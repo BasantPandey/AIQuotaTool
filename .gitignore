@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Turborepo
+.turbo/
+
+# Extension artifacts
+*.vsix
+*.crx
+*.zip
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+
+# Service brand logos (drop files in packages/ui/src/assets/logos/)
+packages/ui/src/assets/logos/*.svg
+packages/ui/src/assets/logos/*.png
+
+# Claude Code
+CLAUDE.md
+
+# Dev scripts / scratch files
+scripts/*-preview.html

@@ -1,0 +1,50 @@
+{
+  "name": "ai-quota-tool-vscode",
+  "displayName": "AI Quota Tool",
+  "description": "Monitor remaining AI quota for Claude, Copilot, and Codex directly in VS Code.",
+  "version": "0.1.0",
+  "publisher": "BasantPandey",
+  "private": true,
+  "engines": { "vscode": "^1.95.0" },
+  "categories": ["Other"],
+  "icon": "icons/icon128.png",
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiQuotaTool.openPanel",
+        "title": "AI Quota Tool: Open Dashboard"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json && vite build --config vite.webview.config.ts",
+    "dev": "tsc --project tsconfig.json --watch",
+    "type-check": "tsc --noEmit && tsc --project tsconfig.webview.json --noEmit",
+    "clean": "rimraf dist",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "@ai-quota-tool/core": "workspace:*",
+    "@ai-quota-tool/ui": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-error-boundary": "^5.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/vscode": "^1.95.0",
+    "@types/ws": "^8.5.13",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vscode/vsce": "^3.2.1",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

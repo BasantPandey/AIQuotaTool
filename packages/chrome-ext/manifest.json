@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "AI Quota Tool",
+  "version": "0.1.0",
+  "description": "Monitor your remaining AI quota for Claude, Copilot, and Codex in one dashboard.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "https://api.github.com/*",
+    "https://github.com/*",
+    "https://api.openai.com/*",
+    "ws://localhost:54321/"
+  ]
+}
