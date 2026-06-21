@@ -103,12 +103,15 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram, 
 
 | Task | Status |
 |---|---|
-| Endpoint discovery (real quota API URLs for Claude, Copilot, Codex) | **TODO** |
-| Implement fetchers with real endpoints | Blocked by above |
-| Verify persistent WebSocket in MV3 service worker | TODO |
+| Endpoint discovery — Claude, Codex | Done |
+| Endpoint discovery — Copilot `GET /user/copilot/usage` | Needs DevTools verification on `github.com/settings/billing` |
+| Implement fetchers with real endpoints — Claude, Codex | Done |
+| Implement Copilot fetcher with real usage endpoint | Blocked by above |
+| Verify persistent WebSocket in MV3 service worker | Done |
+| Migrate fetchers + WS layer to [Effect](https://effect.website/) for typed errors and composability | TODO (post-endpoint-discovery) |
 | Publish to Chrome Web Store + VS Code Marketplace | Post-v1 |
 
-The fetchers in `packages/chrome-ext/src/background/fetchers/` currently use placeholder endpoints. To discover the real URLs, inspect DevTools → Network while logged into each service and find the quota/usage API call.
+To discover the Copilot usage endpoint: log into github.com, open DevTools → Network, navigate to `github.com/settings/billing/summary`, and find the XHR returning completion/chat quota remaining.
 
 ---
 
