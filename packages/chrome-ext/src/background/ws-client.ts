@@ -1,10 +1,8 @@
 import type { QuotaState, WsMessage } from '@ai-quota-tool/core';
 
 const WS_URL = 'ws://localhost:54321';
-const RECONNECT_DELAY_MS = 5_000;
 
 let socket: WebSocket | null = null;
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 function connect(): void {
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
@@ -13,17 +11,10 @@ function connect(): void {
 
   socket = new WebSocket(WS_URL);
 
-  socket.addEventListener('open', () => {
-    if (reconnectTimer !== null) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-    }
-  });
-
   socket.addEventListener('close', () => {
     socket = null;
-    // Attempt reconnect — VS Code may not be open yet
-    reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+    // No setTimeout — MV3 service workers lose heap on suspension, killing any timer.
+    // Reconnect is driven by chrome.alarms in worker.ts (WS_KEEPALIVE_ALARM).
   });
 
   socket.addEventListener('error', () => {
@@ -38,5 +29,11 @@ export function initWsClient(): void {
 export function pushQuotaUpdate(states: QuotaState[]): void {
   if (!socket || socket.readyState !== WebSocket.OPEN) return;
   const msg: WsMessage = { type: 'quota_update', payload: states };
+  socket.send(JSON.stringify(msg));
+}
+
+export function sendPing(): void {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  const msg: WsMessage = { type: 'ping' };
   socket.send(JSON.stringify(msg));
 }

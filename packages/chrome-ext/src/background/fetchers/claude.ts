@@ -61,7 +61,7 @@ export class ClaudeFetcher implements ServiceFetcher {
       weeklyPct: calcPct(data.seven_day.utilization, 100),
       sessionResetsAt,
       weeklyResetsAt,
-      subcategories: subcategories.length > 0 ? subcategories : undefined,
+      ...(subcategories.length > 0 && { subcategories }),
       lastUpdated: Date.now(),
     };
   }
