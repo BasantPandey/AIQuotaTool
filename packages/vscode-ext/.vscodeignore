@@ -1,0 +1,22 @@
+# Source & config — not needed at runtime
+src/
+tsconfig*.json
+vite*.config.ts
+*.config.ts
+.turbo/
+CLAUDE.md
+
+# Type declarations — not needed at runtime (esbuild bundles everything)
+**/*.d.ts
+
+# Test & coverage
+**/*.test.ts
+coverage/
+
+# Dev tooling
+.eslintrc*
+.prettierrc*
+
+# Misc
+*.vsix
+**/*.map

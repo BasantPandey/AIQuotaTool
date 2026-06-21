@@ -4,11 +4,21 @@
   "description": "Monitor remaining AI quota for Claude, Copilot, and Codex directly in VS Code.",
   "version": "0.1.0",
   "publisher": "BasantPandey",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BasantPandey/AIQuotaTool.git"
+  },
   "private": true,
-  "engines": { "vscode": "^1.95.0" },
-  "categories": ["Other"],
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
   "icon": "icons/icon128.png",
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -19,11 +29,11 @@
     ]
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json && vite build --config vite.webview.config.ts",
-    "dev": "tsc --project tsconfig.json --watch",
-    "type-check": "tsc --noEmit && tsc --project tsconfig.webview.json --noEmit",
+    "build": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=dist/extension.js --format=cjs && vite build --config vite.webview.config.ts",
+    "dev": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=dist/extension.js --format=cjs --watch",
+    "type-check": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.webview.json --noEmit",
     "clean": "rimraf dist",
-    "package": "vsce package"
+    "package": "vsce package --no-dependencies"
   },
   "dependencies": {
     "@ai-quota-tool/core": "workspace:*",
@@ -43,6 +53,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vscode/vsce": "^3.2.1",
     "babel-plugin-react-compiler": "^1.0.0",
+    "esbuild": "^0.25.12",
     "rimraf": "^6.0.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.5"
