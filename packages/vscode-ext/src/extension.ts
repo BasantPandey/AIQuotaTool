@@ -18,6 +18,11 @@ export function activate(context: vscode.ExtensionContext): void {
     panel.pushStates(states);
   });
 
+  wsServer.onDisconnect(() => {
+    statusBar.showDisconnected();
+    panel.pushStates([], true);
+  });
+
   const openCmd = vscode.commands.registerCommand(OPEN_PANEL_COMMAND, () => {
     panel.open();
 

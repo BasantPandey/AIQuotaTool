@@ -4,16 +4,28 @@ import type { QuotaState, WsMessage } from '@ai-quota-tool/core';
 const PORT = 54321;
 
 type StateChangeListener = (states: QuotaState[]) => void;
+type DisconnectListener = () => void;
 
 export class QuotaWsServer {
   private wss: WebSocketServer | null = null;
   private latestStates: QuotaState[] = [];
   private listeners: Set<StateChangeListener> = new Set();
+  private disconnectListeners: Set<DisconnectListener> = new Set();
+  private connectionCount = 0;
 
   start(): void {
     this.wss = new WebSocketServer({ host: '127.0.0.1', port: PORT });
 
     this.wss.on('connection', (ws: WebSocket) => {
+      this.connectionCount++;
+
+      ws.on('close', () => {
+        this.connectionCount--;
+        if (this.connectionCount === 0) {
+          this.disconnectListeners.forEach((fn) => fn());
+        }
+      });
+
       ws.on('message', (raw) => {
         try {
           const msg = JSON.parse(raw.toString()) as WsMessage;
@@ -37,6 +49,11 @@ export class QuotaWsServer {
   onStateChange(listener: StateChangeListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  onDisconnect(listener: DisconnectListener): () => void {
+    this.disconnectListeners.add(listener);
+    return () => this.disconnectListeners.delete(listener);
   }
 
   getLatestStates(): QuotaState[] {

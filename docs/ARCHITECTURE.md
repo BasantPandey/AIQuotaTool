@@ -142,9 +142,9 @@ AIQuotaTool/
     │       │   ├── notifications.ts  # chrome.alarms + chrome.notifications
     │       │   └── fetchers/
     │       │       ├── base.ts       # ServiceFetcher interface
-    │       │       ├── claude.ts     # ClaudeFetcher (TODO: real endpoint)
-    │       │       ├── copilot.ts    # CopilotFetcher (TODO: real endpoint)
-    │       │       └── codex.ts      # CodexFetcher (TODO: real endpoint)
+    │       │       ├── claude.ts     # ClaudeFetcher (real endpoint)
+    │       │       ├── copilot.ts    # CopilotFetcher (usage endpoint TBD)
+    │       │       └── codex.ts      # CodexFetcher (real endpoint)
     │       └── popup/
     │           ├── index.html
     │           └── index.tsx         # reads chrome.storage.local → QuotaDashboard
@@ -198,11 +198,37 @@ type WsMessage =
 
 ---
 
+## Chrome Extension Badge
+
+After each poll, `updateBadge(states)` in `worker.ts` sets:
+- Red `!` badge — any service below 5% remaining
+- Amber `!` badge — any service below 10% remaining
+- No badge — all services healthy (≥ 10%)
+
+---
+
+## VS Code Disconnected State
+
+`QuotaWsServer` tracks active connection count. When the last WebSocket client disconnects:
+- `statusBar.showDisconnected()` — status bar turns red with "(not connected)"
+- `panel.pushStates([], true)` — webview shows plug icon with install instructions
+
+When Chrome reconnects and sends the next `quota_update`, the UI automatically restores.
+
+---
+
 ## Open Tasks (Engineering)
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Endpoint discovery — find real API URLs + response shapes for Claude, Copilot, Codex | **TODO** |
-| 2 | Implement `ClaudeFetcher`, `CopilotFetcher`, `CodexFetcher` with real endpoints | Blocked by #1 |
-| 3 | Verify MV3 service worker can maintain a persistent WebSocket client connection | **TODO** |
-| 4 | Publish to Chrome Web Store and VS Code Marketplace | Post-v1 |
+| 1 | Endpoint discovery — Claude (`claude.ai/api/.../usage`) | Done |
+| 2 | Endpoint discovery — Codex (`chatgpt.com/backend-api/wham/usage`) | Done |
+| 3 | Endpoint discovery — Copilot individual usage | **Needs DevTools on `github.com/settings/billing`** |
+| 4 | Implement `ClaudeFetcher` with real endpoint | Done |
+| 5 | Implement `CodexFetcher` with real endpoint | Done |
+| 6 | Implement `CopilotFetcher` with real usage endpoint | Blocked by #3 |
+| 7 | MV3 service worker persistent WebSocket (`chrome.alarms` keepalive) | Done |
+| 8 | Chrome extension badge warning for low quota | Done |
+| 9 | VS Code disconnected state detection | Done |
+| 10 | Migrate to [Effect-TS](https://effect.website/) for typed error channels | TODO (post-endpoint-discovery) |
+| 11 | Publish to Chrome Web Store and VS Code Marketplace | Post-v1 |
