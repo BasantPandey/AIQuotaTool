@@ -2,10 +2,15 @@ import type { QuotaState, ClaudeSubcategory } from '@ai-quota-tool/core';
 import { calcPct } from '@ai-quota-tool/core';
 import type { ServiceFetcher } from './base.js';
 
-// Discovered via DevTools → Network on claude.ai while logged in.
+// Endpoint discovered via DevTools on claude.ai/new#settings/usage.
+// The org UUID is user-specific — must be fetched from /api/organizations first.
 // Response: { five_hour: { utilization, resets_at }, seven_day: { utilization, resets_at },
 //             seven_day_sonnet, seven_day_opus, seven_day_cowork, seven_day_omelette, ... }
-const CLAUDE_USAGE_ENDPOINT = 'https://claude.ai/api/organizations/me/usage';
+const CLAUDE_ORGS_ENDPOINT = 'https://claude.ai/api/organizations';
+
+interface ClaudeOrg {
+  uuid: string;
+}
 
 interface ClaudeUsageBucket {
   utilization: number;   // 0–100, percent USED
@@ -25,10 +30,24 @@ export class ClaudeFetcher implements ServiceFetcher {
   readonly serviceId = 'claude' as const;
 
   async fetch(): Promise<QuotaState> {
-    const res = await fetch(CLAUDE_USAGE_ENDPOINT, {
+    // Step 1: resolve the user's active org UUID (varies per account)
+    const orgRes = await fetch(CLAUDE_ORGS_ENDPOINT, {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
+    if (!orgRes.ok) throw new Error(`Claude orgs API returned ${orgRes.status}`);
+    const orgs = await orgRes.json() as ClaudeOrg[];
+    const orgId = orgs[0]?.uuid;
+    if (!orgId) throw new Error('No Claude organization found');
+
+    // Step 2: fetch usage for that org
+    const res = await fetch(
+      `https://claude.ai/api/organizations/${orgId}/usage`,
+      {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      },
+    );
 
     if (!res.ok) {
       throw new Error(`Claude usage API returned ${res.status}`);
