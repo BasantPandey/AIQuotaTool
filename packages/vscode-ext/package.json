@@ -25,6 +25,10 @@
       {
         "command": "aiQuotaTool.openPanel",
         "title": "AI Quota Tool: Open Dashboard"
+      },
+      {
+        "command": "aiQuotaTool.configure",
+        "title": "AI Quota Tool: Configure Credentials"
       }
     ]
   },
