@@ -9,7 +9,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_popup": "popup/index.html",
+    "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
@@ -19,6 +19,13 @@
     "service_worker": "worker.js",
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*", "https://chatgpt.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "permissions": [
     "storage",
     "alarms",
@@ -27,9 +34,10 @@
   ],
   "host_permissions": [
     "https://claude.ai/*",
+    "https://chatgpt.com/*",
     "https://api.github.com/*",
     "https://github.com/*",
     "https://api.openai.com/*",
-    "ws://localhost:54321/"
+    "ws://127.0.0.1:54321/"
   ]
 }

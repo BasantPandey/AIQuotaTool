@@ -47,6 +47,27 @@ async function pollAll(): Promise<void> {
   updateBadge(states);
 }
 
+// Merge a single service's state (pushed by the content script) into storage.
+async function mergeQuotaState(incoming: QuotaState): Promise<void> {
+  const result = await chrome.storage.local.get(['quotaStates']);
+  const existing: QuotaState[] = (result['quotaStates'] as QuotaState[] | undefined) ?? [];
+  const merged = [
+    ...existing.filter((s) => s.service !== incoming.service),
+    incoming,
+  ];
+  await chrome.storage.local.set({ quotaStates: merged, lastPollAt: Date.now() });
+  pushQuotaUpdate(merged);
+  updateBadge(merged);
+  scheduleResetNotifications([incoming]);
+}
+
+// Content scripts on claude.ai / chatgpt.com push quota data here (bypasses CORS).
+chrome.runtime.onMessage.addListener((msg: { type: string; payload?: QuotaState }) => {
+  if (msg.type === 'content_quota' && msg.payload) {
+    mergeQuotaState(msg.payload).catch(console.error);
+  }
+});
+
 // Top-level call runs on every SW activation (install, startup, and every alarm wake-up).
 // This is the primary reconnect path after suspension clears the heap.
 initWsClient();

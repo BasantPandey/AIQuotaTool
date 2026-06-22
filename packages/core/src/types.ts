@@ -43,3 +43,9 @@ export const SERVICE_COLORS: Record<ServiceId, string> = {
   copilot: '#2ea44f',
   codex: '#0066ff',
 };
+
+export const SERVICE_URLS: Record<ServiceId, string> = {
+  claude: 'claude.ai',
+  copilot: 'github.com',
+  codex: 'chatgpt.com',
+};

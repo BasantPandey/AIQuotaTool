@@ -1,5 +1,8 @@
-import type { QuotaState } from '@ai-quota-tool/core';
+import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { QuotaCard } from './components/QuotaCard.js';
+import { QuotaPendingCard } from './components/QuotaPendingCard.js';
+
+const ALL_SERVICES: ServiceId[] = ['claude', 'copilot', 'codex'];
 
 interface Props {
   states: QuotaState[];
@@ -20,19 +23,16 @@ export function QuotaDashboard({ states, disconnected = false }: Props) {
     );
   }
 
-  if (states.length === 0) {
-    return (
-      <div style={{ padding: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 13 }}>
-        No quota data yet — poll in progress…
-      </div>
-    );
-  }
+  const stateMap = new Map(states.map((s) => [s.service, s]));
 
   return (
     <div style={{ padding: '8px 10px' }}>
-      {states.map((s) => (
-        <QuotaCard key={s.service} state={s} />
-      ))}
+      {ALL_SERVICES.map((serviceId) => {
+        const state = stateMap.get(serviceId);
+        return state
+          ? <QuotaCard key={serviceId} state={state} />
+          : <QuotaPendingCard key={serviceId} service={serviceId} />;
+      })}
     </div>
   );
 }
