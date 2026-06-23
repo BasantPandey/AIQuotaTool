@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-vscode-ext",
+      "type": "shell",
+      "command": "pnpm --filter ai-quota-tool-vscode build",
+      "group": "build",
+      "presentation": { "reveal": "silent" },
+      "problemMatcher": []
+    }
+  ]
+}
