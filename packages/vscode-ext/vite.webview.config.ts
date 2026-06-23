@@ -2,10 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
-/** Builds the React webview bundle that VS Code extension host serves in a WebviewPanel. */
+/** Builds the React webview bundles that VS Code extension host serves in WebviewPanels. */
 export default defineConfig({
   root: '.',
-  // Vite resolves the webview tsconfig for type info during the build
   resolve: { conditions: ['browser'] },
   plugins: [
     react({
@@ -16,9 +15,12 @@ export default defineConfig({
     outDir: 'dist/webview',
     emptyOutDir: false,
     rollupOptions: {
-      input: resolve(__dirname, 'src/webview/index.html'),
+      input: {
+        index: resolve(__dirname, 'src/webview/index.html'),
+        'credential-setup': resolve(__dirname, 'src/webview/credential-setup/index.tsx'),
+      },
       output: {
-        entryFileNames: 'index.js',
+        entryFileNames: '[name].js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: '[name][extname]',
       },

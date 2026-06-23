@@ -35,7 +35,7 @@
       },
       {
         "command": "aiQuotaTool.configure",
-        "title": "AI Quota Tool: Configure Credentials"
+        "title": "AI Quota Tool: Set Up Accounts"
       }
     ]
   },

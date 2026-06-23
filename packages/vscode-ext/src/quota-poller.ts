@@ -4,6 +4,8 @@ import type { QuotaState, ClaudeSubcategory } from '@ai-quota-tool/core';
 import { calcPct } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
 
+type GetGithubToken = () => Promise<string | undefined>;
+
 const POLL_INTERVAL_MS = 60_000;
 
 // ──── Claude ────────────────────────────────────────────────────────────────
@@ -158,12 +160,12 @@ export class QuotaPoller {
     return this.latestStates;
   }
 
-  start(getCredentials: () => Promise<Credentials>): void {
+  start(getCredentials: () => Promise<Credentials>, getGithubToken: GetGithubToken): void {
     const poll = async () => {
-      const creds = await getCredentials();
+      const [creds, githubToken] = await Promise.all([getCredentials(), getGithubToken()]);
       const results = await Promise.allSettled([
         creds.claudeSessionKey ? fetchClaude(creds.claudeSessionKey) : Promise.reject('no credential'),
-        creds.githubToken ? fetchCopilot(creds.githubToken) : Promise.reject('no credential'),
+        githubToken ? fetchCopilot(githubToken) : Promise.reject('no credential'),
         creds.codexSessionToken ? fetchCodex(creds.codexSessionToken) : Promise.reject('no credential'),
       ]);
 
