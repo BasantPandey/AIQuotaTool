@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0] — 2026-06-23
+
+### Fixed
+- Each service account is now explicitly optional — set up only the services you use
+- Setup panel tabs show ✓/○/✗ status at a glance without clicking each tab
+- "Done — open dashboard" button closes setup and immediately shows quota for connected accounts
+- Removed misleading "Install the Chrome extension" message — VS Code extension is fully standalone
+
 ## [0.2.0] — 2026-06-23
 
 ### Added
