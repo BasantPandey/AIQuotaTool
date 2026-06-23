@@ -6,7 +6,7 @@ const ALL_SERVICES: ServiceId[] = ['claude', 'copilot', 'codex'];
 
 interface Props {
   states: QuotaState[];
-  /** VS Code only: show when Chrome extension is not connected */
+  /** Show when no quota data is available yet (credentials not set up) */
   disconnected?: boolean;
 }
 
@@ -15,10 +15,10 @@ export function QuotaDashboard({ states, disconnected = false }: Props) {
   if (disconnected) {
     return (
       <div style={{ padding: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 13 }}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>🔌</div>
-        Chrome extension not connected.
+        <div style={{ fontSize: 32, marginBottom: 12 }}>🔑</div>
+        No quota data yet.
         <br />
-        Install and enable the AI Quota Tool Chrome extension.
+        Run <strong style={{ color: 'rgba(255,255,255,0.7)' }}>AI Quota Tool: Set Up Accounts</strong> to connect your services.
       </div>
     );
   }
