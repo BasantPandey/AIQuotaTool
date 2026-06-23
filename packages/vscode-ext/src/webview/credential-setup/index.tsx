@@ -20,6 +20,12 @@ const TAB_LABELS: Record<ServiceTab, string> = {
 
 const TABS = Object.keys(TAB_LABELS) as ServiceTab[];
 
+function tabIcon(s: CredStatus): string {
+  if (s.status === 'ok') return '✓';
+  if (s.status === 'error') return '✗';
+  return '○';
+}
+
 function StatusBadge({ s }: { s: CredStatus }) {
   const color =
     s.status === 'ok'
@@ -28,9 +34,12 @@ function StatusBadge({ s }: { s: CredStatus }) {
         ? 'var(--vscode-errorForeground, #f48771)'
         : 'var(--vscode-descriptionForeground, #8b949e)';
   const icon = s.status === 'ok' ? '✓' : s.status === 'error' ? '✗' : s.status === 'testing' ? '…' : '○';
+  const label =
+    s.detail ??
+    (s.status === 'idle' ? 'Not configured (optional)' : s.status === 'testing' ? 'Testing…' : '');
   return (
     <span style={{ color, fontSize: 13 }}>
-      {icon} {s.detail ?? (s.status === 'idle' ? 'Not configured' : s.status === 'testing' ? 'Testing…' : '')}
+      {icon} {label}
     </span>
   );
 }
@@ -57,6 +66,12 @@ function CredentialSetup() {
     vscode?.postMessage({ type: 'credential_setup_ready' });
     return () => window.removeEventListener('message', handler);
   }, []);
+
+  const statusOf: Record<ServiceTab, CredStatus> = {
+    claude: claudeStatus,
+    codex: codexStatus,
+    github: githubStatus,
+  };
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -89,12 +104,22 @@ function CredentialSetup() {
 
   return (
     <div style={{ padding: 24, fontFamily: 'var(--vscode-font-family)', color: 'var(--vscode-foreground)', maxWidth: 520 }}>
-      <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>AI Quota Tool — Account Setup</h2>
+      <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>AI Quota Tool — Account Setup</h2>
+      <p style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)', marginBottom: 20 }}>
+        Each service is <strong>optional</strong> — set up only what you use. Quota appears as soon as one account is connected.
+      </p>
 
-      {/* Tab bar */}
+      {/* Tab bar — shows ✓/○/✗ status on each tab */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--vscode-panel-border, #3c3c3c)', marginBottom: 24, gap: 0 }}>
         {TABS.map((tab) => {
           const active = activeTab === tab;
+          const s = statusOf[tab];
+          const iconColor =
+            s.status === 'ok'
+              ? 'var(--vscode-charts-green, #4ec9b0)'
+              : s.status === 'error'
+                ? 'var(--vscode-errorForeground, #f48771)'
+                : 'var(--vscode-descriptionForeground, #8b949e)';
           return (
             <button
               key={tab}
@@ -104,12 +129,16 @@ function CredentialSetup() {
                 color: active ? 'var(--vscode-foreground)' : 'var(--vscode-tab-inactiveForeground, #8b949e)',
                 border: 'none',
                 borderBottom: active ? '2px solid var(--vscode-focusBorder, #0078d4)' : '2px solid transparent',
-                padding: '6px 16px',
+                padding: '6px 14px',
                 cursor: 'pointer',
                 fontSize: 13,
                 marginBottom: -1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
               }}
             >
+              <span style={{ color: iconColor, fontSize: 11 }}>{tabIcon(s)}</span>
               {TAB_LABELS[tab]}
             </button>
           );
@@ -123,7 +152,7 @@ function CredentialSetup() {
             Sign in to <strong>claude.ai</strong> with Google (or any method), then copy your session key:
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
-            <li>Open <strong>claude.ai</strong> in Chrome and sign in</li>
+            <li>Open <strong>claude.ai</strong> in your browser and sign in</li>
             <li>Press <code>F12</code> → <strong>Application</strong> tab → Cookies → <code>https://claude.ai</code></li>
             <li>Copy the value of <code>sessionKey</code></li>
           </ol>
@@ -168,7 +197,7 @@ function CredentialSetup() {
             Sign in to <strong>chatgpt.com</strong> with Google (or any method), then copy your session token:
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
-            <li>Open <strong>chatgpt.com</strong> in Chrome and sign in</li>
+            <li>Open <strong>chatgpt.com</strong> in your browser and sign in</li>
             <li>Press <code>F12</code> → <strong>Application</strong> tab → Cookies → <code>https://chatgpt.com</code></li>
             <li>Copy the value of <code>__Secure-next-auth.session-token</code></li>
           </ol>
@@ -231,6 +260,19 @@ function CredentialSetup() {
           )}
         </div>
       )}
+
+      {/* Done button */}
+      <div style={{ marginTop: 32, paddingTop: 16, borderTop: '1px solid var(--vscode-panel-border, #3c3c3c)' }}>
+        <button
+          style={secondaryBtnStyle}
+          onClick={() => vscode?.postMessage({ type: 'close_panel' })}
+        >
+          Done — open dashboard
+        </button>
+        <span style={{ marginLeft: 14, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
+          Connected services show quota immediately. Skipped services show as pending.
+        </span>
+      </div>
     </div>
   );
 }

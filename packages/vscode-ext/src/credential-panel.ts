@@ -72,6 +72,10 @@ export class CredentialPanel {
         case 'open_external':
           if (msg['url']) await vscode.env.openExternal(vscode.Uri.parse(msg['url']));
           break;
+        case 'close_panel':
+          this.panel?.dispose();
+          await vscode.commands.executeCommand('aiQuotaTool.openPanel');
+          break;
       }
     });
 
