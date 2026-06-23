@@ -34,9 +34,8 @@ coverage/
 Thumbs.db
 desktop.ini
 
-# Editor
+# Editor — ignore personal settings but track shared debug configs
 .vscode/settings.json
-.vscode/launch.json
 .idea/
 
 # Service brand logos (drop files in packages/ui/src/assets/logos/)
