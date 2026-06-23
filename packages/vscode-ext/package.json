@@ -8,12 +8,19 @@
     "type": "git",
     "url": "https://github.com/BasantPandey/AIQuotaTool.git"
   },
-  "private": true,
   "engines": {
     "vscode": "^1.95.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "quota",
+    "AI",
+    "Claude",
+    "Copilot",
+    "Codex",
+    "monitoring"
   ],
   "icon": "icons/icon128.png",
   "activationEvents": [
