@@ -3,8 +3,16 @@ import type { CredentialManager } from './credentials.js';
 
 // ── Validation helpers (same endpoints as quota-poller, but return account info) ──
 
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+
 async function testClaude(sessionKey: string): Promise<string> {
-  const headers = { Accept: 'application/json', Cookie: `sessionKey=${sessionKey}` };
+  const headers = {
+    'Accept': 'application/json',
+    'Cookie': `sessionKey=${sessionKey}`,
+    'User-Agent': BROWSER_UA,
+    'Referer': 'https://claude.ai/',
+    'Origin': 'https://claude.ai',
+  };
   const orgRes = await fetch('https://claude.ai/api/organizations', { headers });
   if (!orgRes.ok) throw new Error(`HTTP ${orgRes.status}`);
   const orgs = (await orgRes.json()) as Array<{ uuid: string; name?: string }>;
@@ -16,9 +24,11 @@ async function testClaude(sessionKey: string): Promise<string> {
 async function testCodex(sessionToken: string): Promise<void> {
   const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
     headers: {
-      Accept: 'application/json',
-      Cookie: `__Secure-next-auth.session-token=${sessionToken}`,
-      Referer: 'https://chatgpt.com/codex/settings/usage',
+      'Accept': 'application/json',
+      'Cookie': `__Secure-next-auth.session-token=${sessionToken}`,
+      'Referer': 'https://chatgpt.com/codex/settings/usage',
+      'User-Agent': BROWSER_UA,
+      'Origin': 'https://chatgpt.com',
     },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

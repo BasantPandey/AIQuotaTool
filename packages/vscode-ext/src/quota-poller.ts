@@ -7,6 +7,7 @@ import type { Credentials } from './credentials.js';
 type GetGithubToken = () => Promise<string | undefined>;
 
 const POLL_INTERVAL_MS = 60_000;
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
 // ──── Claude ────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,9 @@ async function fetchClaude(sessionKey: string): Promise<QuotaState> {
   const headers = {
     'Accept': 'application/json',
     'Cookie': `sessionKey=${sessionKey}`,
+    'User-Agent': BROWSER_UA,
+    'Referer': 'https://claude.ai/',
+    'Origin': 'https://claude.ai',
   };
 
   const orgRes = await fetch('https://claude.ai/api/organizations', { headers });
@@ -122,6 +126,8 @@ async function fetchCodex(sessionToken: string): Promise<QuotaState> {
       'Accept': 'application/json',
       'Cookie': `__Secure-next-auth.session-token=${sessionToken}`,
       'Referer': 'https://chatgpt.com/codex/settings/usage',
+      'User-Agent': BROWSER_UA,
+      'Origin': 'https://chatgpt.com',
     },
   });
   if (!res.ok) throw new Error(`Codex usage API: ${res.status}`);

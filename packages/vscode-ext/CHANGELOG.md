@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.1] — 2026-06-23
+
+### Fixed
+- Claude and Codex API calls now include browser-like headers (`User-Agent`, `Referer`, `Origin`) to avoid HTTP 403 rejections from their servers
+
 ## [0.3.0] — 2026-06-23
 
 ### Fixed
