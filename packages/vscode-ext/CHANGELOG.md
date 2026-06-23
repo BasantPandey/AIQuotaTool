@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0] — 2026-06-23
+
+### Added
+- **Account Setup panel** — dedicated webview with one tab per service replacing the old blind input boxes
+- **Claude tab**: step-by-step guide to retrieve the `sessionKey` cookie; "Save & Test" validates the key and shows the org name before saving
+- **Codex tab**: same guided flow for the ChatGPT `__Secure-next-auth.session-token` cookie
+- **GitHub Copilot tab**: VS Code built-in OAuth (`vscode.authentication`) — one click, no token copying
+- Status bar now shows `$(key) AI Quota: Set up accounts` on first launch when no credentials are configured
+- Command renamed from "Configure Credentials" to **"Set Up Accounts"**
+
 ## [0.1.0] — 2026-06-23
 
 ### Added
