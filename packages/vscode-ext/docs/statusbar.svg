@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <!-- VS Code window background -->
+  <rect width="1280" height="800" fill="#1e1e1e"/>
+
+  <!-- Title bar -->
+  <rect width="1280" height="30" fill="#3c3c3c"/>
+  <text x="640" y="20" font-family="Segoe UI, sans-serif" font-size="13" fill="#cccccc" text-anchor="middle">AI Quota Tool - Visual Studio Code</text>
+  <!-- Window buttons -->
+  <circle cx="1240" cy="15" r="6" fill="#e74c3c"/>
+  <circle cx="1256" cy="15" r="6" fill="#f39c12"/>
+  <circle cx="1272" cy="15" r="6" fill="#2ecc71"/>
+
+  <!-- Activity bar -->
+  <rect x="0" y="30" width="48" height="748" fill="#333333"/>
+  <rect x="0" y="30" width="3" height="748" fill="#007acc"/>
+
+  <!-- Sidebar -->
+  <rect x="48" y="30" width="220" height="748" fill="#252526"/>
+  <text x="68" y="60" font-family="Segoe UI, sans-serif" font-size="11" fill="#bbbbbb" font-weight="bold" letter-spacing="1">EXPLORER</text>
+  <text x="68" y="90" font-family="Segoe UI, sans-serif" font-size="12" fill="#cccccc">📁 AIQuotaTool</text>
+  <text x="82" y="112" font-family="Segoe UI, sans-serif" font-size="12" fill="#cccccc">📁 packages</text>
+  <text x="96" y="134" font-family="Segoe UI, sans-serif" font-size="12" fill="#4fc1ff">📄 quota-poller.ts</text>
+  <text x="96" y="156" font-family="Segoe UI, sans-serif" font-size="12" fill="#cccccc">📄 extension.ts</text>
+  <text x="96" y="178" font-family="Segoe UI, sans-serif" font-size="12" fill="#cccccc">📄 status-bar.ts</text>
+
+  <!-- Editor area -->
+  <rect x="268" y="30" width="1012" height="748" fill="#1e1e1e"/>
+
+  <!-- Tab bar -->
+  <rect x="268" y="30" width="1012" height="36" fill="#2d2d2d"/>
+  <rect x="268" y="30" width="180" height="36" fill="#1e1e1e"/>
+  <rect x="268" y="62" width="180" height="2" fill="#007acc"/>
+  <text x="290" y="53" font-family="Segoe UI, sans-serif" font-size="13" fill="#ffffff">quota-poller.ts</text>
+
+  <!-- Editor content - line numbers + code -->
+  <rect x="268" y="66" width="40" height="682" fill="#1e1e1e"/>
+
+  <!-- Line numbers -->
+  <g font-family="Consolas, monospace" font-size="13" fill="#858585">
+    <text x="298" y="94" text-anchor="end">1</text>
+    <text x="298" y="116" text-anchor="end">2</text>
+    <text x="298" y="138" text-anchor="end">3</text>
+    <text x="298" y="160" text-anchor="end">4</text>
+    <text x="298" y="182" text-anchor="end">5</text>
+    <text x="298" y="204" text-anchor="end">6</text>
+    <text x="298" y="226" text-anchor="end">7</text>
+    <text x="298" y="248" text-anchor="end">8</text>
+    <text x="298" y="270" text-anchor="end">9</text>
+    <text x="298" y="292" text-anchor="end">10</text>
+    <text x="298" y="314" text-anchor="end">11</text>
+    <text x="298" y="336" text-anchor="end">12</text>
+    <text x="298" y="358" text-anchor="end">13</text>
+    <text x="298" y="380" text-anchor="end">14</text>
+    <text x="298" y="402" text-anchor="end">15</text>
+    <text x="298" y="424" text-anchor="end">16</text>
+    <text x="298" y="446" text-anchor="end">17</text>
+    <text x="298" y="468" text-anchor="end">18</text>
+  </g>
+
+  <!-- Code -->
+  <g font-family="Consolas, monospace" font-size="13">
+    <text x="316" y="94" fill="#569cd6">import</text>
+    <text x="366" y="94" fill="#cccccc"> type </text>
+    <text x="404" y="94" fill="#4ec9b0">{ QuotaState }</text>
+    <text x="520" y="94" fill="#569cd6"> from</text>
+    <text x="554" y="94" fill="#ce9178"> '@ai-quota-tool/core'</text>
+    <text x="700" y="94" fill="#cccccc">;</text>
+
+    <text x="316" y="138" fill="#6a9955">// Fetch quota from Anthropic API</text>
+    <text x="316" y="160" fill="#569cd6">async function </text>
+    <text x="442" y="160" fill="#dcdcaa">fetchClaude</text>
+    <text x="520" y="160" fill="#cccccc">(</text>
+    <text x="528" y="160" fill="#9cdcfe">apiKey</text>
+    <text x="576" y="160" fill="#cccccc">: </text>
+    <text x="588" y="160" fill="#569cd6">string</text>
+    <text x="626" y="160" fill="#cccccc">): </text>
+    <text x="646" y="160" fill="#4ec9b0">Promise</text>
+    <text x="698" y="160" fill="#cccccc">&lt;</text>
+    <text x="706" y="160" fill="#4ec9b0">QuotaState</text>
+    <text x="782" y="160" fill="#cccccc">&gt; {</text>
+
+    <text x="332" y="182" fill="#569cd6">  const </text>
+    <text x="386" y="182" fill="#9cdcfe">res</text>
+    <text x="410" y="182" fill="#cccccc"> = </text>
+    <text x="430" y="182" fill="#569cd6">await </text>
+    <text x="474" y="182" fill="#dcdcaa">fetch</text>
+    <text x="508" y="182" fill="#cccccc">(</text>
+    <text x="516" y="182" fill="#ce9178">'https://api.anthropic.com/v1/models'</text>
+    <text x="750" y="182" fill="#cccccc">, {</text>
+
+    <text x="332" y="226" fill="#9cdcfe">    sessionPct</text>
+    <text x="428" y="226" fill="#cccccc">: </text>
+    <text x="440" y="226" fill="#9cdcfe">tokensLimit</text>
+    <text x="528" y="226" fill="#cccccc"> &gt; </text>
+    <text x="546" y="226" fill="#b5cea8">0</text>
+    <text x="554" y="226" fill="#cccccc"> ? </text>
+
+    <text x="316" y="292" fill="#569cd6">  return </text>
+    <text x="370" y="292" fill="#cccccc">{</text>
+    <text x="316" y="314" fill="#9cdcfe">    service</text>
+    <text x="380" y="314" fill="#cccccc">: </text>
+    <text x="392" y="314" fill="#ce9178">'claude'</text>
+    <text x="438" y="314" fill="#cccccc">,</text>
+    <text x="316" y="336" fill="#9cdcfe">    sessionPct</text>
+    <text x="396" y="336" fill="#cccccc">,</text>
+    <text x="316" y="358" fill="#9cdcfe">    weeklyPct</text>
+    <text x="388" y="358" fill="#cccccc">,</text>
+    <text x="316" y="380" fill="#9cdcfe">    lastUpdated</text>
+    <text x="404" y="380" fill="#cccccc">: </text>
+    <text x="418" y="380" fill="#4ec9b0">Date</text>
+    <text x="444" y="380" fill="#cccccc">.</text>
+    <text x="448" y="380" fill="#dcdcaa">now</text>
+    <text x="472" y="380" fill="#cccccc">(),</text>
+    <text x="316" y="402" fill="#cccccc">  };</text>
+    <text x="316" y="424" fill="#cccccc">}</text>
+  </g>
+
+  <!-- Dashboard panel overlay (right side) -->
+  <rect x="900" y="66" width="380" height="460" rx="0" fill="#0d1117"/>
+  <rect x="900" y="66" width="380" height="36" fill="#161b22"/>
+  <text x="920" y="89" font-family="Segoe UI, sans-serif" font-size="13" fill="#c9d1d9">AI Quota Tool</text>
+
+  <!-- Claude card -->
+  <rect x="910" y="112" width="360" height="120" rx="14" fill="#1a1a2e"/>
+  <!-- Claude icon placeholder -->
+  <circle cx="934" cy="136" r="10" fill="#da7756"/>
+  <text x="950" y="141" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Claude</text>
+  <text x="1230" y="141" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)" text-anchor="end">Updated just now</text>
+  <!-- Session ring (72%) -->
+  <circle cx="954" cy="195" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+  <circle cx="954" cy="195" r="28" fill="none" stroke="#f39c12" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="49.26" stroke-linecap="round" transform="rotate(-90 954 195)"/>
+  <text x="954" y="199" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">72%</text>
+  <text x="954" y="215" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Session · 2h 54m</text>
+  <!-- Weekly ring (97%) -->
+  <circle cx="1020" cy="195" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+  <circle cx="1020" cy="195" r="28" fill="none" stroke="#2ecc71" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="5.28" stroke-linecap="round" transform="rotate(-90 1020 195)"/>
+  <text x="1020" y="199" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">97%</text>
+  <text x="1020" y="215" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weekly · 149h 54m</text>
+
+  <!-- Copilot card -->
+  <rect x="910" y="242" width="360" height="90" rx="14" fill="#2ea44f"/>
+  <circle cx="934" cy="265" r="10" fill="rgba(255,255,255,0.3)"/>
+  <text x="950" y="270" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Copilot</text>
+  <circle cx="954" cy="305" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+  <circle cx="954" cy="305" r="28" fill="none" stroke="#2ecc71" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="5.28" stroke-linecap="round" transform="rotate(-90 954 305)"/>
+  <text x="954" y="309" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">91%</text>
+  <text x="954" y="325" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Monthly</text>
+
+  <!-- Codex card -->
+  <rect x="910" y="342" width="360" height="120" rx="14" fill="#0066ff"/>
+  <circle cx="934" cy="366" r="10" fill="rgba(255,255,255,0.3)"/>
+  <text x="950" y="371" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Codex</text>
+  <!-- Session ring (8% - almost empty, red) -->
+  <circle cx="954" cy="415" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+  <circle cx="954" cy="415" r="28" fill="none" stroke="#e74c3c" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="161.86" stroke-linecap="round" transform="rotate(-90 954 415)"/>
+  <text x="954" y="419" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">8%</text>
+  <text x="954" y="435" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Session · 1h 2m</text>
+  <!-- Weekly ring (43%) -->
+  <circle cx="1020" cy="415" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+  <circle cx="1020" cy="415" r="28" fill="none" stroke="#f39c12" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="100.28" stroke-linecap="round" transform="rotate(-90 1020 415)"/>
+  <text x="1020" y="419" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">43%</text>
+  <text x="1020" y="435" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weekly · 72h 10m</text>
+
+  <!-- Status bar -->
+  <rect x="0" y="778" width="1280" height="22" fill="#007acc"/>
+  <!-- Left side status bar items -->
+  <text x="10" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">⎇ main</text>
+  <text x="80" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">⚠ 0</text>
+  <!-- Right side - our extension -->
+  <rect x="860" y="778" width="400" height="22" fill="#005a9e"/>
+  <text x="872" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff" font-weight="500">⚡ Claude 72% | Copilot 91% | Codex 8%</text>
+  <!-- Other right-side items -->
+  <text x="1170" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">UTF-8</text>
+  <text x="1220" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">TypeScript</text>
+</svg>

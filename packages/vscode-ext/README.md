@@ -2,7 +2,7 @@
 
 Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** — live in VS Code.
 
-![Status bar showing Claude 72% | Copilot 91% | Codex 8%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/docs/statusbar.png)
+![Status bar showing Claude 72% | Copilot 91% | Codex 8%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.svg)
 
 ---
 
@@ -24,15 +24,12 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI
 
 ### How to get each credential
 
-**Claude session key**
-1. Open [claude.ai](https://claude.ai) in Chrome and sign in
-2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
-3. Copy the value of the `sessionKey` cookie (starts with `sk-ant-sid02-`)
+**Claude API key**
+1. Go to [console.anthropic.com](https://console.anthropic.com) and sign in
+2. Open **Settings → API Keys**
+3. Click **Create Key**, copy it (starts with `sk-ant-api03-`)
 
-**GitHub Personal Access Token** (for Copilot)
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Generate a new classic token with the `read:user` scope
-3. Copy the token (starts with `ghp_`)
+**GitHub Copilot** — click **Sign in with GitHub** in the setup panel. VS Code handles the OAuth flow — no token copying required.
 
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in
