@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 
-const KEY_CLAUDE_COOKIE = 'aiQuotaTool.claudeSessionKey';
+const KEY_CLAUDE_API_KEY = 'aiQuotaTool.claudeApiKey';
 const KEY_CODEX_COOKIE = 'aiQuotaTool.codexSessionToken';
+// ponytail: migrate old session-cookie key on first read, then drop it
+const KEY_CLAUDE_LEGACY = 'aiQuotaTool.claudeSessionKey';
 
 export interface Credentials {
-  claudeSessionKey: string | undefined;
+  claudeApiKey: string | undefined;
   codexSessionToken: string | undefined;
 }
 
@@ -12,20 +14,22 @@ export class CredentialManager {
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
   async get(): Promise<Credentials> {
-    const [claudeSessionKey, codexSessionToken] = await Promise.all([
-      this.secrets.get(KEY_CLAUDE_COOKIE),
+    const [claudeApiKey, codexSessionToken] = await Promise.all([
+      this.secrets.get(KEY_CLAUDE_API_KEY),
       this.secrets.get(KEY_CODEX_COOKIE),
     ]);
-    return { claudeSessionKey, codexSessionToken };
+    // silently drop legacy cookie — it no longer works
+    Promise.resolve(this.secrets.delete(KEY_CLAUDE_LEGACY)).catch(() => { /* ignore */ });
+    return { claudeApiKey, codexSessionToken };
   }
 
   async hasAny(): Promise<boolean> {
     const creds = await this.get();
-    return !!(creds.claudeSessionKey || creds.codexSessionToken);
+    return !!(creds.claudeApiKey || creds.codexSessionToken);
   }
 
-  async setClaudeKey(key: string): Promise<void> {
-    await this.secrets.store(KEY_CLAUDE_COOKIE, key);
+  async setClaudeApiKey(key: string): Promise<void> {
+    await this.secrets.store(KEY_CLAUDE_API_KEY, key);
   }
 
   async setCodexToken(token: string): Promise<void> {

@@ -24,11 +24,13 @@ export class QuotaStatusBar {
       return;
     }
 
-    const parts = states.map((s) => `${SERVICE_LABELS[s.service]} ${s.weeklyPct}%`);
-    this.item.text = `$(pulse) ${parts.join(' | ')}`;
+    const parts = states
+      .filter((s) => s.weeklyPct != null)
+      .map((s) => `${SERVICE_LABELS[s.service]} ${s.weeklyPct}%`);
+    this.item.text = parts.length > 0 ? `$(pulse) ${parts.join(' | ')}` : '$(pulse) AI Quota';
     this.item.command = this.openPanelCommand;
 
-    const lowest = Math.min(...states.map((s) => s.weeklyPct));
+    const lowest = Math.min(...states.map((s) => s.weeklyPct ?? 100));
     this.item.color = lowest < 10 ? new vscode.ThemeColor('statusBarItem.warningBackground') : undefined;
   }
 

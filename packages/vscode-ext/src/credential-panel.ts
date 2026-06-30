@@ -1,24 +1,23 @@
 import * as vscode from 'vscode';
 import type { CredentialManager } from './credentials.js';
 
-// ── Validation helpers (same endpoints as quota-poller, but return account info) ──
+// ── Validation helpers ───────────────────────────────────────────────────────
 
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
-async function testClaude(sessionKey: string): Promise<string> {
-  const headers = {
-    'Accept': 'application/json',
-    'Cookie': `sessionKey=${sessionKey}`,
-    'User-Agent': BROWSER_UA,
-    'Referer': 'https://claude.ai/',
-    'Origin': 'https://claude.ai',
-  };
-  const orgRes = await fetch('https://claude.ai/api/organizations', { headers });
-  if (!orgRes.ok) throw new Error(`HTTP ${orgRes.status}`);
-  const orgs = (await orgRes.json()) as Array<{ uuid: string; name?: string }>;
-  const org = orgs[0];
-  if (!org) throw new Error('No organisation found');
-  return org.name ?? org.uuid;
+async function testClaude(apiKey: string): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/models', {
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Accept': 'application/json',
+    },
+  });
+  if (res.status === 401) throw new Error('Invalid API key');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = (await res.json()) as { data?: Array<{ id: string }> };
+  const modelCount = data.data?.length ?? 0;
+  return `API key valid — ${modelCount} model${modelCount !== 1 ? 's' : ''} accessible`;
 }
 
 async function testCodex(sessionToken: string): Promise<void> {
@@ -101,11 +100,11 @@ export class CredentialPanel {
   private async sendInitialStatus(): Promise<void> {
     const creds = await this.credentials.get();
 
-    if (creds.claudeSessionKey) {
+    if (creds.claudeApiKey) {
       this.send('claude', 'testing');
       try {
-        const name = await testClaude(creds.claudeSessionKey);
-        this.send('claude', 'ok', `Connected as ${name}`);
+        const name = await testClaude(creds.claudeApiKey);
+        this.send('claude', 'ok', name);
       } catch {
         this.send('claude', 'error', 'Saved key is invalid — please re-enter');
       }
@@ -134,9 +133,9 @@ export class CredentialPanel {
   private async handleSaveTestClaude(key: string): Promise<void> {
     if (!key) { this.send('claude', 'error', 'Key is empty'); return; }
     try {
-      const name = await testClaude(key);
-      await this.credentials.setClaudeKey(key);
-      this.send('claude', 'ok', `Connected as ${name}`);
+      const detail = await testClaude(key);
+      await this.credentials.setClaudeApiKey(key);
+      this.send('claude', 'ok', detail);
     } catch (e) {
       this.send('claude', 'error', e instanceof Error ? e.message : String(e));
     }

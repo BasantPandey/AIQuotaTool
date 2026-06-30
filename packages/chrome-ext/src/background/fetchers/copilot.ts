@@ -21,10 +21,6 @@ const GITHUB_HEADERS = {
   'X-GitHub-Api-Version': '2022-11-28',
 };
 
-interface CopilotSeatResponse {
-  copilot_plan?: string; // 'free' | 'pro' | 'pro_plus' | 'business' | 'enterprise'
-}
-
 // TODO: Replace with real field names once endpoint is discovered.
 interface CopilotUsageResponse {
   completions_used?: number;
@@ -57,12 +53,13 @@ export class CopilotFetcher implements ServiceFetcher {
     if (seatRes.status === 404) {
       throw new Error('No active GitHub Copilot subscription on this account');
     }
-    if (!seatRes.ok) {
-      throw new Error(`Copilot seat API returned ${seatRes.status}`);
-    }
 
-    const seat = await seatRes.json() as CopilotSeatResponse;
-    const isPaidPlan = seat.copilot_plan && seat.copilot_plan !== 'free';
+    const resetsAt = nextMonthlyResetMs();
+
+    // Non-404 failure (e.g. no cookies / CORS) — show card with 100% rather than hiding it.
+    if (!seatRes.ok) {
+      return { service: 'copilot', weeklyPct: 100, weeklyResetsAt: resetsAt, lastUpdated: Date.now() };
+    }
 
     // Attempt usage fetch — will fail until real endpoint is discovered.
     const usageRes = await fetch(COPILOT_USAGE_ENDPOINT, {
@@ -71,17 +68,7 @@ export class CopilotFetcher implements ServiceFetcher {
     });
 
     if (!usageRes.ok) {
-      // Paid plans on usage-based billing have no fixed completion quota.
-      // Return 100% remaining as a stand-in until the real endpoint is found.
-      const weeklyResetsAt = nextMonthlyResetMs();
-      return {
-        service: 'copilot',
-        sessionPct: isPaidPlan ? 100 : 0,
-        weeklyPct: isPaidPlan ? 100 : 0,
-        sessionResetsAt: weeklyResetsAt,
-        weeklyResetsAt,
-        lastUpdated: Date.now(),
-      };
+      return { service: 'copilot', weeklyPct: 100, weeklyResetsAt: resetsAt, lastUpdated: Date.now() };
     }
 
     const data = await usageRes.json() as CopilotUsageResponse;
@@ -90,18 +77,16 @@ export class CopilotFetcher implements ServiceFetcher {
     const chatLimit = data.chat_limit ?? FREE_CHAT_LIMIT;
     const completionsPct = calcPct(data.completions_used ?? 0, completionsLimit);
     const chatPct = calcPct(data.chat_used ?? 0, chatLimit);
-    const resetsAt = data.billing_cycle_resets_at
+    const usageResetsAt = data.billing_cycle_resets_at
       ? Date.parse(data.billing_cycle_resets_at)
-      : nextMonthlyResetMs();
+      : resetsAt;
 
     return {
       service: 'copilot',
-      // session → completions (primary per-month bucket for Free tier)
       sessionPct: completionsPct,
-      // weekly → chat (secondary bucket; maps loosely — both are monthly limits)
       weeklyPct: chatPct,
-      sessionResetsAt: resetsAt,
-      weeklyResetsAt: resetsAt,
+      sessionResetsAt: usageResetsAt,
+      weeklyResetsAt: usageResetsAt,
       lastUpdated: Date.now(),
     };
   }

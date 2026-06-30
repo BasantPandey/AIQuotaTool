@@ -12,7 +12,7 @@ const POLL_INTERVAL_MINUTES = 1;
 const fetchers = [new ClaudeFetcher(), new CopilotFetcher(), new CodexFetcher()];
 
 function updateBadge(states: QuotaState[]): void {
-  const lowest = Math.min(...states.map((s) => Math.min(s.sessionPct, s.weeklyPct)));
+  const lowest = Math.min(...states.map((s) => Math.min(s.sessionPct ?? 100, s.weeklyPct ?? 100)));
   if (lowest < 5) {
     chrome.action.setBadgeText({ text: '!' });
     chrome.action.setBadgeBackgroundColor({ color: '#d73a49' });

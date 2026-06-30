@@ -9,13 +9,10 @@ export function scheduleResetNotifications(states: QuotaState[]): void {
     const sessionAlarmName = `${ALARM_PREFIX_SESSION}${state.service}`;
     const weeklyAlarmName = `${ALARM_PREFIX_WEEKLY}${state.service}`;
 
-    const sessionDelayMs = state.sessionResetsAt - Date.now();
-    const weeklyDelayMs = state.weeklyResetsAt - Date.now();
-
-    if (sessionDelayMs > 0) {
+    if (state.sessionResetsAt != null && state.sessionResetsAt - Date.now() > 0) {
       chrome.alarms.create(sessionAlarmName, { when: state.sessionResetsAt });
     }
-    if (weeklyDelayMs > 0) {
+    if (state.weeklyResetsAt != null && state.weeklyResetsAt - Date.now() > 0) {
       chrome.alarms.create(weeklyAlarmName, { when: state.weeklyResetsAt });
     }
   }

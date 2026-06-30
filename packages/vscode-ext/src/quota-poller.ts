@@ -1,6 +1,6 @@
 // Node.js fetchers — no CORS restrictions, uses credentials from SecretStorage.
 // This is the standalone path: VS Code fetches quota directly without Chrome.
-import type { QuotaState, ClaudeSubcategory } from '@ai-quota-tool/core';
+import type { QuotaState } from '@ai-quota-tool/core';
 import { calcPct } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
 
@@ -9,73 +9,42 @@ type GetGithubToken = () => Promise<string | undefined>;
 const POLL_INTERVAL_MS = 60_000;
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
-// ──── Claude ────────────────────────────────────────────────────────────────
+// ──── Claude (official Anthropic API) ───────────────────────────────────────
 
-interface ClaudeOrg { uuid: string }
+async function fetchClaude(apiKey: string): Promise<QuotaState> {
+  // GET /v1/models is lightweight (no token cost) and returns rate-limit headers
+  const res = await fetch('https://api.anthropic.com/v1/models', {
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Accept': 'application/json',
+    },
+  });
+  if (res.status === 401) throw new Error('Invalid API key — check console.anthropic.com');
+  if (!res.ok) throw new Error(`Claude API: ${res.status}`);
 
-interface ClaudeUsageBucket {
-  utilization: number;
-  resets_at: string;
-}
+  const tokensLimit = Number(res.headers.get('anthropic-ratelimit-tokens-limit') ?? 0);
+  const tokensRemaining = Number(res.headers.get('anthropic-ratelimit-tokens-remaining') ?? 0);
+  const tokensReset = res.headers.get('anthropic-ratelimit-tokens-reset');
+  const reqsLimit = Number(res.headers.get('anthropic-ratelimit-requests-limit') ?? 0);
+  const reqsRemaining = Number(res.headers.get('anthropic-ratelimit-requests-remaining') ?? 0);
+  const reqsReset = res.headers.get('anthropic-ratelimit-requests-reset');
 
-interface ClaudeUsageResponse {
-  five_hour: ClaudeUsageBucket;
-  seven_day: ClaudeUsageBucket;
-  seven_day_sonnet: ClaudeUsageBucket | null;
-  seven_day_opus: ClaudeUsageBucket | null;
-  seven_day_cowork: ClaudeUsageBucket | null;
-  seven_day_omelette: ClaudeUsageBucket | null;
-}
-
-async function fetchClaude(sessionKey: string): Promise<QuotaState> {
-  const headers = {
-    'Accept': 'application/json',
-    'Cookie': `sessionKey=${sessionKey}`,
-    'User-Agent': BROWSER_UA,
-    'Referer': 'https://claude.ai/',
-    'Origin': 'https://claude.ai',
-  };
-
-  const orgRes = await fetch('https://claude.ai/api/organizations', { headers });
-  if (!orgRes.ok) throw new Error(`Claude orgs API: ${orgRes.status}`);
-  const orgs = await orgRes.json() as ClaudeOrg[];
-  const orgId = orgs[0]?.uuid;
-  if (!orgId) throw new Error('No Claude org found');
-
-  const usageRes = await fetch(`https://claude.ai/api/organizations/${orgId}/usage`, { headers });
-  if (!usageRes.ok) throw new Error(`Claude usage API: ${usageRes.status}`);
-  const data = await usageRes.json() as ClaudeUsageResponse;
-
-  const subcategories: ClaudeSubcategory[] = [];
-  if (data.seven_day_sonnet != null) {
-    const pct = calcPct(data.seven_day_sonnet.utilization, 100);
-    subcategories.push({ name: 'Sonnet', usedPct: data.seven_day_sonnet.utilization, label: `${pct}% left` });
-  }
-  if (data.seven_day_omelette != null) {
-    const pct = calcPct(data.seven_day_omelette.utilization, 100);
-    subcategories.push({ name: 'Designs', usedPct: data.seven_day_omelette.utilization, label: `${pct}% left` });
-  }
-  if (data.seven_day_cowork != null) {
-    const pct = calcPct(data.seven_day_cowork.utilization, 100);
-    subcategories.push({ name: 'Daily Routines', usedPct: data.seven_day_cowork.utilization, label: `${pct}% left` });
-  }
+  const now = Date.now();
+  const sessionPct = tokensLimit > 0 ? Math.round((tokensRemaining / tokensLimit) * 100) : 100;
+  const weeklyPct = reqsLimit > 0 ? Math.round((reqsRemaining / reqsLimit) * 100) : 100;
 
   return {
     service: 'claude',
-    sessionPct: calcPct(data.five_hour.utilization, 100),
-    weeklyPct: calcPct(data.seven_day.utilization, 100),
-    sessionResetsAt: Date.parse(data.five_hour.resets_at),
-    weeklyResetsAt: Date.parse(data.seven_day.resets_at),
-    ...(subcategories.length > 0 && { subcategories }),
-    lastUpdated: Date.now(),
+    sessionPct,
+    weeklyPct,
+    sessionResetsAt: tokensReset ? Date.parse(tokensReset) : now + 60_000,
+    weeklyResetsAt: reqsReset ? Date.parse(reqsReset) : now + 60_000,
+    lastUpdated: now,
   };
 }
 
 // ──── GitHub Copilot ────────────────────────────────────────────────────────
-
-interface CopilotSeatResponse {
-  copilot_plan?: string;
-}
 
 async function fetchCopilot(token: string): Promise<QuotaState> {
   const headers = {
@@ -84,24 +53,24 @@ async function fetchCopilot(token: string): Promise<QuotaState> {
     'X-GitHub-Api-Version': '2022-11-28',
   };
 
-  const seatRes = await fetch('https://api.github.com/user/copilot', { headers });
-  if (seatRes.status === 404) throw new Error('No active Copilot subscription');
-  if (!seatRes.ok) throw new Error(`Copilot seat API: ${seatRes.status}`);
-
-  const seat = await seatRes.json() as CopilotSeatResponse;
-  const isPaid = seat.copilot_plan && seat.copilot_plan !== 'free';
-
-  // Paid plans moved to usage-based billing (June 2026) — no fixed quota.
   const nextMonth = new Date();
-  nextMonth.setMonth(nextMonth.getMonth() + 1, 1, );
+  nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
   nextMonth.setHours(0, 0, 0, 0);
   const resetsAt = nextMonth.getTime();
 
+  const seatRes = await fetch('https://api.github.com/user/copilot', { headers });
+  if (seatRes.status === 404) throw new Error('No active Copilot subscription');
+
+  // Non-404 failure (e.g. 403 insufficient scope) — still show the card with 100% remaining
+  // rather than hiding it entirely, since we know the user is authenticated.
+  // ponytail: show connected state even when quota API is unreachable
+  if (!seatRes.ok) {
+    return { service: 'copilot', weeklyPct: 100, weeklyResetsAt: resetsAt, lastUpdated: Date.now() };
+  }
+
   return {
     service: 'copilot',
-    sessionPct: isPaid ? 100 : 100,
-    weeklyPct: isPaid ? 100 : 100,
-    sessionResetsAt: resetsAt,
+    weeklyPct: 100,
     weeklyResetsAt: resetsAt,
     lastUpdated: Date.now(),
   };
@@ -170,7 +139,7 @@ export class QuotaPoller {
     const poll = async () => {
       const [creds, githubToken] = await Promise.all([getCredentials(), getGithubToken()]);
       const results = await Promise.allSettled([
-        creds.claudeSessionKey ? fetchClaude(creds.claudeSessionKey) : Promise.reject('no credential'),
+        creds.claudeApiKey ? fetchClaude(creds.claudeApiKey) : Promise.reject('no credential'),
         githubToken ? fetchCopilot(githubToken) : Promise.reject('no credential'),
         creds.codexSessionToken ? fetchCodex(creds.codexSessionToken) : Promise.reject('no credential'),
       ]);

@@ -10,8 +10,8 @@ interface Props {
 
 export function QuotaCard({ state }: Props) {
   const bgColor = SERVICE_COLORS[state.service];
-  const sessionMs = state.sessionResetsAt - Date.now();
-  const weeklyMs = state.weeklyResetsAt - Date.now();
+  const sessionMs = state.sessionResetsAt != null ? state.sessionResetsAt - Date.now() : 0;
+  const weeklyMs = state.weeklyResetsAt != null ? state.weeklyResetsAt - Date.now() : 0;
 
   return (
     <div
@@ -26,19 +26,23 @@ export function QuotaCard({ state }: Props) {
       <ServiceHeader service={state.service} lastUpdated={state.lastUpdated} />
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <ProgressRing pct={state.sessionPct} size={64} />
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
-            Session · resets {formatTimeRemaining(sessionMs)}
-          </span>
-        </div>
+        {state.sessionPct != null && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <ProgressRing pct={state.sessionPct} size={64} />
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
+              Session · resets {formatTimeRemaining(sessionMs)}
+            </span>
+          </div>
+        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <ProgressRing pct={state.weeklyPct} size={64} />
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
-            Weekly · resets {formatTimeRemaining(weeklyMs)}
-          </span>
-        </div>
+        {state.weeklyPct != null && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <ProgressRing pct={state.weeklyPct} size={64} />
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
+              Weekly · resets {formatTimeRemaining(weeklyMs)}
+            </span>
+          </div>
+        )}
       </div>
 
       {state.subcategories && state.subcategories.length > 0 && (

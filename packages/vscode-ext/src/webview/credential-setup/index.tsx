@@ -149,27 +149,28 @@ function CredentialSetup() {
       {activeTab === 'claude' && (
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
-            Sign in to <strong>claude.ai</strong> with Google (or any method), then copy your session key:
+            Authenticate with your <strong>Anthropic API key</strong>. Create one at{' '}
+            <strong>console.anthropic.com</strong> under API Keys.
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
-            <li>Open <strong>claude.ai</strong> in your browser and sign in</li>
-            <li>Press <code>F12</code> → <strong>Application</strong> tab → Cookies → <code>https://claude.ai</code></li>
-            <li>Copy the value of <code>sessionKey</code></li>
+            <li>Go to <strong>console.anthropic.com</strong> and sign in</li>
+            <li>Open <strong>Settings → API Keys</strong></li>
+            <li>Click <strong>Create Key</strong>, copy it, paste below</li>
           </ol>
           <div style={{ marginTop: 14 }}>
             <button
               style={secondaryBtnStyle}
-              onClick={() => vscode?.postMessage({ type: 'open_external', url: 'https://claude.ai' })}
+              onClick={() => vscode?.postMessage({ type: 'open_external', url: 'https://console.anthropic.com/settings/keys' })}
             >
-              Open claude.ai
+              Open Anthropic Console
             </button>
           </div>
           <div style={{ marginTop: 16 }}>
-            <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>Session Key</label>
+            <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>API Key</label>
             <input
               type="password"
               style={inputStyle}
-              placeholder="sk-ant-sid02-…"
+              placeholder="sk-ant-api03-…"
               value={claudeKey}
               onChange={(e) => setClaudeKey(e.target.value)}
             />

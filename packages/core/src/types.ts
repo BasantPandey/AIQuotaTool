@@ -12,14 +12,14 @@ export interface ClaudeSubcategory {
 
 export interface QuotaState {
   service: ServiceId;
-  /** 0–100, percentage REMAINING in the current session window */
-  sessionPct: number;
-  /** 0–100, percentage REMAINING in the current weekly window */
-  weeklyPct: number;
-  /** Unix timestamp (ms) when the session resets */
-  sessionResetsAt: number;
-  /** Unix timestamp (ms) when the weekly window resets */
-  weeklyResetsAt: number;
+  /** 0–100, percentage REMAINING in the current session window. Omit if the service has no session quota. */
+  sessionPct?: number;
+  /** 0–100, percentage REMAINING in the current weekly window. Omit if the service has no weekly quota. */
+  weeklyPct?: number;
+  /** Unix timestamp (ms) when the session resets. Omit when sessionPct is absent. */
+  sessionResetsAt?: number;
+  /** Unix timestamp (ms) when the weekly window resets. Omit when weeklyPct is absent. */
+  weeklyResetsAt?: number;
   /** Claude-only breakdown by sub-bucket */
   subcategories?: ClaudeSubcategory[];
   /** Unix timestamp (ms) of the last successful poll */
