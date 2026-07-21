@@ -27,7 +27,7 @@ function ServiceRow({ serviceId, states }: { serviceId: ServiceId; states: Quota
         <div style={{ fontSize: 13, fontWeight: 500 }}>{label}</div>
         <div style={{ fontSize: 11, color: '#8b949e', marginTop: 2 }}>
           {serviceId === 'copilot'
-            ? 'Sign in via VS Code AI Quota extension'
+            ? 'Sign in at github.com — seat status only (no remaining % yet)'
             : url}
         </div>
       </div>
@@ -37,16 +37,14 @@ function ServiceRow({ serviceId, states }: { serviceId: ServiceId; states: Quota
         ) : (
           <>
             <span style={{ color: '#8b949e', fontSize: 12 }}>○ Not connected</span>
-            {serviceId !== 'copilot' && (
-              <a
-                href={`https://${url}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: '#58a6ff', fontSize: 11, textDecoration: 'none' }}
-              >
-                Open ↗
-              </a>
-            )}
+            <a
+              href={`https://${url}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: '#58a6ff', fontSize: 11, textDecoration: 'none' }}
+            >
+              Open ↗
+            </a>
           </>
         )}
       </div>
@@ -59,7 +57,7 @@ export function SettingsTab({ states }: SettingsTabProps) {
     <div style={{ padding: '12px 14px' }}>
       <p style={{ fontSize: 12, color: '#8b949e', marginBottom: 14, lineHeight: 1.5 }}>
         Sign in to each service in Chrome — quota data flows automatically.
-        GitHub Copilot is connected via the VS Code extension.
+        Copilot shows seat status only; remaining usage % is not available from GitHub.
       </p>
       {SERVICES.map((id) => (
         <ServiceRow key={id} serviceId={id} states={states} />

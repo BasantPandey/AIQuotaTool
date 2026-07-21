@@ -29,7 +29,9 @@ export function QuotaDashboard({ states, disconnected = false }: Props) {
     <div style={{ padding: '8px 10px' }}>
       {ALL_SERVICES.map((serviceId) => {
         const state = stateMap.get(serviceId);
-        const hasData = state != null && (state.sessionPct != null || state.weeklyPct != null);
+        const hasData =
+          state != null &&
+          (state.sessionPct != null || state.weeklyPct != null || state.honesty != null);
         return hasData
           ? <QuotaCard key={serviceId} state={state} />
           : <QuotaPendingCard key={serviceId} service={serviceId} />;

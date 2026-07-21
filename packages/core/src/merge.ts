@@ -8,6 +8,7 @@ function richness(state: QuotaState): number {
   if (state.sessionResetsAt !== undefined) score += 1;
   if (state.weeklyResetsAt !== undefined) score += 1;
   if (state.subcategories !== undefined && state.subcategories.length > 0) score += 1;
+  if (state.honesty !== undefined) score += 1;
   return score;
 }
 

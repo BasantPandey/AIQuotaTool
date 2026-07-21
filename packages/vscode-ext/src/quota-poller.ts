@@ -1,7 +1,12 @@
 // Node.js fetchers — no CORS restrictions, uses credentials from SecretStorage.
 // This is the standalone path: VS Code fetches quota directly without Chrome.
 import type { QuotaState, ClaudeSubcategory } from '@ai-quota-tool/core';
-import { calcPct } from '@ai-quota-tool/core';
+import {
+  calcPct,
+  copilotAuthUnavailable,
+  copilotNoPlan,
+  copilotSeatActiveUsageUnknown,
+} from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
 
 type GetGithubToken = () => Promise<string | undefined>;
@@ -91,6 +96,7 @@ async function fetchClaude(sessionKey: string): Promise<QuotaState> {
 }
 
 // ──── GitHub Copilot ────────────────────────────────────────────────────────
+// No public remaining-% API for individuals — return honest states only.
 
 async function fetchCopilot(token: string): Promise<QuotaState> {
   const headers = {
@@ -99,32 +105,12 @@ async function fetchCopilot(token: string): Promise<QuotaState> {
     'X-GitHub-Api-Version': '2022-11-28',
   };
 
-  const nextMonth = new Date();
-  nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
-  nextMonth.setHours(0, 0, 0, 0);
-  const resetsAt = nextMonth.getTime();
-
+  const now = Date.now();
   const seatRes = await fetch('https://api.github.com/user/copilot', { headers });
-  if (seatRes.status === 404) throw new Error('No active Copilot subscription');
-
-  // Non-404 failure (e.g. 403 insufficient scope) — still show the card with 100% remaining
-  // rather than hiding it entirely, since we know the user is authenticated.
-  // ponytail: show connected state even when quota API is unreachable
-  if (!seatRes.ok) {
-    return {
-      service: 'copilot',
-      weeklyPct: 100,
-      weeklyResetsAt: resetsAt,
-      lastUpdated: Date.now(),
-    };
-  }
-
-  return {
-    service: 'copilot',
-    weeklyPct: 100,
-    weeklyResetsAt: resetsAt,
-    lastUpdated: Date.now(),
-  };
+  if (seatRes.status === 404) return copilotNoPlan(now);
+  if (!seatRes.ok) return copilotAuthUnavailable(now);
+  // Seat present; remaining usage % is not available via public API.
+  return copilotSeatActiveUsageUnknown(now);
 }
 
 // ──── Codex ─────────────────────────────────────────────────────────────────

@@ -10,6 +10,18 @@ export interface ClaudeSubcategory {
   label: string;
 }
 
+/**
+ * Honest non-percentage states (esp. Copilot when remaining % is unknown).
+ * When set, sessionPct/weeklyPct must not be fabricated — omit them instead.
+ */
+export type QuotaHonesty =
+  /** Seat/plan present; GitHub does not expose remaining % we can show. */
+  | 'seat_active_usage_unknown'
+  /** No active Copilot subscription/plan for this account. */
+  | 'no_plan'
+  /** Could not verify seat (auth, scope, network, or CORS). */
+  | 'auth_unavailable';
+
 export interface QuotaState {
   service: ServiceId;
   /** 0–100, percentage REMAINING in the current session window. Omit if the service has no session quota. */
@@ -22,9 +34,21 @@ export interface QuotaState {
   weeklyResetsAt?: number;
   /** Claude-only breakdown by sub-bucket */
   subcategories?: ClaudeSubcategory[];
+  /**
+   * Set when remaining percentages are intentionally absent so the UI can show
+   * an honest status instead of inventing 100% remaining.
+   */
+  honesty?: QuotaHonesty;
   /** Unix timestamp (ms) of the last successful poll */
   lastUpdated: number;
 }
+
+/** User-facing copy for honesty states (shared by UI hosts). */
+export const QUOTA_HONESTY_LABELS: Record<QuotaHonesty, string> = {
+  seat_active_usage_unknown: 'Connected — remaining usage % not available',
+  no_plan: 'No active Copilot plan on this account',
+  auth_unavailable: 'Could not verify Copilot access — sign in to GitHub',
+};
 
 export type WsMessage =
   | { type: 'quota_update'; payload: QuotaState[] }
