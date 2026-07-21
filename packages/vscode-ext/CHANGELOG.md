@@ -1,6 +1,15 @@
 # Changelog
 
-## [0.7.0] — 2026-07-21
+## [0.7.1] - 2026-07-21
+
+### Honest Copilot + pressure
+- Shared pure `mapCopilotSeatStatus` for seat HTTP to honesty states (Chrome and VS Code)
+- Chrome no longer calls undocumented `/user/copilot/usage`
+- `pressureRemaining` / `lowestPressureAmong` for badge and status bar (never invent 100% for honesty-only)
+- Session auth failure: keep secret, drop ring, status bar + dashboard re-auth cue
+- Chrome Settings privacy disclosure; drop unused `api.openai.com` host permission
+
+## [0.7.0] - 2026-07-21
 
 ### V1 product bar
 - **Dual-mode equal:** standalone poller and optional Chrome push both first-class; freshest-wins merge by `lastUpdated`
@@ -8,7 +17,7 @@
 - **Shared pure mappers** for Claude and Codex in `@ai-quota-tool/core` (used by VS Code and Chrome)
 - **Credential lifecycle:** clear Claude/Codex secrets; privacy disclosure for session cookies in SecretStorage; 401/403 drops stale rings
 - **Status bar:** uses min(session, weekly) remaining for display and low-quota warning
-- **Empty state:** points to Set Up Accounts (and optional Chrome), not Chrome-only “not connected”
+- **Empty state:** points to Set Up Accounts (and optional Chrome), not Chrome-only "not connected"
 - Docs and agent notes aligned with dual-mode architecture
 
 ## [0.6.x] — 2026-06 / 2026-07

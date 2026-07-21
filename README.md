@@ -116,6 +116,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge
 | Credential clear / privacy disclosure (VS Code) | Done |
 | Session auth failure re-auth cue (keep secret) | Done |
 | Chrome Settings privacy disclosure | Done |
+| Honest pressure (badge/status) + seat-status mapper | Done |
 | Core unit tests + CI | Done |
 | Real Copilot remaining-% API (if GitHub ever exposes one) | Optional follow-up |
 | Effect-TS migration | Post-v1 |

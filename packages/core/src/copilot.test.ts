@@ -3,6 +3,7 @@ import {
   copilotAuthUnavailable,
   copilotNoPlan,
   copilotSeatActiveUsageUnknown,
+  mapCopilotSeatStatus,
 } from './copilot.js';
 
 describe('copilot honest builders', () => {
@@ -43,5 +44,24 @@ describe('copilot honest builders', () => {
       expect(s.weeklyPct).not.toBe(100);
       expect(s.sessionPct).not.toBe(100);
     }
+  });
+});
+
+describe('mapCopilotSeatStatus', () => {
+  it('maps 404 to no_plan', () => {
+    expect(mapCopilotSeatStatus(404, 10)).toEqual(copilotNoPlan(10));
+  });
+
+  it('maps 2xx to seat_active_usage_unknown (never invents remaining %)', () => {
+    const s = mapCopilotSeatStatus(200, 11);
+    expect(s).toEqual(copilotSeatActiveUsageUnknown(11));
+    expect(s.sessionPct).toBeUndefined();
+    expect(s.weeklyPct).toBeUndefined();
+  });
+
+  it('maps 401/403/5xx to auth_unavailable', () => {
+    expect(mapCopilotSeatStatus(401, 12).honesty).toBe('auth_unavailable');
+    expect(mapCopilotSeatStatus(403, 12).honesty).toBe('auth_unavailable');
+    expect(mapCopilotSeatStatus(500, 12).honesty).toBe('auth_unavailable');
   });
 });

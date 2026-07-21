@@ -82,7 +82,7 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 ## Core pure seams (tested)
 - `preferQuotaState` / `upsertQuotaState` / `mergeQuotaStates`
 - `mapClaudeUsage` / `mapCodexUsage`
-- Copilot honesty builders + `QuotaHonesty`
+- Copilot honesty builders + `mapCopilotSeatStatus` + `QuotaHonesty`
 - `sessionAuthFailureAction` (Claude/Codex 401/403: drop ring, keep secret, re-auth signal)
 - `pressureRemaining` / `lowestPressureAmong` (badge/status pressure; no inventing 100%)
 

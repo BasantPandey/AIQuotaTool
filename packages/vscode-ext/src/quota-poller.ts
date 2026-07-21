@@ -2,11 +2,9 @@
 // This is the standalone path: VS Code fetches quota directly without Chrome.
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import {
-  copilotAuthUnavailable,
-  copilotNoPlan,
-  copilotSeatActiveUsageUnknown,
   mapClaudeUsage,
   mapCodexUsage,
+  mapCopilotSeatStatus,
   sessionAuthFailureAction,
   upsertQuotaState,
   type ClaudeUsageResponse,
@@ -58,7 +56,7 @@ async function fetchClaude(sessionKey: string): Promise<QuotaState> {
 }
 
 // ──── GitHub Copilot ────────────────────────────────────────────────────────
-// No public remaining-% API for individuals — return honest states only.
+// No public remaining-% API for individuals — seat status → honest builders only.
 
 async function fetchCopilot(token: string): Promise<QuotaState> {
   const headers = {
@@ -67,11 +65,8 @@ async function fetchCopilot(token: string): Promise<QuotaState> {
     'X-GitHub-Api-Version': '2022-11-28',
   };
 
-  const now = Date.now();
   const seatRes = await fetch('https://api.github.com/user/copilot', { headers });
-  if (seatRes.status === 404) return copilotNoPlan(now);
-  if (!seatRes.ok) return copilotAuthUnavailable(now);
-  return copilotSeatActiveUsageUnknown(now);
+  return mapCopilotSeatStatus(seatRes.status);
 }
 
 // ──── Codex ─────────────────────────────────────────────────────────────────
