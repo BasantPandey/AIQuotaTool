@@ -77,3 +77,40 @@ Two honest paths: **Chrome** uses live browser cookies and does not store sessio
 
 - VS Code 1.95 or later
 - Active accounts on the services you want to monitor (Claude Pro/Free, GitHub Copilot, ChatGPT)
+
+---
+
+## Publishing (maintainers)
+
+Releases go to the Visual Studio Marketplace under publisher **BasantPandey** via a **manual** GitHub Actions workflow. Every live publish **increments** the extension version and pushes a git tag.
+
+### One-time setup
+
+1. Create an [Azure DevOps personal access token](https://dev.azure.com/) with **Marketplace** access that can publish for the **BasantPandey** publisher.
+2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `VSCE_PAT`
+   - Value: the PAT (never commit it)
+3. Confirm branch protection allows `github-actions[bot]` to push version commits/tags to `main`, or use a token with contents write if protection blocks `GITHUB_TOKEN`.
+
+### Run a release
+
+1. Open **Actions → Publish VS Code extension → Run workflow**
+2. Inputs:
+   - **ref** - branch to ship (default `main`; use a branch name, not a raw SHA, for live runs)
+   - **bump** - `patch` (default), `minor`, or `major`
+   - **dry_run** - leave **checked** to package only (no bump, no Marketplace). Uncheck for a live release.
+3. Prefer a **dry run** first; download the `.vsix` artifact and confirm it installs.
+4. Live run: uncheck dry_run → workflow bumps `package.json`, commits, tags `vscode-vX.Y.Z`, packages, then `vsce publish`.
+5. Verify the listing: [Marketplace manage (BasantPandey)](https://marketplace.visualstudio.com/manage/publishers/basantpandey)
+
+### Local package (no publish)
+
+```bash
+pnpm install
+pnpm turbo build
+pnpm --filter ai-quota-tool-vscode run package
+```
+
+### Spec
+
+Pipeline product requirements: [Spec: VS Code Marketplace publish pipeline](https://github.com/BasantPandey/AIQuotaTool/issues/18)

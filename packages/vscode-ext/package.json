@@ -4,6 +4,7 @@
   "description": "Monitor remaining AI quota for Claude, Copilot, and Codex directly in VS Code.",
   "version": "0.7.1",
   "publisher": "BasantPandey",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/BasantPandey/AIQuotaTool.git"
@@ -44,7 +45,8 @@
     "dev": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=dist/extension.js --format=cjs --watch",
     "type-check": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.webview.json --noEmit",
     "clean": "rimraf dist",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies",
+    "publish:vsce": "vsce publish --no-dependencies"
   },
   "dependencies": {
     "@ai-quota-tool/core": "workspace:*",

@@ -65,6 +65,12 @@ pnpm --filter ai-quota-tool-vscode run package   # produces a .vsix file
 
 Then install the `.vsix` via **Extensions → Install from VSIX…** in VS Code. Run **AI Quota Tool: Set Up Accounts**.
 
+### Publish to Visual Studio Marketplace
+
+Manual GitHub Actions workflow **Publish VS Code extension** (version bump + `vsce publish`).  
+Setup and dry-run steps: [`packages/vscode-ext/README.md`](packages/vscode-ext/README.md#publishing-maintainers).  
+Publisher UI: https://marketplace.visualstudio.com/manage/publishers/basantpandey
+
 ---
 
 ## Development

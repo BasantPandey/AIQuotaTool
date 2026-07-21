@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Packaging
+- Manual GitHub Actions workflow to package/publish the VS Code extension (semver bump + Marketplace)
+
 ## [0.7.1] - 2026-07-21
 
 ### Honest Copilot + pressure
