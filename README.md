@@ -23,13 +23,13 @@ Chrome Extension (MV3)
   └─ Pushes quota_update over WebSocket → VS Code
 
 VS Code Extension
-  └─ WebSocket server on 127.0.0.1:54321
+  └─ Standalone poller (optional session secrets in SecretStorage)
+  └─ WebSocket server on 127.0.0.1:54321 (optional Chrome push)
   └─ Relays data to webview panel via postMessage
   └─ Updates status bar item
-  └─ Fires system notifications at each service's reset time
 ```
 
-No credentials are stored. The extension piggybacks on cookies from your existing browser sessions with claude.ai, github.com, and openai.com.
+**Credentials:** The Chrome extension uses your existing browser cookies and does not store them. The VS Code extension **can store** Claude/ChatGPT session cookies in VS Code SecretStorage for standalone mode — treat those as passwords and clear them anytime via **Set Up Accounts**. See `packages/vscode-ext/README.md` Privacy section.
 
 ---
 

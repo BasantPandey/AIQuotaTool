@@ -50,6 +50,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // After Save & Test (or Done), re-poll so the dashboard is not empty for 60s.
   credPanel.setOnSaved(() => poller.pollNow());
+  // After clear, drop that service's reading (do not leave stale healthy rings).
+  credPanel.setOnCleared((service) => {
+    poller.dropService(service);
+    applyStates(poller.getLatestStates());
+  });
 
   // Chrome extension push — merges into polled state (both sources coexist).
   wsServer.start();

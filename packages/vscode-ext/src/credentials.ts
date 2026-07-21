@@ -45,4 +45,12 @@ export class CredentialManager {
   async setCodexToken(token: string): Promise<void> {
     await this.secrets.store(KEY_CODEX_COOKIE, token);
   }
+
+  async clearClaudeKey(): Promise<void> {
+    await this.secrets.delete(KEY_CLAUDE_COOKIE);
+  }
+
+  async clearCodexToken(): Promise<void> {
+    await this.secrets.delete(KEY_CODEX_COOKIE);
+  }
 }

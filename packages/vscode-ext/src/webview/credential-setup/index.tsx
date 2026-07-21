@@ -105,8 +105,25 @@ function CredentialSetup() {
   return (
     <div style={{ padding: 24, fontFamily: 'var(--vscode-font-family)', color: 'var(--vscode-foreground)', maxWidth: 520 }}>
       <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>AI Quota Tool — Account Setup</h2>
-      <p style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)', marginBottom: 20 }}>
+      <p style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)', marginBottom: 12 }}>
         Each service is <strong>optional</strong> — set up only what you use. Quota appears as soon as one account is connected.
+      </p>
+      <p
+        style={{
+          fontSize: 11,
+          color: 'var(--vscode-descriptionForeground)',
+          marginBottom: 20,
+          lineHeight: 1.5,
+          padding: '10px 12px',
+          border: '1px solid var(--vscode-inputValidation-warningBorder, #b89500)',
+          borderRadius: 4,
+          background: 'var(--vscode-inputValidation-warningBackground, rgba(184,149,0,0.08))',
+        }}
+      >
+        <strong>Privacy:</strong> Claude and Codex use browser <em>session cookies</em> (account-level secrets).
+        They are stored only in this machine&apos;s VS Code <code>SecretStorage</code> (encrypted at rest by the host).
+        They are never sent to us or any third-party server — only to claude.ai / chatgpt.com / GitHub for quota reads.
+        Clear a secret anytime with <strong>Clear saved key</strong> below. Do not share session keys.
       </p>
 
       {/* Tab bar — shows ✓/○/✗ status on each tab */}
@@ -175,7 +192,7 @@ function CredentialSetup() {
               onChange={(e) => setClaudeKey(e.target.value)}
             />
           </div>
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
               style={{ ...btnStyle, opacity: claudeKey.trim() ? 1 : 0.5 }}
               disabled={!claudeKey.trim()}
@@ -186,8 +203,21 @@ function CredentialSetup() {
             >
               Save &amp; Test
             </button>
+            <button
+              style={secondaryBtnStyle}
+              onClick={() => {
+                setClaudeKey('');
+                setClaudeStatus({ status: 'idle', detail: undefined });
+                vscode?.postMessage({ type: 'clear_claude' });
+              }}
+            >
+              Clear saved key
+            </button>
             <StatusBadge s={claudeStatus} />
           </div>
+          <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)' }}>
+            Paste a new key and Save &amp; Test to replace an existing one.
+          </p>
         </div>
       )}
 
@@ -220,7 +250,7 @@ function CredentialSetup() {
               onChange={(e) => setCodexToken(e.target.value)}
             />
           </div>
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
               style={{ ...btnStyle, opacity: codexToken.trim() ? 1 : 0.5 }}
               disabled={!codexToken.trim()}
@@ -231,8 +261,21 @@ function CredentialSetup() {
             >
               Save &amp; Test
             </button>
+            <button
+              style={secondaryBtnStyle}
+              onClick={() => {
+                setCodexToken('');
+                setCodexStatus({ status: 'idle', detail: undefined });
+                vscode?.postMessage({ type: 'clear_codex' });
+              }}
+            >
+              Clear saved token
+            </button>
             <StatusBadge s={codexStatus} />
           </div>
+          <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)' }}>
+            Paste a new token and Save &amp; Test to replace an existing one.
+          </p>
         </div>
       )}
 

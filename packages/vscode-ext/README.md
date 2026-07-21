@@ -19,22 +19,24 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI
 
 1. Install the extension
 2. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-3. Run **"AI Quota Tool: Configure Credentials"**
-4. Paste credentials for each service (press Enter to skip any)
+3. Run **"AI Quota Tool: Set Up Accounts"**
+4. Paste session credentials for the services you use (each is optional)
 
 ### How to get each credential
 
-**Claude session key** (claude.ai usage bars)
+**Claude session key** (claude.ai usage bars — **not** an Anthropic Console API key)
 1. Open [claude.ai](https://claude.ai) in Chrome and sign in
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
 3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
 
-**GitHub Copilot** — click **Sign in with GitHub** in the setup panel. VS Code handles the OAuth flow — no token copying required.
+**GitHub Copilot** — click **Sign in with GitHub** in the setup panel. VS Code handles the OAuth flow — no token copying required. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
 
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://chatgpt.com`
 3. Copy the value of `__Secure-next-auth.session-token`
+
+Use **Save & Test** to validate before the secret is kept. Use **Clear saved key / token** to remove a secret. Paste a new value and Save & Test to replace.
 
 ---
 
@@ -43,7 +45,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI
 | Command | Description |
 |---|---|
 | `AI Quota Tool: Open Dashboard` | Opens the quota dashboard panel |
-| `AI Quota Tool: Configure Credentials` | Set or update your session credentials |
+| `AI Quota Tool: Set Up Accounts` | Set, replace, or clear session credentials |
 
 Click the status bar item (`$(pulse) AI Quota`) to open the dashboard directly.
 
@@ -51,17 +53,19 @@ Click the status bar item (`$(pulse) AI Quota`) to open the dashboard directly.
 
 ## Optional: Chrome Extension
 
-For automatic real-time updates without managing session cookies, install the companion [Chrome extension](https://github.com/BasantPandey/AIQuotaTool). It pushes quota data to VS Code over a local WebSocket whenever it polls — no credential setup required in VS Code.
+For automatic real-time updates without pasting session cookies into VS Code, install the companion [Chrome extension](https://github.com/BasantPandey/AIQuotaTool). It uses your browser login and can push quota data to VS Code over a local WebSocket.
 
 Both modes work simultaneously: the Chrome extension supplements the direct polling.
 
 ---
 
-## Privacy
+## Privacy and security
 
-- All credentials are stored in VS Code's encrypted `SecretStorage` — never written to disk in plain text
-- Quota data is fetched directly from each service and stays on your machine
-- No telemetry, no external servers
+- **Session secrets are stored.** Claude `sessionKey` and ChatGPT session tokens are full browser session credentials. Treat them like passwords.
+- They are stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
+- Secrets are sent only to the owning service (claude.ai, chatgpt.com, or GitHub APIs) for quota reads — no telemetry backend.
+- Invalid or expired sessions fail validation and polling; stale “full quota” is not invented. Clear secrets anytime from Set Up Accounts.
+- Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.
 
 ---
 

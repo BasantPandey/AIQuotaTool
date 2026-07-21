@@ -1,6 +1,6 @@
 // Node.js fetchers — no CORS restrictions, uses credentials from SecretStorage.
 // This is the standalone path: VS Code fetches quota directly without Chrome.
-import type { QuotaState, ClaudeSubcategory } from '@ai-quota-tool/core';
+import type { QuotaState, ClaudeSubcategory, ServiceId } from '@ai-quota-tool/core';
 import {
   calcPct,
   copilotAuthUnavailable,
@@ -8,6 +8,12 @@ import {
   copilotSeatActiveUsageUnknown,
 } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
+
+/** True when a fetch failure looks like expired/invalid session credentials. */
+function isAuthFailure(reason: unknown): boolean {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  return /\b401\b|\b403\b|invalid or expired|No Claude org/i.test(msg);
+}
 
 type GetGithubToken = () => Promise<string | undefined>;
 type GetCredentials = () => Promise<Credentials>;
@@ -47,6 +53,9 @@ async function fetchClaude(sessionKey: string): Promise<QuotaState> {
   };
 
   const orgRes = await fetch('https://claude.ai/api/organizations', { headers });
+  if (orgRes.status === 401 || orgRes.status === 403) {
+    throw new Error(`Claude orgs API: ${orgRes.status} invalid or expired session key`);
+  }
   if (!orgRes.ok) throw new Error(`Claude orgs API: ${orgRes.status}`);
   const orgs = (await orgRes.json()) as ClaudeOrg[];
   const orgId = orgs[0]?.uuid;
@@ -55,6 +64,9 @@ async function fetchClaude(sessionKey: string): Promise<QuotaState> {
   const usageRes = await fetch(`https://claude.ai/api/organizations/${orgId}/usage`, {
     headers,
   });
+  if (usageRes.status === 401 || usageRes.status === 403) {
+    throw new Error(`Claude usage API: ${usageRes.status} invalid or expired session key`);
+  }
   if (!usageRes.ok) throw new Error(`Claude usage API: ${usageRes.status}`);
   const data = (await usageRes.json()) as ClaudeUsageResponse;
 
@@ -136,6 +148,9 @@ async function fetchCodex(sessionToken: string): Promise<QuotaState> {
       Origin: 'https://chatgpt.com',
     },
   });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error(`Codex usage API: ${res.status} invalid or expired session token`);
+  }
   if (!res.ok) throw new Error(`Codex usage API: ${res.status}`);
   const data = (await res.json()) as WhamUsageResponse;
 
@@ -223,23 +238,41 @@ export class QuotaPoller {
 
     const [creds, githubToken] = await Promise.all([getCredentials(), getGithubToken()]);
 
-    const results = await Promise.allSettled([
-      creds.claudeSessionKey
-        ? fetchClaude(creds.claudeSessionKey)
-        : Promise.reject('no credential'),
-      githubToken ? fetchCopilot(githubToken) : Promise.reject('no credential'),
-      creds.codexSessionToken
-        ? fetchCodex(creds.codexSessionToken)
-        : Promise.reject('no credential'),
-    ]);
+    const jobs: Array<{ service: ServiceId; promise: Promise<QuotaState> }> = [
+      {
+        service: 'claude',
+        promise: creds.claudeSessionKey
+          ? fetchClaude(creds.claudeSessionKey)
+          : Promise.reject('no credential'),
+      },
+      {
+        service: 'copilot',
+        promise: githubToken ? fetchCopilot(githubToken) : Promise.reject('no credential'),
+      },
+      {
+        service: 'codex',
+        promise: creds.codexSessionToken
+          ? fetchCodex(creds.codexSessionToken)
+          : Promise.reject('no credential'),
+      },
+    ];
+
+    const results = await Promise.allSettled(jobs.map((j) => j.promise));
 
     let changed = false;
-    for (const r of results) {
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i]!;
+      const service = jobs[i]!.service;
       if (r.status === 'fulfilled') {
         this.upsert(r.value);
         changed = true;
       } else if (r.reason !== 'no credential') {
-        console.error('[ai-quota-tool] poller:', r.reason);
+        // Never log secrets — only status/reason strings from our Error messages.
+        console.error('[ai-quota-tool] poller:', service, r.reason instanceof Error ? r.reason.message : r.reason);
+        if (isAuthFailure(r.reason) && (service === 'claude' || service === 'codex')) {
+          // Drop stale healthy rings so invalid/expired secrets do not look valid.
+          if (this.removeService(service)) changed = true;
+        }
       }
     }
 
@@ -254,10 +287,24 @@ export class QuotaPoller {
     this.listeners.forEach((fn) => fn(this.latestStates));
   }
 
+  /** Remove a service reading (e.g. after clear or auth failure). */
+  dropService(service: ServiceId): void {
+    if (this.removeService(service)) {
+      this.listeners.forEach((fn) => fn(this.latestStates));
+    }
+  }
+
   private upsert(incoming: QuotaState): void {
     this.latestStates = [
       ...this.latestStates.filter((s) => s.service !== incoming.service),
       incoming,
     ];
+  }
+
+  private removeService(service: ServiceId): boolean {
+    const next = this.latestStates.filter((s) => s.service !== service);
+    if (next.length === this.latestStates.length) return false;
+    this.latestStates = next;
+    return true;
   }
 }
