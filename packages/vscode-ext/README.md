@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** — live in VS Code.
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** — live in VS Code (v0.7.0 V1 bar).
 
 ![Status bar showing Claude 72% | Copilot 91% | Codex 8%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.png)
 
@@ -8,9 +8,10 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI
 
 ## Features
 
-- **Status bar item** — shows remaining quota at a glance (`Claude 72% | Copilot 91% | Codex 8%`); turns amber when any service drops below 10%
-- **Dashboard panel** — full quota breakdown with session and weekly progress rings per service
+- **Status bar item** — remaining quota at a glance using the lower of session/weekly %; amber when any service drops below 10%
+- **Dashboard panel** — full quota breakdown with session and weekly progress rings (or honest Copilot status without fake %)
 - **Standalone** — fetches quota directly from VS Code using your session credentials; no Chrome extension required
+- **Optional Chrome push** — merges fresher browser readings over local WebSocket (freshest-wins)
 - **Automatic refresh** — polls every 60 seconds in the background
 
 ---

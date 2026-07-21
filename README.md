@@ -1,15 +1,15 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** — all in one dashboard.
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** - all in one dashboard.
 
-Ships as two extensions from a single TypeScript monorepo:
+Ships as two **first-class** extensions from a single TypeScript monorepo (dual-mode equal):
 
 | Extension | What it does |
 |---|---|
-| **Chrome extension** (MV3) | Fetches quota data using your existing browser session, shows a popup, and pushes data to VS Code |
-| **VS Code extension** | Displays live quota in a webview panel and a status bar item (`Claude 3% \| Codex 24%`) |
+| **Chrome extension** (MV3) | Fetches quota via browser session cookies (and content scripts), popup UI, optional push to VS Code |
+| **VS Code extension** | Standalone poller with SecretStorage credentials, webview dashboard, status bar; optional receive from Chrome |
 
-The two extensions talk over a local WebSocket (`ws://127.0.0.1:54321`). Each works standalone — the Chrome extension functions without VS Code open, and VS Code gracefully shows a "not connected" state when Chrome isn't running.
+Either works alone. Together they merge readings with **freshest-wins** (`lastUpdated`).
 
 ---
 
@@ -17,19 +17,19 @@ The two extensions talk over a local WebSocket (`ws://127.0.0.1:54321`). Each wo
 
 ```
 Chrome Extension (MV3)
-  └─ Service worker polls each AI service every 60 s
-       using your existing login session (cookies)
-  └─ Writes results to chrome.storage.local → popup reads
-  └─ Pushes quota_update over WebSocket → VS Code
+  - Service worker + content scripts poll / push quota
+  - chrome.storage.local → popup
+  - Optional WS client → ws://127.0.0.1:54321
 
 VS Code Extension
-  └─ Standalone poller (optional session secrets in SecretStorage)
-  └─ WebSocket server on 127.0.0.1:54321 (optional Chrome push)
-  └─ Relays data to webview panel via postMessage
-  └─ Updates status bar item
+  - Standalone Node poller (Claude sessionKey, Codex session token, GitHub OAuth)
+  - Optional WS server on 127.0.0.1:54321 (Chrome push, freshest-wins merge)
+  - Webview dashboard + status bar (min session/weekly remaining)
 ```
 
-**Credentials:** The Chrome extension uses your existing browser cookies and does not store them. The VS Code extension **can store** Claude/ChatGPT session cookies in VS Code SecretStorage for standalone mode — treat those as passwords and clear them anytime via **Set Up Accounts**. See `packages/vscode-ext/README.md` Privacy section.
+**Credentials:** Chrome uses in-browser cookies and does not store them. VS Code **stores** Claude/ChatGPT session cookies in SecretStorage for standalone mode - treat them as passwords; clear anytime via **Set Up Accounts**. See `packages/vscode-ext/README.md`.
+
+**Copilot:** Seat/plan can be detected; remaining usage % is often unavailable from GitHub. The UI shows honest status instead of inventing 100% remaining.
 
 ---
 
@@ -47,6 +47,8 @@ VS Code Extension
 ```bash
 pnpm install          # install all workspace dependencies
 pnpm turbo build      # build all packages in dependency order
+pnpm turbo test       # core pure-function tests
+pnpm turbo type-check
 ```
 
 ### Load the Chrome extension
@@ -61,7 +63,7 @@ pnpm turbo build      # build all packages in dependency order
 pnpm --filter ai-quota-tool-vscode run package   # produces a .vsix file
 ```
 
-Then install the `.vsix` via **Extensions → Install from VSIX…** in VS Code.
+Then install the `.vsix` via **Extensions → Install from VSIX…** in VS Code. Run **AI Quota Tool: Set Up Accounts**.
 
 ---
 
@@ -74,12 +76,16 @@ pnpm --filter @ai-quota-tool/chrome-ext dev
 # Preview shared UI components with mock data (localhost:5173)
 pnpm --filter @ai-quota-tool/ui dev
 
-# Typecheck everything
+# Typecheck / test / build
 pnpm turbo type-check
+pnpm turbo test
+pnpm turbo build
 
 # Regenerate icons
 node scripts/generate-icons.mjs
 ```
+
+CI (GitHub Actions) runs install, type-check, test, and build on push/PR.
 
 ---
 
@@ -87,15 +93,15 @@ node scripts/generate-icons.mjs
 
 ```
 packages/
-  core/        Shared TypeScript types (QuotaState, WsMessage) and pure utilities
-  ui/          Shared React 19 components — no data fetching, used by both extensions
+  core/        Shared types, pure merge/mappers/copilot builders, utils
+  ui/          Shared React 19 components — no data fetching
   chrome-ext/  Chrome MV3 extension
-  vscode-ext/  VS Code extension
+  vscode-ext/  VS Code extension (poller + optional WS)
 docs/
-  ARCHITECTURE.md   Full system diagram and design decisions
+  ARCHITECTURE.md   Dual-mode architecture and design decisions
 ```
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram, WebSocket protocol, security model, and open engineering tasks.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge rules, and security.
 
 ---
 
@@ -103,15 +109,15 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram, 
 
 | Task | Status |
 |---|---|
-| Endpoint discovery — Claude, Codex | Done |
-| Endpoint discovery — Copilot `GET /user/copilot/usage` | Needs DevTools verification on `github.com/settings/billing` |
-| Implement fetchers with real endpoints — Claude, Codex | Done |
-| Implement Copilot fetcher with real usage endpoint | Blocked by above |
-| Verify persistent WebSocket in MV3 service worker | Done |
-| Migrate fetchers + WS layer to [Effect](https://effect.website/) for typed errors and composability | TODO (post-endpoint-discovery) |
+| Dual-mode equal (Chrome + VS Code standalone) | Done (V1 bar) |
+| Claude + Codex real usage mapping | Done (shared pure mappers in core) |
+| Freshest-wins dual-source merge | Done |
+| Honest Copilot (no fake 100% remaining) | Done |
+| Credential clear / privacy disclosure (VS Code) | Done |
+| Core unit tests + CI | Done |
+| Real Copilot remaining-% API (if GitHub ever exposes one) | Optional follow-up |
+| Effect-TS migration | Post-v1 |
 | Publish to Chrome Web Store + VS Code Marketplace | Post-v1 |
-
-To discover the Copilot usage endpoint: log into github.com, open DevTools → Network, navigate to `github.com/settings/billing/summary`, and find the XHR returning completion/chat quota remaining.
 
 ---
 
@@ -120,5 +126,6 @@ To discover the Copilot usage endpoint: log into github.com, open DevTools → N
 - TypeScript (strict mode throughout)
 - React 19 + React Compiler
 - TanStack Query v5
-- Vite 6
+- Vite 6 / esbuild
+- Vitest (core pure seams)
 - pnpm workspaces + Turborepo

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Quota Tool",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "description": "Monitor your remaining AI quota for Claude, Copilot, and Codex in one dashboard.",
   "icons": {
     "16": "icons/icon16.png",
@@ -41,3 +41,4 @@
     "ws://127.0.0.1:54321/"
   ]
 }
+

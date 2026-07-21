@@ -2,10 +2,12 @@
 
 ## Overview
 
-AI Quota Tool monitors remaining session and weekly quotas for Claude Code, GitHub Copilot, and Codex. It ships as two extensions from a single TypeScript monorepo:
+AI Quota Tool monitors remaining session and weekly quotas for **Claude**, **GitHub Copilot**, and **Codex**. It ships as two **first-class** extensions from one TypeScript monorepo (**dual-mode equal**):
 
-- **Chrome extension** — fetches quota data using the user's existing browser session (OAuth cookies). Displays a popup. Pushes data to VS Code.
-- **VS Code extension** — displays the same quota UI inside a webview panel. Runs the WebSocket server that receives data from Chrome.
+- **Chrome extension** — browser session cookies, content scripts, popup, optional WebSocket **client** push to VS Code.
+- **VS Code extension** — standalone Node poller (SecretStorage session secrets + GitHub OAuth), webview, status bar, optional WebSocket **server** on `127.0.0.1:54321`.
+
+Either surface works alone. Together they share the same `QuotaState` model and merge with **freshest-wins** by `lastUpdated`.
 
 ---
 
@@ -14,57 +16,25 @@ AI Quota Tool monitors remaining session and weekly quotas for Claude Code, GitH
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   Browser (Chrome)                  │
-│                                                     │
 │  ┌──────────────────────────────────────────────┐   │
 │  │         Chrome Extension (MV3)               │   │
-│  │                                              │   │
-│  │  ┌─────────────────┐   ┌──────────────────┐  │   │
-│  │  │ Service Worker  │   │     Popup        │  │   │
-│  │  │                 │   │  (React + UI pkg)│  │   │
-│  │  │ • ClaudeFetcher │   │                  │  │   │
-│  │  │ • CopilotFetcher│──▶│  chrome.storage  │  │   │
-│  │  │ • CodexFetcher  │   │  .local (read)   │  │   │
-│  │  │                 │   └──────────────────┘  │   │
-│  │  │ Polls every 60s │                          │   │
-│  │  │ Writes to       │                          │   │
-│  │  │ chrome.storage  │                          │   │
-│  │  │                 │                          │   │
-│  │  │ WS Client ──────┼──────────────────────────┼───┼──▶ localhost:54321
-│  │  │ (pushes on poll)│                          │   │
-│  │  │                 │                          │   │
-│  │  │ Alarm Scheduler │                          │   │
-│  │  │ (reset notifs)  │                          │   │
-│  │  └─────────────────┘                          │   │
+│  │  Service worker: fetchers + alarms           │   │
+│  │  Content scripts: claude.ai / chatgpt.com    │   │
+│  │  chrome.storage.local ← freshest-wins merge  │   │
+│  │  Popup (React + @ai-quota-tool/ui)           │   │
+│  │  WS client ──────────────────────────────────┼───┼──▶ 127.0.0.1:54321
 │  └──────────────────────────────────────────────┘   │
-│                                                     │
-│  Authenticated sessions: claude.ai, github.com,     │
-│  openai.com  (cookies used automatically)           │
+│  Cookies: claude.ai, github.com, chatgpt.com        │
 └─────────────────────────────────────────────────────┘
 
-                         WS (ws://)
-                    quota_update messages
-                            │
-                            ▼
 ┌─────────────────────────────────────────────────────┐
 │                   VS Code (Node.js)                 │
-│                                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │          VS Code Extension                   │   │
-│  │                                              │   │
-│  │  ┌──────────────┐   ┌───────────────────┐   │   │
-│  │  │  WS Server   │   │   Webview Panel   │   │   │
-│  │  │ :54321       │──▶│  (React + UI pkg) │   │   │
-│  │  │              │   │                   │   │   │
-│  │  │  In-memory   │   │  postMessage IPC  │   │   │
-│  │  │  QuotaState[]│   └───────────────────┘   │   │
-│  │  └──────────────┘                            │   │
-│  │                                              │   │
-│  │  ┌──────────────┐                            │   │
-│  │  │ Status Bar   │  "Claude 3% | Codex 24%"  │   │
-│  │  └──────────────┘                            │   │
-│  │                                              │   │
-│  │  Graceful degradation: shows "Chrome ext     │   │
-│  │  not connected" when port 54321 is empty     │   │
+│  │  QuotaPoller (SecretStorage + GitHub OAuth)  │   │
+│  │  WS server :54321 (optional Chrome push)     │   │
+│  │  upsert/merge freshest-wins                  │   │
+│  │  Webview + status bar (shared UI pkg)        │   │
+│  │  Credential setup (session keys / clear)     │   │
 │  └──────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────┘
 ```
@@ -73,17 +43,30 @@ AI Quota Tool monitors remaining session and weekly quotas for Claude Code, GitH
 
 ## Data Flow
 
-1. **Poll (every 60 seconds)**: Chrome service worker calls each service's quota API using the user's existing auth cookies.
-2. **Local storage**: Results written to `chrome.storage.local` — the popup reads from here independently of VS Code.
-3. **Push to VS Code**: Service worker (as WebSocket client) sends a `quota_update` message to `ws://localhost:54321`. If VS Code is not running, the connection attempt silently fails; Chrome still works standalone.
-4. **VS Code display**: WS server receives the message, updates in-memory state, and `postMessage`s the new data into the webview. Status bar item also updates.
-5. **Notifications**: Chrome `chrome.alarms` API fires at each service's reset timestamp. On alarm, `chrome.notifications.create` shows a system notification.
+### Chrome
+1. Poll every ~60s (`chrome.alarms`) — Claude, Copilot, Codex fetchers via `Promise.allSettled`.
+2. Content scripts on claude.ai / chatgpt.com push fresher page-origin readings.
+3. Merge into `chrome.storage.local` with `mergeQuotaStates` / `upsertQuotaState` (do not wipe other services on partial poll).
+4. Popup reads storage; optional `quota_update` to VS Code.
+5. Reset alarms → Chrome notifications (VS Code does not own reset notifications in V1).
+
+### VS Code
+1. `QuotaPoller` every 60s using stored Claude/Codex secrets and GitHub OAuth token.
+2. Pure mappers: `mapClaudeUsage` / `mapCodexUsage` from `@ai-quota-tool/core`.
+3. Copilot: honest builders when remaining % is unavailable (no fake 100%).
+4. Chrome WS payloads merge with `upsertQuotaState` (freshest-wins).
+5. Status bar shows min(session, weekly) remaining; amber below 10%. Empty → Set Up Accounts.
+
+### Merge rule
+- Higher `lastUpdated` wins for the same `service`.
+- Equal timestamps: prefer richer optional fields (`sessionPct`, `weeklyPct`, resets, subcategories, `honesty`).
+- Equal richness: prefer incoming.
 
 ---
 
 ## WebSocket Protocol
 
-Messages are JSON-serialized `WsMessage` (defined in `packages/core`).
+Messages are JSON-serialized `WsMessage` (`packages/core`).
 
 ```
 Chrome → VS Code:
@@ -95,13 +78,13 @@ VS Code → Chrome:
   { type: "error", message: string }
 ```
 
-VS Code is a passive data sink — it never initiates a push to Chrome.
+VS Code does not push to Chrome. Localhost only (`127.0.0.1`). Any local process could spoof the channel — documented local-trust model.
 
 ---
 
 ## IPC: Why VS Code runs the server
 
-Chrome Manifest V3 service workers **cannot** bind TCP ports or run a server. They can only initiate outbound connections. VS Code extensions run in Node.js and can bind any localhost port. This dictates the topology: VS Code = server, Chrome = client.
+Chrome Manifest V3 service workers **cannot** bind TCP ports. VS Code extensions run in Node.js and can. Topology: VS Code = server, Chrome = client.
 
 ---
 
@@ -109,53 +92,20 @@ Chrome Manifest V3 service workers **cannot** bind TCP ports or run a server. Th
 
 ```
 AIQuotaTool/
-├── package.json              # root (private, scripts only)
-├── pnpm-workspace.yaml       # workspace: packages/*
-├── turbo.json                # build pipeline
-├── tsconfig.base.json        # shared TS compiler options
-├── docs/
-│   └── ARCHITECTURE.md       # this file
-└── packages/
-    ├── core/                 # shared types + pure utilities
-    │   └── src/
-    │       ├── types.ts      # QuotaState, WsMessage, ServiceId, ClaudeSubcategory
-    │       ├── utils.ts      # formatTimeRemaining, calcPct
-    │       └── index.ts
-    │
-    ├── ui/                   # shared React components (no data fetching)
-    │   └── src/
-    │       ├── components/
-    │       │   ├── QuotaCard.tsx
-    │       │   ├── ProgressRing.tsx
-    │       │   ├── SubcategoryRow.tsx
-    │       │   └── ServiceHeader.tsx
-    │       ├── QuotaDashboard.tsx   # root component (list of QuotaCards)
-    │       ├── dev.tsx              # Vite dev-server entry with mock data
-    │       └── index.ts
-    │
-    ├── chrome-ext/           # Chrome Manifest V3 extension
-    │   ├── manifest.json
-    │   └── src/
-    │       ├── background/
-    │       │   ├── worker.ts         # entry: poll loop, orchestrates all below
-    │       │   ├── ws-client.ts      # WebSocket client → VS Code
-    │       │   ├── notifications.ts  # chrome.alarms + chrome.notifications
-    │       │   └── fetchers/
-    │       │       ├── base.ts       # ServiceFetcher interface
-    │       │       ├── claude.ts     # ClaudeFetcher (real endpoint)
-    │       │       ├── copilot.ts    # CopilotFetcher (usage endpoint TBD)
-    │       │       └── codex.ts      # CodexFetcher (real endpoint)
-    │       └── popup/
-    │           ├── index.html
-    │           └── index.tsx         # reads chrome.storage.local → QuotaDashboard
-    │
-    └── vscode-ext/           # VS Code extension
-        └── src/
-            ├── extension.ts          # activate/deactivate entry
-            ├── ws-server.ts          # WebSocket server on :54321
-            ├── quota-panel.ts        # WebviewPanel host
-            └── status-bar.ts         # StatusBarItem
+├── packages/
+│   ├── core/           # types, merge, mappers, copilot honesty, utils (+ vitest)
+│   ├── ui/             # pure React display
+│   ├── chrome-ext/     # MV3 worker, content scripts, popup
+│   └── vscode-ext/     # poller, credentials, WS, webviews, status bar
+└── docs/ARCHITECTURE.md
 ```
+
+### Core exports (high value)
+- `QuotaState`, `QuotaHonesty`, `WsMessage`, `ServiceId`
+- `mergeQuotaStates`, `upsertQuotaState`, `preferQuotaState`
+- `mapClaudeUsage`, `mapCodexUsage`
+- `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`
+- `calcPct`, `formatTimeRemaining`, `pctToColor`
 
 ---
 
@@ -164,56 +114,51 @@ AIQuotaTool/
 ```typescript
 type ServiceId = 'claude' | 'copilot' | 'codex';
 
-interface ClaudeSubcategory {
-  name: 'Sonnet' | 'Designs' | 'Daily Routines';
-  usedPct: number;   // 0–100, percentage USED
-  label: string;     // display string, e.g. "97% left"
-}
+type QuotaHonesty =
+  | 'seat_active_usage_unknown'
+  | 'no_plan'
+  | 'auth_unavailable';
 
 interface QuotaState {
   service: ServiceId;
-  sessionPct: number;       // 0–100, percentage REMAINING
-  weeklyPct: number;        // 0–100, percentage REMAINING
-  sessionResetsAt: number;  // Unix timestamp (ms)
-  weeklyResetsAt: number;   // Unix timestamp (ms)
-  subcategories?: ClaudeSubcategory[];  // Claude-only
-  lastUpdated: number;      // Unix timestamp (ms)
+  sessionPct?: number;       // 0–100 REMAINING; omit if unknown
+  weeklyPct?: number;
+  sessionResetsAt?: number;
+  weeklyResetsAt?: number;
+  subcategories?: ClaudeSubcategory[];
+  honesty?: QuotaHonesty;    // when percentages intentionally absent
+  lastUpdated: number;
 }
-
-type WsMessage =
-  | { type: 'quota_update'; payload: QuotaState[] }
-  | { type: 'ping' }
-  | { type: 'pong' }
-  | { type: 'error'; message: string };
 ```
 
 ---
 
 ## Security Model
 
-- **No credential storage.** Chrome uses existing browser session cookies — the extension never sees passwords.
-- **Localhost-only WebSocket.** The VS Code server binds only `127.0.0.1:54321`, not `0.0.0.0`. No external access.
-- **Minimal permissions.** Chrome extension requests only the specific host permissions needed for each service's API endpoint (added during endpoint discovery phase).
-- **Local-only data.** All quota data lives in `chrome.storage.local` and VS Code in-memory state. Nothing leaves the machine.
+- **Chrome:** uses existing browser session cookies; does not store passwords or session keys in extension storage as secrets for auth (quota data only in `chrome.storage.local`).
+- **VS Code:** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — account-grade secrets. User must clear/replace via Set Up Accounts. Never log secrets.
+- **Localhost WebSocket** only; dual-mode empty UI points to account setup, not a false “no credentials” product claim.
+- **No telemetry backend.** Quota requests go only to the vendor hosts.
 
 ---
 
 ## Chrome Extension Badge
 
-After each poll, `updateBadge(states)` in `worker.ts` sets:
-- Red `!` badge — any service below 5% remaining
-- Amber `!` badge — any service below 10% remaining
-- No badge — all services healthy (≥ 10%)
+After each poll, `updateBadge` in `worker.ts`:
+- Red `!` — any defined remaining below 5%
+- Amber `!` — below 10%
+- Clear — otherwise  
+(Honesty-only states without percentages do not invent low remaining.)
 
 ---
 
-## VS Code Disconnected State
+## VS Code empty / setup state
 
-`QuotaWsServer` tracks active connection count. When the last WebSocket client disconnects:
-- `statusBar.showDisconnected()` — status bar turns red with "(not connected)"
-- `panel.pushStates([], true)` — webview shows plug icon with install instructions
+When there is no quota state (and optional Chrome disconnect leaves no polled data):
+- Status bar: **Set up accounts** (setup command)
+- Dashboard: dual-mode empty copy (VS Code Set Up Accounts **or** Chrome signed-in sessions)
 
-When Chrome reconnects and sends the next `quota_update`, the UI automatically restores.
+Not Chrome-only “not connected” as the primary story.
 
 ---
 
@@ -221,14 +166,12 @@ When Chrome reconnects and sends the next `quota_update`, the UI automatically r
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Endpoint discovery — Claude (`claude.ai/api/.../usage`) | Done |
-| 2 | Endpoint discovery — Codex (`chatgpt.com/backend-api/wham/usage`) | Done |
-| 3 | Endpoint discovery — Copilot individual usage | **Needs DevTools on `github.com/settings/billing`** |
-| 4 | Implement `ClaudeFetcher` with real endpoint | Done |
-| 5 | Implement `CodexFetcher` with real endpoint | Done |
-| 6 | Implement `CopilotFetcher` with real usage endpoint | Blocked by #3 |
-| 7 | MV3 service worker persistent WebSocket (`chrome.alarms` keepalive) | Done |
-| 8 | Chrome extension badge warning for low quota | Done |
-| 9 | VS Code disconnected state detection | Done |
-| 10 | Migrate to [Effect-TS](https://effect.website/) for typed error channels | TODO (post-endpoint-discovery) |
-| 11 | Publish to Chrome Web Store and VS Code Marketplace | Post-v1 |
+| 1 | Claude usage mapping | Done |
+| 2 | Codex usage mapping | Done |
+| 3 | Dual-mode poller + credentials | Done |
+| 4 | Freshest-wins merge | Done |
+| 5 | Honest Copilot (no fake remaining %) | Done |
+| 6 | Core tests + CI | Done |
+| 7 | Real Copilot remaining-% if GitHub exposes a public API | Optional |
+| 8 | Effect-TS typed errors | Post-v1 |
+| 9 | Store publish (CWS + Marketplace) | Post-v1 |

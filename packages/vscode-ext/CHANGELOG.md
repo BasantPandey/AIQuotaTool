@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0] — 2026-07-21
+
+### V1 product bar
+- **Dual-mode equal:** standalone poller and optional Chrome push both first-class; freshest-wins merge by `lastUpdated`
+- **Honest Copilot:** no fabricated 100% remaining; seat / no-plan / auth-unavailable labels
+- **Shared pure mappers** for Claude and Codex in `@ai-quota-tool/core` (used by VS Code and Chrome)
+- **Credential lifecycle:** clear Claude/Codex secrets; privacy disclosure for session cookies in SecretStorage; 401/403 drops stale rings
+- **Status bar:** uses min(session, weekly) remaining for display and low-quota warning
+- **Empty state:** points to Set Up Accounts (and optional Chrome), not Chrome-only “not connected”
+- Docs and agent notes aligned with dual-mode architecture
+
+## [0.6.x] — 2026-06 / 2026-07
+
+### Notes
+- Session-key Claude auth, poll-after-save, storage merge hardening, and packaging bumps through 0.6.3 (see git history for incremental commits)
+
 ## [0.3.1] — 2026-06-23
 
 ### Fixed
@@ -29,8 +45,6 @@
 - Live quota dashboard for Claude, GitHub Copilot, and Codex with session and weekly progress rings
 - Status bar item showing remaining quota per service; turns amber when any service drops below 10%
 - Standalone mode: fetches quota directly from VS Code using credentials stored in SecretStorage — no Chrome extension required
-- **"AI Quota Tool: Configure Credentials"** command for one-time credential setup (Claude session key, GitHub token, Codex session token)
+- **"AI Quota Tool: Set Up Accounts"** command for one-time credential setup
 - **"AI Quota Tool: Open Dashboard"** command
 - Optional Chrome extension integration: receives live quota pushes over a local WebSocket on port 54321
-- System notifications when session or weekly quota resets
-- Disconnected state detection: status bar turns red if Chrome extension was connected and then closes
