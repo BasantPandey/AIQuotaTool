@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** — live in VS Code (v0.7.0 V1 bar).
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** - live in VS Code (v0.7.1 V1 bar).
 
 ![Status bar showing Claude 72% | Copilot 91% | Codex 8%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.png)
 
