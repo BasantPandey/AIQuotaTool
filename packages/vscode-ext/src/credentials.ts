@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
-const KEY_CLAUDE_API_KEY = 'aiQuotaTool.claudeApiKey';
+const KEY_CLAUDE_COOKIE = 'aiQuotaTool.claudeSessionKey';
 const KEY_CODEX_COOKIE = 'aiQuotaTool.codexSessionToken';
-// ponytail: migrate old session-cookie key on first read, then drop it
-const KEY_CLAUDE_LEGACY = 'aiQuotaTool.claudeSessionKey';
+// Accidentally stored Anthropic API keys in 0.5.x — not used for claude.ai usage.
+const KEY_CLAUDE_API_LEGACY = 'aiQuotaTool.claudeApiKey';
 
 export interface Credentials {
-  claudeApiKey: string | undefined;
+  claudeSessionKey: string | undefined;
   codexSessionToken: string | undefined;
 }
 
@@ -14,22 +14,32 @@ export class CredentialManager {
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
   async get(): Promise<Credentials> {
-    const [claudeApiKey, codexSessionToken] = await Promise.all([
-      this.secrets.get(KEY_CLAUDE_API_KEY),
+    const [claudeSessionKey, codexSessionToken] = await Promise.all([
+      this.secrets.get(KEY_CLAUDE_COOKIE),
       this.secrets.get(KEY_CODEX_COOKIE),
     ]);
-    // silently drop legacy cookie — it no longer works
-    Promise.resolve(this.secrets.delete(KEY_CLAUDE_LEGACY)).catch(() => { /* ignore */ });
-    return { claudeApiKey, codexSessionToken };
+    // Drop the unused API-key secret if present (0.5.x regression leftover).
+    Promise.resolve(this.secrets.delete(KEY_CLAUDE_API_LEGACY)).catch(() => {
+      /* ignore */
+    });
+    return { claudeSessionKey, codexSessionToken };
   }
 
   async hasAny(): Promise<boolean> {
     const creds = await this.get();
-    return !!(creds.claudeApiKey || creds.codexSessionToken);
+    if (creds.claudeSessionKey || creds.codexSessionToken) return true;
+    try {
+      const session = await vscode.authentication.getSession('github', ['read:user'], {
+        createIfNone: false,
+      });
+      return !!session;
+    } catch {
+      return false;
+    }
   }
 
-  async setClaudeApiKey(key: string): Promise<void> {
-    await this.secrets.store(KEY_CLAUDE_API_KEY, key);
+  async setClaudeKey(key: string): Promise<void> {
+    await this.secrets.store(KEY_CLAUDE_COOKIE, key);
   }
 
   async setCodexToken(token: string): Promise<void> {

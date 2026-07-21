@@ -29,24 +29,32 @@ export function activate(context: vscode.ExtensionContext): void {
   const statusBar = new QuotaStatusBar(OPEN_PANEL_COMMAND, CONFIGURE_COMMAND);
   const credPanel = new CredentialPanel(context.extensionUri, credentials);
 
+  const applyStates = (states: QuotaState[]): void => {
+    statusBar.update(states);
+    panel.pushStates(states, states.length === 0);
+  };
+
   // Show setup prompt if no credentials are saved yet
-  credentials.hasAny().then((hasAny) => {
-    if (!hasAny) statusBar.showSetupPrompt();
-  }).catch(() => { /* ignore */ });
+  credentials
+    .hasAny()
+    .then((hasAny) => {
+      if (!hasAny) statusBar.showSetupPrompt();
+    })
+    .catch(() => {
+      /* ignore */
+    });
 
   // Standalone polling — fetches quota directly from Node.js (no Chrome needed).
   poller.start(() => credentials.get(), getGithubToken);
-  poller.onUpdate((states: QuotaState[]) => {
-    statusBar.update(states);
-    panel.pushStates(states);
-  });
+  poller.onUpdate(applyStates);
 
-  // Chrome extension push — if Chrome is running it overrides the polled data.
+  // After Save & Test (or Done), re-poll so the dashboard is not empty for 60s.
+  credPanel.setOnSaved(() => poller.pollNow());
+
+  // Chrome extension push — merges into polled state (both sources coexist).
   wsServer.start();
   wsServer.onStateChange((states: QuotaState[]) => {
     for (const s of states) poller.merge(s);
-    statusBar.update(poller.getLatestStates());
-    panel.pushStates(poller.getLatestStates());
   });
   wsServer.onDisconnect(() => {
     const current = poller.getLatestStates();
@@ -56,17 +64,16 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  const openCmd = vscode.commands.registerCommand(OPEN_PANEL_COMMAND, () => {
+  const openCmd = vscode.commands.registerCommand(OPEN_PANEL_COMMAND, async () => {
     panel.open();
+    // Kick a poll when opening so data is fresh after setup / long idle.
+    await poller.pollNow();
     const current = poller.getLatestStates();
     panel.pushStates(current, current.length === 0);
   });
 
   const configureCmd = vscode.commands.registerCommand(CONFIGURE_COMMAND, async () => {
     await credPanel.open();
-    // After the panel opens, re-start the poller to pick up any newly saved credentials.
-    poller.stop();
-    poller.start(() => credentials.get(), getGithubToken);
   });
 
   context.subscriptions.push(

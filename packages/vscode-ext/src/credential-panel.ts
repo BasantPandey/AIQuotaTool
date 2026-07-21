@@ -1,33 +1,35 @@
 import * as vscode from 'vscode';
 import type { CredentialManager } from './credentials.js';
 
-// ── Validation helpers ───────────────────────────────────────────────────────
+// ── Validation helpers (same endpoints as quota-poller) ──────────────────────
 
-const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
-async function testClaude(apiKey: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/models', {
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'Accept': 'application/json',
-    },
-  });
-  if (res.status === 401) throw new Error('Invalid API key');
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = (await res.json()) as { data?: Array<{ id: string }> };
-  const modelCount = data.data?.length ?? 0;
-  return `API key valid — ${modelCount} model${modelCount !== 1 ? 's' : ''} accessible`;
+async function testClaude(sessionKey: string): Promise<string> {
+  const headers = {
+    Accept: 'application/json',
+    Cookie: `sessionKey=${sessionKey}`,
+    'User-Agent': BROWSER_UA,
+    Referer: 'https://claude.ai/',
+    Origin: 'https://claude.ai',
+  };
+  const orgRes = await fetch('https://claude.ai/api/organizations', { headers });
+  if (!orgRes.ok) throw new Error(`HTTP ${orgRes.status}`);
+  const orgs = (await orgRes.json()) as Array<{ uuid: string; name?: string }>;
+  const org = orgs[0];
+  if (!org) throw new Error('No organisation found');
+  return org.name ?? org.uuid;
 }
 
 async function testCodex(sessionToken: string): Promise<void> {
   const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
     headers: {
-      'Accept': 'application/json',
-      'Cookie': `__Secure-next-auth.session-token=${sessionToken}`,
-      'Referer': 'https://chatgpt.com/codex/settings/usage',
+      Accept: 'application/json',
+      Cookie: `__Secure-next-auth.session-token=${sessionToken}`,
+      Referer: 'https://chatgpt.com/codex/settings/usage',
       'User-Agent': BROWSER_UA,
-      'Origin': 'https://chatgpt.com',
+      Origin: 'https://chatgpt.com',
     },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -39,11 +41,17 @@ type WvMsg = Record<string, string>;
 
 export class CredentialPanel {
   private panel: vscode.WebviewPanel | null = null;
+  private onSaved: (() => void | Promise<void>) | null = null;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly credentials: CredentialManager,
   ) {}
+
+  /** Called after a credential is saved successfully so the poller can refresh. */
+  setOnSaved(handler: () => void | Promise<void>): void {
+    this.onSaved = handler;
+  }
 
   async open(): Promise<void> {
     if (this.panel) {
@@ -83,6 +91,8 @@ export class CredentialPanel {
           break;
         case 'close_panel':
           this.panel?.dispose();
+          // Await refresh so the dashboard is not empty for ~60s after setup.
+          await this.onSaved?.();
           await vscode.commands.executeCommand('aiQuotaTool.openPanel');
           break;
       }
@@ -100,11 +110,11 @@ export class CredentialPanel {
   private async sendInitialStatus(): Promise<void> {
     const creds = await this.credentials.get();
 
-    if (creds.claudeApiKey) {
+    if (creds.claudeSessionKey) {
       this.send('claude', 'testing');
       try {
-        const name = await testClaude(creds.claudeApiKey);
-        this.send('claude', 'ok', name);
+        const name = await testClaude(creds.claudeSessionKey);
+        this.send('claude', 'ok', `Connected as ${name}`);
       } catch {
         this.send('claude', 'error', 'Saved key is invalid — please re-enter');
       }
@@ -131,22 +141,30 @@ export class CredentialPanel {
   }
 
   private async handleSaveTestClaude(key: string): Promise<void> {
-    if (!key) { this.send('claude', 'error', 'Key is empty'); return; }
+    if (!key) {
+      this.send('claude', 'error', 'Key is empty');
+      return;
+    }
     try {
-      const detail = await testClaude(key);
-      await this.credentials.setClaudeApiKey(key);
-      this.send('claude', 'ok', detail);
+      const name = await testClaude(key);
+      await this.credentials.setClaudeKey(key);
+      this.send('claude', 'ok', `Connected as ${name}`);
+      this.onSaved?.();
     } catch (e) {
       this.send('claude', 'error', e instanceof Error ? e.message : String(e));
     }
   }
 
   private async handleSaveTestCodex(token: string): Promise<void> {
-    if (!token) { this.send('codex', 'error', 'Token is empty'); return; }
+    if (!token) {
+      this.send('codex', 'error', 'Token is empty');
+      return;
+    }
     try {
       await testCodex(token);
       await this.credentials.setCodexToken(token);
       this.send('codex', 'ok', 'Connected');
+      this.onSaved?.();
     } catch (e) {
       this.send('codex', 'error', e instanceof Error ? e.message : String(e));
     }
@@ -158,6 +176,7 @@ export class CredentialPanel {
         createIfNone: true,
       });
       this.send('github', 'ok', `Connected as @${session.account.label}`);
+      this.onSaved?.();
     } catch {
       this.send('github', 'error', 'Sign-in cancelled or failed');
     }

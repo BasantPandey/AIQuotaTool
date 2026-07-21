@@ -56,10 +56,6 @@ export class QuotaPanel {
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'index.js'),
     );
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'index.css'),
-    );
-
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,7 +63,6 @@ export class QuotaPanel {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource};" />
-  <link rel="stylesheet" href="${styleUri}" />
   <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #0d1117; font-family: system-ui, sans-serif; }</style>
   <title>AI Quota Tool</title>
 </head>

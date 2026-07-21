@@ -24,10 +24,10 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI
 
 ### How to get each credential
 
-**Claude API key**
-1. Go to [console.anthropic.com](https://console.anthropic.com) and sign in
-2. Open **Settings → API Keys**
-3. Click **Create Key**, copy it (starts with `sk-ant-api03-`)
+**Claude session key** (claude.ai usage bars)
+1. Open [claude.ai](https://claude.ai) in Chrome and sign in
+2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
+3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
 
 **GitHub Copilot** — click **Sign in with GitHub** in the setup panel. VS Code handles the OAuth flow — no token copying required.
 
