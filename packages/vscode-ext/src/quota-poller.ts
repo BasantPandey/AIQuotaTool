@@ -1,11 +1,15 @@
 // Node.js fetchers — no CORS restrictions, uses credentials from SecretStorage.
 // This is the standalone path: VS Code fetches quota directly without Chrome.
-import type { QuotaState, ClaudeSubcategory, ServiceId } from '@ai-quota-tool/core';
+import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import {
-  calcPct,
   copilotAuthUnavailable,
   copilotNoPlan,
   copilotSeatActiveUsageUnknown,
+  mapClaudeUsage,
+  mapCodexUsage,
+  upsertQuotaState,
+  type ClaudeUsageResponse,
+  type WhamUsageResponse,
 } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
 
@@ -27,20 +31,6 @@ const BROWSER_UA =
 
 interface ClaudeOrg {
   uuid: string;
-}
-
-interface ClaudeUsageBucket {
-  utilization: number;
-  resets_at: string;
-}
-
-interface ClaudeUsageResponse {
-  five_hour: ClaudeUsageBucket;
-  seven_day: ClaudeUsageBucket;
-  seven_day_sonnet: ClaudeUsageBucket | null;
-  seven_day_opus: ClaudeUsageBucket | null;
-  seven_day_cowork: ClaudeUsageBucket | null;
-  seven_day_omelette: ClaudeUsageBucket | null;
 }
 
 async function fetchClaude(sessionKey: string): Promise<QuotaState> {
@@ -69,42 +59,7 @@ async function fetchClaude(sessionKey: string): Promise<QuotaState> {
   }
   if (!usageRes.ok) throw new Error(`Claude usage API: ${usageRes.status}`);
   const data = (await usageRes.json()) as ClaudeUsageResponse;
-
-  const subcategories: ClaudeSubcategory[] = [];
-  if (data.seven_day_sonnet != null) {
-    const pct = calcPct(data.seven_day_sonnet.utilization, 100);
-    subcategories.push({
-      name: 'Sonnet',
-      usedPct: data.seven_day_sonnet.utilization,
-      label: `${pct}% left`,
-    });
-  }
-  if (data.seven_day_omelette != null) {
-    const pct = calcPct(data.seven_day_omelette.utilization, 100);
-    subcategories.push({
-      name: 'Designs',
-      usedPct: data.seven_day_omelette.utilization,
-      label: `${pct}% left`,
-    });
-  }
-  if (data.seven_day_cowork != null) {
-    const pct = calcPct(data.seven_day_cowork.utilization, 100);
-    subcategories.push({
-      name: 'Daily Routines',
-      usedPct: data.seven_day_cowork.utilization,
-      label: `${pct}% left`,
-    });
-  }
-
-  return {
-    service: 'claude',
-    sessionPct: calcPct(data.five_hour.utilization, 100),
-    weeklyPct: calcPct(data.seven_day.utilization, 100),
-    sessionResetsAt: Date.parse(data.five_hour.resets_at),
-    weeklyResetsAt: Date.parse(data.seven_day.resets_at),
-    ...(subcategories.length > 0 && { subcategories }),
-    lastUpdated: Date.now(),
-  };
+  return mapClaudeUsage(data);
 }
 
 // ──── GitHub Copilot ────────────────────────────────────────────────────────
@@ -121,22 +76,10 @@ async function fetchCopilot(token: string): Promise<QuotaState> {
   const seatRes = await fetch('https://api.github.com/user/copilot', { headers });
   if (seatRes.status === 404) return copilotNoPlan(now);
   if (!seatRes.ok) return copilotAuthUnavailable(now);
-  // Seat present; remaining usage % is not available via public API.
   return copilotSeatActiveUsageUnknown(now);
 }
 
 // ──── Codex ─────────────────────────────────────────────────────────────────
-
-interface WhamWindow {
-  used_percent: number;
-  reset_at: string;
-}
-
-interface WhamUsageResponse {
-  rate_limit?: { primary_window?: WhamWindow; secondary_window?: WhamWindow };
-  primary_window?: WhamWindow;
-  secondary_window?: WhamWindow;
-}
 
 async function fetchCodex(sessionToken: string): Promise<QuotaState> {
   const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
@@ -153,20 +96,7 @@ async function fetchCodex(sessionToken: string): Promise<QuotaState> {
   }
   if (!res.ok) throw new Error(`Codex usage API: ${res.status}`);
   const data = (await res.json()) as WhamUsageResponse;
-
-  const primary = data.rate_limit?.primary_window ?? data.primary_window;
-  const secondary = data.rate_limit?.secondary_window ?? data.secondary_window;
-  const remaining = (pct?: number) => Math.max(0, Math.min(100, Math.round(100 - (pct ?? 0))));
-  const resetMs = (val?: string) => (val ? Date.parse(val) : Date.now() + 5 * 3600_000);
-
-  return {
-    service: 'codex',
-    sessionPct: remaining(primary?.used_percent),
-    weeklyPct: remaining(secondary?.used_percent),
-    sessionResetsAt: resetMs(primary?.reset_at),
-    weeklyResetsAt: resetMs(secondary?.reset_at),
-    lastUpdated: Date.now(),
-  };
+  return mapCodexUsage(data);
 }
 
 // ──── Poller ────────────────────────────────────────────────────────────────
@@ -268,9 +198,12 @@ export class QuotaPoller {
         changed = true;
       } else if (r.reason !== 'no credential') {
         // Never log secrets — only status/reason strings from our Error messages.
-        console.error('[ai-quota-tool] poller:', service, r.reason instanceof Error ? r.reason.message : r.reason);
+        console.error(
+          '[ai-quota-tool] poller:',
+          service,
+          r.reason instanceof Error ? r.reason.message : r.reason,
+        );
         if (isAuthFailure(r.reason) && (service === 'claude' || service === 'codex')) {
-          // Drop stale healthy rings so invalid/expired secrets do not look valid.
           if (this.removeService(service)) changed = true;
         }
       }
@@ -281,9 +214,9 @@ export class QuotaPoller {
     }
   }
 
-  /** Merge a single state (from WS push) and notify listeners. */
+  /** Merge a single state (from WS push) using freshest-wins. */
   merge(incoming: QuotaState): void {
-    this.upsert(incoming);
+    this.latestStates = upsertQuotaState(this.latestStates, incoming);
     this.listeners.forEach((fn) => fn(this.latestStates));
   }
 
@@ -295,10 +228,7 @@ export class QuotaPoller {
   }
 
   private upsert(incoming: QuotaState): void {
-    this.latestStates = [
-      ...this.latestStates.filter((s) => s.service !== incoming.service),
-      incoming,
-    ];
+    this.latestStates = upsertQuotaState(this.latestStates, incoming);
   }
 
   private removeService(service: ServiceId): boolean {

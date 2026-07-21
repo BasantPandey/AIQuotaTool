@@ -1,4 +1,5 @@
 import type { QuotaState } from '@ai-quota-tool/core';
+import { mergeQuotaStates, upsertQuotaState } from '@ai-quota-tool/core';
 import { ClaudeFetcher } from './fetchers/claude.js';
 import { CopilotFetcher } from './fetchers/copilot.js';
 import { CodexFetcher } from './fetchers/codex.js';
@@ -43,14 +44,11 @@ async function pollAll(): Promise<void> {
 
   if (states.length === 0) return;
 
-  // Merge with any content-script pushes already in storage so a partial SW poll
-  // does not wipe a fresher Claude/Codex reading from the page context.
+  // Freshest-wins merge with content-script / prior SW readings; partial polls keep other services.
   const stored = await chrome.storage.local.get(['quotaStates']);
   const existing: QuotaState[] =
     (stored['quotaStates'] as QuotaState[] | undefined) ?? [];
-  const byService = new Map(existing.map((s) => [s.service, s]));
-  for (const s of states) byService.set(s.service, s);
-  const merged = Array.from(byService.values());
+  const merged = mergeQuotaStates(existing, states);
 
   await chrome.storage.local.set({ quotaStates: merged, lastPollAt: Date.now() });
   pushQuotaUpdate(merged);
@@ -62,7 +60,7 @@ async function pollAll(): Promise<void> {
 async function mergeQuotaState(incoming: QuotaState): Promise<void> {
   const result = await chrome.storage.local.get(['quotaStates']);
   const existing: QuotaState[] = (result['quotaStates'] as QuotaState[] | undefined) ?? [];
-  const merged = [...existing.filter((s) => s.service !== incoming.service), incoming];
+  const merged = upsertQuotaState(existing, incoming);
   await chrome.storage.local.set({ quotaStates: merged, lastPollAt: Date.now() });
   pushQuotaUpdate(merged);
   updateBadge(merged);

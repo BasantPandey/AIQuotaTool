@@ -2,6 +2,15 @@ import * as vscode from 'vscode';
 import type { QuotaState } from '@ai-quota-tool/core';
 import { SERVICE_LABELS } from '@ai-quota-tool/core';
 
+/** Lowest defined remaining % (session or weekly); undefined if no percentages. */
+function pressureRemaining(state: QuotaState): number | undefined {
+  const vals: number[] = [];
+  if (state.sessionPct != null) vals.push(state.sessionPct);
+  if (state.weeklyPct != null) vals.push(state.weeklyPct);
+  if (vals.length === 0) return undefined;
+  return Math.min(...vals);
+}
+
 export class QuotaStatusBar {
   private item: vscode.StatusBarItem;
 
@@ -24,14 +33,24 @@ export class QuotaStatusBar {
       return;
     }
 
-    const parts = states
-      .filter((s) => s.weeklyPct != null)
-      .map((s) => `${SERVICE_LABELS[s.service]} ${s.weeklyPct}%`);
+    const parts: string[] = [];
+    for (const s of states) {
+      const pct = pressureRemaining(s);
+      if (pct != null) {
+        parts.push(`${SERVICE_LABELS[s.service]} ${pct}%`);
+      } else if (s.honesty === 'seat_active_usage_unknown') {
+        parts.push(`${SERVICE_LABELS[s.service]} ·`);
+      }
+    }
     this.item.text = parts.length > 0 ? `$(pulse) ${parts.join(' | ')}` : '$(pulse) AI Quota';
     this.item.command = this.openPanelCommand;
 
-    const lowest = Math.min(...states.map((s) => s.weeklyPct ?? 100));
-    this.item.color = lowest < 10 ? new vscode.ThemeColor('statusBarItem.warningBackground') : undefined;
+    const pressures = states
+      .map(pressureRemaining)
+      .filter((n): n is number => n != null);
+    const lowest = pressures.length > 0 ? Math.min(...pressures) : 100;
+    this.item.color =
+      lowest < 10 ? new vscode.ThemeColor('statusBarItem.warningBackground') : undefined;
   }
 
   showSetupPrompt(): void {
@@ -41,10 +60,11 @@ export class QuotaStatusBar {
     this.item.color = undefined;
   }
 
+  /** Empty dual-mode state — prefer setup over Chrome-only "not connected". */
   showDisconnected(): void {
-    this.item.text = '$(debug-disconnect) AI Quota (not connected)';
-    this.item.command = this.openPanelCommand;
-    this.item.color = new vscode.ThemeColor('statusBarItem.errorBackground');
+    this.showSetupPrompt();
+    this.item.tooltip =
+      'No quota data yet. Set up accounts, or wait for the Chrome extension if you use it.';
   }
 
   dispose(): void {

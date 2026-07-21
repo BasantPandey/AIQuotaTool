@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import type { QuotaState, WsMessage } from '@ai-quota-tool/core';
+import { mergeQuotaStates } from '@ai-quota-tool/core';
 
 const PORT = 54321;
 
@@ -68,7 +69,8 @@ export class QuotaWsServer {
         break;
       }
       case 'quota_update': {
-        this.latestStates = msg.payload;
+        // Freshest-wins against any prior WS payload (partial updates keep other services).
+        this.latestStates = mergeQuotaStates(this.latestStates, msg.payload);
         this.listeners.forEach((fn) => fn(this.latestStates));
         break;
       }

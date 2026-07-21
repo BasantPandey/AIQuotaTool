@@ -14,11 +14,17 @@ interface Props {
 export function QuotaDashboard({ states, disconnected = false }: Props) {
   if (disconnected) {
     return (
-      <div style={{ padding: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 13 }}>
+      <div style={{ padding: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 13, lineHeight: 1.55 }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>🔑</div>
         No quota data yet.
         <br />
-        Run <strong style={{ color: 'rgba(255,255,255,0.7)' }}>AI Quota Tool: Set Up Accounts</strong> to connect your services.
+        <span style={{ color: 'rgba(255,255,255,0.7)' }}>
+          VS Code: run <strong>AI Quota Tool: Set Up Accounts</strong>
+        </span>
+        <br />
+        <span style={{ fontSize: 12 }}>
+          or use the Chrome extension while signed into each service.
+        </span>
       </div>
     );
   }
