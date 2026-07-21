@@ -7,17 +7,12 @@ import {
   copilotSeatActiveUsageUnknown,
   mapClaudeUsage,
   mapCodexUsage,
+  sessionAuthFailureAction,
   upsertQuotaState,
   type ClaudeUsageResponse,
   type WhamUsageResponse,
 } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
-
-/** True when a fetch failure looks like expired/invalid session credentials. */
-function isAuthFailure(reason: unknown): boolean {
-  const msg = reason instanceof Error ? reason.message : String(reason);
-  return /\b401\b|\b403\b|invalid or expired|No Claude org/i.test(msg);
-}
 
 type GetGithubToken = () => Promise<string | undefined>;
 type GetCredentials = () => Promise<Credentials>;
@@ -105,6 +100,8 @@ export class QuotaPoller {
   private timer: ReturnType<typeof setInterval> | null = null;
   private listeners: Set<UpdateListener> = new Set();
   private latestStates: QuotaState[] = [];
+  /** Session-cookie services whose last poll was an auth failure (secret kept). */
+  private reauthNeeded: Set<ServiceId> = new Set();
   private getCredentials: GetCredentials | null = null;
   private getGithubToken: GetGithubToken | null = null;
   private pollPromise: Promise<void> | null = null;
@@ -118,6 +115,11 @@ export class QuotaPoller {
 
   getLatestStates(): QuotaState[] {
     return this.latestStates;
+  }
+
+  /** Claude/Codex services that need replace/clear after invalid/expired session. */
+  getReauthNeeded(): ServiceId[] {
+    return [...this.reauthNeeded];
   }
 
   start(getCredentials: GetCredentials, getGithubToken: GetGithubToken): void {
@@ -195,6 +197,7 @@ export class QuotaPoller {
       const service = jobs[i]!.service;
       if (r.status === 'fulfilled') {
         this.upsert(r.value);
+        if (this.reauthNeeded.delete(service)) changed = true;
         changed = true;
       } else if (r.reason !== 'no credential') {
         // Never log secrets — only status/reason strings from our Error messages.
@@ -203,8 +206,14 @@ export class QuotaPoller {
           service,
           r.reason instanceof Error ? r.reason.message : r.reason,
         );
-        if (isAuthFailure(r.reason) && (service === 'claude' || service === 'codex')) {
-          if (this.removeService(service)) changed = true;
+        const action = sessionAuthFailureAction(service, r.reason);
+        if (action) {
+          // keepSecret is policy (do not clear SecretStorage here).
+          if (action.dropRing && this.removeService(service)) changed = true;
+          if (action.requireReauthSignal && !this.reauthNeeded.has(service)) {
+            this.reauthNeeded.add(service);
+            changed = true;
+          }
         }
       }
     }
@@ -222,7 +231,16 @@ export class QuotaPoller {
 
   /** Remove a service reading (e.g. after clear or auth failure). */
   dropService(service: ServiceId): void {
-    if (this.removeService(service)) {
+    const ring = this.removeService(service);
+    const reauth = this.reauthNeeded.delete(service);
+    if (ring || reauth) {
+      this.listeners.forEach((fn) => fn(this.latestStates));
+    }
+  }
+
+  /** Clear re-auth flag after a successful Save & Test (before poll). */
+  clearReauth(service: ServiceId): void {
+    if (this.reauthNeeded.delete(service)) {
       this.listeners.forEach((fn) => fn(this.latestStates));
     }
   }

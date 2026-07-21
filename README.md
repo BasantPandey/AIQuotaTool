@@ -27,7 +27,7 @@ VS Code Extension
   - Webview dashboard + status bar (min session/weekly remaining)
 ```
 
-**Credentials:** Chrome uses in-browser cookies and does not store them. VS Code **stores** Claude/ChatGPT session cookies in SecretStorage for standalone mode - treat them as passwords; clear anytime via **Set Up Accounts**. See `packages/vscode-ext/README.md`.
+**Credentials (two honest paths):** Chrome uses live browser session cookies and does **not** store session keys (Settings discloses this). VS Code **stores** Claude/ChatGPT session cookies in SecretStorage for standalone mode - treat them like passwords; validate on save, clear anytime via **Set Up Accounts**. Expired sessions surface a re-auth cue; secrets are not auto-deleted. Never claim product-wide "no credentials stored." See `packages/vscode-ext/README.md` and `docs/ARCHITECTURE.md` security model.
 
 **Copilot:** Seat/plan can be detected; remaining usage % is often unavailable from GitHub. The UI shows honest status instead of inventing 100% remaining.
 
@@ -114,6 +114,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge
 | Freshest-wins dual-source merge | Done |
 | Honest Copilot (no fake 100% remaining) | Done |
 | Credential clear / privacy disclosure (VS Code) | Done |
+| Session auth failure re-auth cue (keep secret) | Done |
+| Chrome Settings privacy disclosure | Done |
 | Core unit tests + CI | Done |
 | Real Copilot remaining-% API (if GitHub ever exposes one) | Optional follow-up |
 | Effect-TS migration | Post-v1 |

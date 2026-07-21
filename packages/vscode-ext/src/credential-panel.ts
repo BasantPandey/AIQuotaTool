@@ -45,9 +45,11 @@ async function testCodex(sessionToken: string): Promise<void> {
 
 type WvMsg = Record<string, string>;
 
+export type SavedCredentialService = 'claude' | 'codex' | 'github';
+
 export class CredentialPanel {
   private panel: vscode.WebviewPanel | null = null;
-  private onSaved: (() => void | Promise<void>) | null = null;
+  private onSaved: ((service?: SavedCredentialService) => void | Promise<void>) | null = null;
   private onCleared: ((service: 'claude' | 'codex') => void | Promise<void>) | null = null;
 
   constructor(
@@ -56,7 +58,7 @@ export class CredentialPanel {
   ) {}
 
   /** Called after a credential is saved successfully so the poller can refresh. */
-  setOnSaved(handler: () => void | Promise<void>): void {
+  setOnSaved(handler: (service?: SavedCredentialService) => void | Promise<void>): void {
     this.onSaved = handler;
   }
 
@@ -134,7 +136,11 @@ export class CredentialPanel {
         const name = await testClaude(creds.claudeSessionKey);
         this.send('claude', 'ok', `Connected as ${name}`);
       } catch {
-        this.send('claude', 'error', 'Saved key is invalid — please re-enter');
+        this.send(
+          'claude',
+          'error',
+          'Session invalid or expired — paste a fresh sessionKey or Clear saved key',
+        );
       }
     }
 
@@ -144,7 +150,11 @@ export class CredentialPanel {
         await testCodex(creds.codexSessionToken);
         this.send('codex', 'ok', 'Connected');
       } catch {
-        this.send('codex', 'error', 'Saved token is invalid — please re-enter');
+        this.send(
+          'codex',
+          'error',
+          'Session invalid or expired — paste a fresh session cookie or Clear saved key',
+        );
       }
     }
 
@@ -167,7 +177,7 @@ export class CredentialPanel {
       const name = await testClaude(key);
       await this.credentials.setClaudeKey(key);
       this.send('claude', 'ok', `Connected as ${name}`);
-      this.onSaved?.();
+      await this.onSaved?.('claude');
     } catch (e) {
       this.send('claude', 'error', e instanceof Error ? e.message : String(e));
     }
@@ -182,7 +192,7 @@ export class CredentialPanel {
       await testCodex(token);
       await this.credentials.setCodexToken(token);
       this.send('codex', 'ok', 'Connected');
-      this.onSaved?.();
+      await this.onSaved?.('codex');
     } catch (e) {
       this.send('codex', 'error', e instanceof Error ? e.message : String(e));
     }
@@ -194,7 +204,7 @@ export class CredentialPanel {
         createIfNone: true,
       });
       this.send('github', 'ok', `Connected as @${session.account.label}`);
-      this.onSaved?.();
+      await this.onSaved?.('github');
     } catch {
       this.send('github', 'error', 'Sign-in cancelled or failed');
     }

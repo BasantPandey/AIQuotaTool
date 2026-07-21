@@ -135,10 +135,13 @@ interface QuotaState {
 
 ## Security Model
 
-- **Chrome:** uses existing browser session cookies; does not store passwords or session keys in extension storage as secrets for auth (quota data only in `chrome.storage.local`).
-- **VS Code:** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — account-grade secrets. User must clear/replace via Set Up Accounts. Never log secrets.
-- **Localhost WebSocket** only; dual-mode empty UI points to account setup, not a false “no credentials” product claim.
-- **No telemetry backend.** Quota requests go only to the vendor hosts.
+Two honest credential paths (product-wide “no credentials stored” is false):
+
+- **Chrome:** uses live browser session cookies; does **not** store session keys as auth secrets (`chrome.storage.local` holds quota readings only). Settings tab discloses cookie use + optional localhost WS.
+- **VS Code:** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — password-grade secrets. GitHub Copilot uses VS Code OAuth (not a pasted cookie). Lifecycle: validate-before-persist (Save & Test), replace, explicit clear. On 401/403 for Claude/Codex: drop the ring, **keep** the secret, surface an explicit re-auth signal (status bar / Set Up Accounts) — never invent full remaining. Pure policy: `sessionAuthFailureAction` in `@ai-quota-tool/core`.
+- **Localhost WebSocket** only (`127.0.0.1`); any process on the machine could spoof the channel (disclosed local-trust model).
+- **Hard rules:** never log secrets; no developer backend for credentials/quota; VS Code secrets only in SecretStorage; Chrome must not persist session keys as auth secrets.
+- **Store publish** (privacy policy URL, CWS Limited Use / consent UX) is post-V1; product + README disclosure is the V1 bar.
 
 ---
 

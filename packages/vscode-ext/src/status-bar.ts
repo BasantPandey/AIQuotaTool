@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { QuotaState } from '@ai-quota-tool/core';
+import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { SERVICE_LABELS } from '@ai-quota-tool/core';
 
 /** Lowest defined remaining % (session or weekly); undefined if no percentages. */
@@ -65,6 +65,21 @@ export class QuotaStatusBar {
     this.showSetupPrompt();
     this.item.tooltip =
       'No quota data yet. Set up accounts, or wait for the Chrome extension if you use it.';
+  }
+
+  /**
+   * Session cookie invalid/expired — secret still stored; user must replace or clear.
+   * Click opens Set Up Accounts (not the dashboard alone).
+   */
+  showReauthPrompt(services: ServiceId[]): void {
+    const labels = services.map((s) => SERVICE_LABELS[s]).join(', ');
+    this.item.text =
+      services.length === 1
+        ? `$(key) AI Quota: ${labels} session expired`
+        : `$(key) AI Quota: sessions expired`;
+    this.item.command = this.configureCommand;
+    this.item.tooltip = `${labels}: session invalid or expired. Open Set Up Accounts to replace or clear the saved cookie.`;
+    this.item.color = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
   dispose(): void {

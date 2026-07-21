@@ -30,7 +30,12 @@ export function activate(context: vscode.ExtensionContext): void {
   const credPanel = new CredentialPanel(context.extensionUri, credentials);
 
   const applyStates = (states: QuotaState[]): void => {
-    statusBar.update(states);
+    const reauth = poller.getReauthNeeded();
+    if (reauth.length > 0) {
+      statusBar.showReauthPrompt(reauth);
+    } else {
+      statusBar.update(states);
+    }
     panel.pushStates(states, states.length === 0);
   };
 
@@ -48,8 +53,13 @@ export function activate(context: vscode.ExtensionContext): void {
   poller.start(() => credentials.get(), getGithubToken);
   poller.onUpdate(applyStates);
 
-  // After Save & Test (or Done), re-poll so the dashboard is not empty for 60s.
-  credPanel.setOnSaved(() => poller.pollNow());
+  // After Save & Test (or Done), clear re-auth flag and re-poll.
+  credPanel.setOnSaved((service) => {
+    if (service === 'claude' || service === 'codex') {
+      poller.clearReauth(service);
+    }
+    void poller.pollNow();
+  });
   // After clear, drop that service's reading (do not leave stale healthy rings).
   credPanel.setOnCleared((service) => {
     poller.dropService(service);
@@ -64,8 +74,8 @@ export function activate(context: vscode.ExtensionContext): void {
   wsServer.onDisconnect(() => {
     const current = poller.getLatestStates();
     if (current.length === 0) {
-      statusBar.showDisconnected();
-      panel.pushStates([], true);
+      // Prefer session-expired re-auth over generic setup when secrets failed auth.
+      applyStates(current);
     }
   });
 

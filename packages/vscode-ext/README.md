@@ -62,10 +62,13 @@ Both modes work simultaneously: the Chrome extension supplements the direct poll
 
 ## Privacy and security
 
-- **Session secrets are stored.** Claude `sessionKey` and ChatGPT session tokens are full browser session credentials. Treat them like passwords.
-- They are stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
+Two honest paths: **Chrome** uses live browser cookies and does not store session keys; **this extension stores** Claude `sessionKey` and ChatGPT session tokens for standalone mode.
+
+- Session cookies are full browser credentials. Treat them like passwords.
+- Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
 - Secrets are sent only to the owning service (claude.ai, chatgpt.com, or GitHub APIs) for quota reads — no telemetry backend.
-- Invalid or expired sessions fail validation and polling; stale “full quota” is not invented. Clear secrets anytime from Set Up Accounts.
+- Lifecycle: **Save & Test** validates before persist; replace by saving again; **Clear saved key** removes the secret.
+- Invalid or expired sessions drop the quota ring and show a **session expired** status-bar cue; the secret is **not** auto-deleted. Open **Set Up Accounts** to replace or clear. Stale “full quota” is never invented.
 - Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.
 
 ---

@@ -10,7 +10,7 @@ A pnpm + Turborepo monorepo that builds two **first-class** extensions (dual-mod
 ## Packages
 | Package | npm name | Purpose |
 |---|---|---|
-| `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot honesty) — no DOM, no Node, no React |
+| `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot honesty, session-auth policy) — no DOM, no Node, no React |
 | `packages/ui` | `@ai-quota-tool/ui` | Shared React 19 components — pure display, no data fetching |
 | `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | Chrome MV3 extension — service worker, content scripts, popup |
 | `packages/vscode-ext` | `ai-quota-tool-vscode` | VS Code extension — poller, credentials, WS server, webview, status bar |
@@ -83,6 +83,7 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 - `preferQuotaState` / `upsertQuotaState` / `mergeQuotaStates`
 - `mapClaudeUsage` / `mapCodexUsage`
 - Copilot honesty builders + `QuotaHonesty`
+- `sessionAuthFailureAction` (Claude/Codex 401/403: drop ring, keep secret, re-auth signal)
 
 ## VS Code extension: two tsconfigs — critical
 - `tsconfig.json` — Node.js extension host (`lib: ["ES2022"]`, no DOM). Excludes `src/webview/`.

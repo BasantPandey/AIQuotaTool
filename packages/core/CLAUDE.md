@@ -8,10 +8,12 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 - **Merge:** `preferQuotaState`, `upsertQuotaState`, `mergeQuotaStates` (freshest-wins by `lastUpdated`)
 - **Mappers:** `mapClaudeUsage`, `mapCodexUsage` (+ response types)
 - **Copilot honesty:** `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`
+- **Session auth failure:** `sessionAuthFailureAction`, `isSessionAuthFailure`, `isSessionCookieService` (drop ring, keep secret, re-auth signal)
 - `formatTimeRemaining(ms)`, `calcPct(used, limit)`, `pctToColor(pct)`
 
 ## Rules
 - No DOM, no React, no Node builtins — importable in browser, service worker, and Node
 - `calcPct` returns **REMAINING** (not used)
 - Never invent Copilot remaining % in builders
+- Never invent remaining % on Claude/Codex session auth failure (hosts drop ring + re-auth cue)
 - Build: `tsc` → `dist/`; tests: `vitest run` (`*.test.ts` excluded from emit)

@@ -59,12 +59,31 @@ export function SettingsTab({ states }: SettingsTabProps) {
         Sign in to each service in Chrome — quota data flows automatically.
         Copilot shows seat status only; remaining usage % is not available from GitHub.
       </p>
+      <p
+        style={{
+          fontSize: 11,
+          color: '#8b949e',
+          marginBottom: 14,
+          lineHeight: 1.5,
+          padding: '10px 12px',
+          border: '1px solid #3d3d00',
+          borderRadius: 4,
+          background: 'rgba(184,149,0,0.08)',
+        }}
+      >
+        <strong>Privacy:</strong> This extension uses your <em>logged-in browser sessions</em> (cookies)
+        only to read your own AI quota. It does <strong>not</strong> store session keys as secrets.
+        Local storage holds quota readings for the popup. Optional push to VS Code uses{' '}
+        <code style={{ fontSize: 10 }}>ws://127.0.0.1</code> on this machine only (any local process
+        could spoof that channel).
+      </p>
       {SERVICES.map((id) => (
         <ServiceRow key={id} serviceId={id} states={states} />
       ))}
       <p style={{ fontSize: 11, color: '#8b949e', marginTop: 14, lineHeight: 1.5 }}>
         For VS Code standalone mode, open the Command Palette and run{' '}
-        <strong>AI Quota Tool: Set Up Accounts</strong>.
+        <strong>AI Quota Tool: Set Up Accounts</strong>. VS Code stores session cookies in
+        SecretStorage when you paste them there — treat them like passwords.
       </p>
     </div>
   );

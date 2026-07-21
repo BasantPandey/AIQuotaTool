@@ -8,7 +8,7 @@ Chrome Manifest V3 extension. Owns browser-session quota fetching. Runs standalo
 | `src/background/worker.ts` | Service worker — poll, freshest-wins storage merge, alarms, WS push |
 | `src/content/quota-bridge.ts` | Page-origin fetch for claude.ai / chatgpt.com |
 | `src/popup/index.tsx` | Popup UI — storage via TanStack Query → `QuotaDashboard` |
-| `src/popup/SettingsTab.tsx` | Accounts tab |
+| `src/popup/SettingsTab.tsx` | Accounts tab + minimal privacy disclosure (browser sessions, no stored keys, optional localhost WS) |
 
 ## Data flow
 1. Alarms every 60s (recreated on install, startup, SW wake)
