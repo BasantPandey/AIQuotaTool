@@ -147,11 +147,11 @@ Two honest credential paths (product-wide “no credentials stored” is false):
 
 ## Chrome Extension Badge
 
-After each poll, `updateBadge` in `worker.ts`:
+After each poll, `updateBadge` in `worker.ts` uses `lowestPressureAmong` from core:
 - Red `!` — any defined remaining below 5%
 - Amber `!` — below 10%
-- Clear — otherwise  
-(Honesty-only states without percentages do not invent low remaining.)
+- Clear — otherwise, or when every state is honesty-only / has no remaining %  
+(Honesty-only states never invent 100% remaining for badge math.)
 
 ---
 

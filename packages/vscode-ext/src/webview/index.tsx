@@ -2,7 +2,7 @@ import { StrictMode, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
-import type { QuotaState } from '@ai-quota-tool/core';
+import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { QuotaDashboard, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
 
 declare const acquireVsCodeApi: () => { postMessage: (msg: unknown) => void };
@@ -14,12 +14,18 @@ const queryClient = new QueryClient({
   },
 });
 
-/** Extension host pushes { type: 'quota_update', payload, disconnected } via postMessage */
+/** Extension host pushes { type: 'quota_update', payload, disconnected, reauthServices } */
 window.addEventListener('message', (event: MessageEvent) => {
-  const msg = event.data as { type: string; payload?: QuotaState[]; disconnected?: boolean };
+  const msg = event.data as {
+    type: string;
+    payload?: QuotaState[];
+    disconnected?: boolean;
+    reauthServices?: ServiceId[];
+  };
   if (msg.type === 'quota_update') {
     queryClient.setQueryData(['quota-states'], msg.payload ?? []);
     queryClient.setQueryData(['disconnected'], msg.disconnected ?? false);
+    queryClient.setQueryData(['reauth-services'], msg.reauthServices ?? []);
   }
 });
 
@@ -36,12 +42,24 @@ function QuotaView() {
     initialData: false,
   });
 
+  const { data: reauthServices = [] } = useQuery<ServiceId[]>({
+    queryKey: ['reauth-services'],
+    queryFn: () => [],
+    initialData: [],
+  });
+
   useEffect(() => {
     // Signal to extension host that the webview is ready for data
     vscode?.postMessage({ type: 'webview_ready' });
   }, []);
 
-  return <QuotaDashboard states={states} disconnected={disconnected} />;
+  return (
+    <QuotaDashboard
+      states={states}
+      disconnected={disconnected}
+      reauthServices={reauthServices}
+    />
+  );
 }
 
 function App() {

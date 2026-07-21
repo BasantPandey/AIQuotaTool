@@ -1,5 +1,5 @@
 import type { QuotaState } from '@ai-quota-tool/core';
-import { mergeQuotaStates, upsertQuotaState } from '@ai-quota-tool/core';
+import { lowestPressureAmong, mergeQuotaStates, upsertQuotaState } from '@ai-quota-tool/core';
 import { ClaudeFetcher } from './fetchers/claude.js';
 import { CopilotFetcher } from './fetchers/copilot.js';
 import { CodexFetcher } from './fetchers/codex.js';
@@ -13,9 +13,12 @@ const POLL_INTERVAL_MINUTES = 1;
 const fetchers = [new ClaudeFetcher(), new CopilotFetcher(), new CodexFetcher()];
 
 function updateBadge(states: QuotaState[]): void {
-  const lowest = Math.min(
-    ...states.map((s) => Math.min(s.sessionPct ?? 100, s.weeklyPct ?? 100)),
-  );
+  // Honesty-only states (no remaining %) must not invent 100 and hide real low pressure.
+  const lowest = lowestPressureAmong(states);
+  if (lowest == null) {
+    chrome.action.setBadgeText({ text: '' });
+    return;
+  }
   if (lowest < 5) {
     chrome.action.setBadgeText({ text: '!' });
     chrome.action.setBadgeBackgroundColor({ color: '#d73a49' });

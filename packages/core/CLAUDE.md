@@ -9,6 +9,7 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 - **Mappers:** `mapClaudeUsage`, `mapCodexUsage` (+ response types)
 - **Copilot honesty:** `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`
 - **Session auth failure:** `sessionAuthFailureAction`, `isSessionAuthFailure`, `isSessionCookieService` (drop ring, keep secret, re-auth signal)
+- **Pressure:** `pressureRemaining`, `lowestPressureAmong` (never invent 100% for honesty-only states)
 - `formatTimeRemaining(ms)`, `calcPct(used, limit)`, `pctToColor(pct)`
 
 ## Rules

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { QuotaState } from '@ai-quota-tool/core';
+import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 
 /** Hosts the shared React UI bundle inside a VS Code webview panel. */
 export class QuotaPanel {
@@ -9,6 +9,7 @@ export class QuotaPanel {
   private readonly extensionUri: vscode.Uri;
   private latestStates: QuotaState[] = [];
   private latestDisconnected = false;
+  private latestReauth: ServiceId[] = [];
 
   constructor(extensionUri: vscode.Uri) {
     this.extensionUri = extensionUri;
@@ -36,7 +37,7 @@ export class QuotaPanel {
     // Webview signals readiness after React mounts — send current state immediately
     this.panel.webview.onDidReceiveMessage((msg: { type: string }) => {
       if (msg.type === 'webview_ready') {
-        this.pushStates(this.latestStates, this.latestDisconnected);
+        this.pushStates(this.latestStates, this.latestDisconnected, this.latestReauth);
       }
     });
 
@@ -45,10 +46,20 @@ export class QuotaPanel {
     });
   }
 
-  pushStates(states: QuotaState[], disconnected = false): void {
+  pushStates(
+    states: QuotaState[],
+    disconnected = false,
+    reauthServices: ServiceId[] = [],
+  ): void {
     this.latestStates = states;
     this.latestDisconnected = disconnected;
-    this.panel?.webview.postMessage({ type: 'quota_update', payload: states, disconnected });
+    this.latestReauth = reauthServices;
+    this.panel?.webview.postMessage({
+      type: 'quota_update',
+      payload: states,
+      disconnected,
+      reauthServices,
+    });
   }
 
   private buildHtml(): string {

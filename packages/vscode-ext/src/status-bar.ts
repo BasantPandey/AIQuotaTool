@@ -1,15 +1,6 @@
 import * as vscode from 'vscode';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
-import { SERVICE_LABELS } from '@ai-quota-tool/core';
-
-/** Lowest defined remaining % (session or weekly); undefined if no percentages. */
-function pressureRemaining(state: QuotaState): number | undefined {
-  const vals: number[] = [];
-  if (state.sessionPct != null) vals.push(state.sessionPct);
-  if (state.weeklyPct != null) vals.push(state.weeklyPct);
-  if (vals.length === 0) return undefined;
-  return Math.min(...vals);
-}
+import { lowestPressureAmong, pressureRemaining, SERVICE_LABELS } from '@ai-quota-tool/core';
 
 export class QuotaStatusBar {
   private item: vscode.StatusBarItem;
@@ -45,12 +36,12 @@ export class QuotaStatusBar {
     this.item.text = parts.length > 0 ? `$(pulse) ${parts.join(' | ')}` : '$(pulse) AI Quota';
     this.item.command = this.openPanelCommand;
 
-    const pressures = states
-      .map(pressureRemaining)
-      .filter((n): n is number => n != null);
-    const lowest = pressures.length > 0 ? Math.min(...pressures) : 100;
+    const lowest = lowestPressureAmong(states);
+    // No percentage pressure (empty or honesty-only) is not treated as 100% remaining.
     this.item.color =
-      lowest < 10 ? new vscode.ThemeColor('statusBarItem.warningBackground') : undefined;
+      lowest != null && lowest < 10
+        ? new vscode.ThemeColor('statusBarItem.warningBackground')
+        : undefined;
   }
 
   showSetupPrompt(): void {

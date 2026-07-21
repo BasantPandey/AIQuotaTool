@@ -8,11 +8,19 @@ interface Props {
   states: QuotaState[];
   /** Show when no quota data is available yet (credentials not set up) */
   disconnected?: boolean;
+  /** Services whose saved session failed auth (secret may still be stored). */
+  reauthServices?: ServiceId[];
 }
 
 /** Pure display component. Wrap with <Suspense> and <ErrorBoundary> at the call site. */
-export function QuotaDashboard({ states, disconnected = false }: Props) {
-  if (disconnected) {
+export function QuotaDashboard({
+  states,
+  disconnected = false,
+  reauthServices = [],
+}: Props) {
+  const reauthSet = new Set(reauthServices);
+
+  if (disconnected && reauthSet.size === 0) {
     return (
       <div style={{ padding: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 13, lineHeight: 1.55 }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>🔑</div>
@@ -35,12 +43,14 @@ export function QuotaDashboard({ states, disconnected = false }: Props) {
     <div style={{ padding: '8px 10px' }}>
       {ALL_SERVICES.map((serviceId) => {
         const state = stateMap.get(serviceId);
+        const needsReauth = reauthSet.has(serviceId);
         const hasData =
+          !needsReauth &&
           state != null &&
           (state.sessionPct != null || state.weeklyPct != null || state.honesty != null);
         return hasData
           ? <QuotaCard key={serviceId} state={state} />
-          : <QuotaPendingCard key={serviceId} service={serviceId} />;
+          : <QuotaPendingCard key={serviceId} service={serviceId} needsReauth={needsReauth} />;
       })}
     </div>
   );

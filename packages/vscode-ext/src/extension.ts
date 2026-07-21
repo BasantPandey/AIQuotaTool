@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext): void {
     } else {
       statusBar.update(states);
     }
-    panel.pushStates(states, states.length === 0);
+    panel.pushStates(states, states.length === 0 && reauth.length === 0, reauth);
   };
 
   // Show setup prompt if no credentials are saved yet
@@ -83,8 +83,7 @@ export function activate(context: vscode.ExtensionContext): void {
     panel.open();
     // Kick a poll when opening so data is fresh after setup / long idle.
     await poller.pollNow();
-    const current = poller.getLatestStates();
-    panel.pushStates(current, current.length === 0);
+    applyStates(poller.getLatestStates());
   });
 
   const configureCmd = vscode.commands.registerCommand(CONFIGURE_COMMAND, async () => {

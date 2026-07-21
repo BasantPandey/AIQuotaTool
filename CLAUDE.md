@@ -84,6 +84,7 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 - `mapClaudeUsage` / `mapCodexUsage`
 - Copilot honesty builders + `QuotaHonesty`
 - `sessionAuthFailureAction` (Claude/Codex 401/403: drop ring, keep secret, re-auth signal)
+- `pressureRemaining` / `lowestPressureAmong` (badge/status pressure; no inventing 100%)
 
 ## VS Code extension: two tsconfigs — critical
 - `tsconfig.json` — Node.js extension host (`lib: ["ES2022"]`, no DOM). Excludes `src/webview/`.

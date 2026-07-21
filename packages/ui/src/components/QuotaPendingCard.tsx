@@ -16,11 +16,19 @@ const PENDING_HINTS: Record<ServiceId, string> = {
   codex: 'Set up a ChatGPT session token, or open chatgpt.com while signed in',
 };
 
+const REAUTH_HINTS: Partial<Record<ServiceId, string>> = {
+  claude: 'Session invalid or expired — open Set Up Accounts to replace or clear the key',
+  codex: 'Session invalid or expired — open Set Up Accounts to replace or clear the token',
+};
+
 interface Props {
   service: ServiceId;
+  /** Saved session failed auth; secret may still be stored. */
+  needsReauth?: boolean;
 }
 
-export function QuotaPendingCard({ service }: Props) {
+export function QuotaPendingCard({ service, needsReauth = false }: Props) {
+  const reauth = needsReauth && REAUTH_HINTS[service] != null;
   return (
     <div
       style={{
@@ -29,7 +37,8 @@ export function QuotaPendingCard({ service }: Props) {
         padding: '16px 18px',
         marginBottom: 10,
         boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-        opacity: 0.55,
+        opacity: reauth ? 0.85 : 0.55,
+        outline: reauth ? '1px solid rgba(227, 179, 65, 0.55)' : undefined,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -37,11 +46,21 @@ export function QuotaPendingCard({ service }: Props) {
           {LOGOS[service]}
           <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{SERVICE_LABELS[service]}</span>
         </div>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>No data yet</span>
+        <span style={{ fontSize: 10, color: reauth ? 'rgba(227, 179, 65, 0.95)' : 'rgba(255,255,255,0.4)' }}>
+          {reauth ? 'Session expired' : 'No data yet'}
+        </span>
       </div>
 
-      <div style={{ textAlign: 'center', padding: '10px 0', color: 'rgba(255,255,255,0.55)', fontSize: 12, lineHeight: 1.45 }}>
-        {PENDING_HINTS[service]}
+      <div
+        style={{
+          textAlign: 'center',
+          padding: '10px 0',
+          color: reauth ? 'rgba(255,230,160,0.9)' : 'rgba(255,255,255,0.55)',
+          fontSize: 12,
+          lineHeight: 1.45,
+        }}
+      >
+        {reauth ? REAUTH_HINTS[service] : PENDING_HINTS[service]}
       </div>
     </div>
   );
