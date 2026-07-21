@@ -99,9 +99,12 @@ packages/
   vscode-ext/  VS Code extension (poller + optional WS)
 docs/
   ARCHITECTURE.md   Dual-mode architecture and design decisions
+  V1-SPEC.md        V1 product bar (requirements, acceptance, backlog)
+  research/         Primary-source notes (Copilot usage, store cookie policy)
 ```
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge rules, and security.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge rules, and security.  
+See [`docs/V1-SPEC.md`](docs/V1-SPEC.md) for the V1 product bar and acceptance criteria.
 
 ---
 
@@ -117,6 +120,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge
 | Session auth failure re-auth cue (keep secret) | Done |
 | Chrome Settings privacy disclosure | Done |
 | Honest pressure (badge/status) + seat-status mapper | Done |
+| V1-SPEC + research notes on main | Done |
+| Chrome permission hygiene (no unused cookies/hosts) | Done |
 | Core unit tests + CI | Done |
 | Real Copilot remaining-% API (if GitHub ever exposes one) | Optional follow-up |
 | Effect-TS migration | Post-v1 |

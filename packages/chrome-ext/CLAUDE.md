@@ -22,6 +22,10 @@ Chrome Manifest V3 extension. Owns browser-session quota fetching. Runs standalo
 - **Codex** — real wham/usage; mapped with `mapCodexUsage`
 - **Copilot** — seat check; honest builders when usage % unknown (**never fake 100% remaining**)
 
+## Permissions
+- `storage`, `alarms`, `notifications` - no `cookies` API (session cookies via `credentials: 'include'` + host permissions)
+- Hosts: claude.ai, chatgpt.com, api.github.com, localhost WS - not github.com page or api.openai.com
+
 ## Key patterns
 - Popup: `useSuspenseQuery` + `refetchInterval: 5_000` + `storage.onChanged` invalidation
 - WS reconnect is alarm/poll driven (SW suspension kills heap timers)

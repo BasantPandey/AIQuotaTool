@@ -1,6 +1,7 @@
 import type { QuotaState, WsMessage } from '@ai-quota-tool/core';
 
-const WS_URL = 'ws://localhost:54321';
+// Must match VS Code server bind and manifest host_permissions (127.0.0.1, not localhost).
+const WS_URL = 'ws://127.0.0.1:54321';
 
 let socket: WebSocket | null = null;
 

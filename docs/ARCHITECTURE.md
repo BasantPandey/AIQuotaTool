@@ -133,6 +133,12 @@ interface QuotaState {
 
 ---
 
+## V1 product bar
+
+Product requirements, acceptance criteria, and explicit out-of-scope items live in [`docs/V1-SPEC.md`](./V1-SPEC.md). Research notes: [`docs/research/`](./research/).
+
+---
+
 ## Security Model
 
 Two honest credential paths (product-wide “no credentials stored” is false):

@@ -8,6 +8,8 @@
 - `pressureRemaining` / `lowestPressureAmong` for badge and status bar (never invent 100% for honesty-only)
 - Session auth failure: keep secret, drop ring, status bar + dashboard re-auth cue
 - Chrome Settings privacy disclosure; drop unused `api.openai.com` host permission
+- Drop unused Chrome `cookies` permission and `github.com` host permission
+- `docs/V1-SPEC.md` product bar + research notes under `docs/research/`
 
 ## [0.7.0] - 2026-07-21
 
