@@ -1,12 +1,13 @@
 import type React from 'react';
 import type { ServiceId } from '@ai-quota-tool/core';
 import { SERVICE_LABELS } from '@ai-quota-tool/core';
-import { ClaudeLogo, CopilotLogo, CodexLogo } from './logos.js';
+import { ClaudeLogo, CopilotLogo, CodexLogo, GrokLogo } from './logos.js';
 
 const LOGOS: Record<ServiceId, React.ReactNode> = {
   claude: <ClaudeLogo size={20} />,
   copilot: <CopilotLogo size={20} />,
   codex: <CodexLogo size={20} />,
+  grok: <GrokLogo size={20} />,
 };
 
 interface Props {

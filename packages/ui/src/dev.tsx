@@ -27,11 +27,14 @@ const MOCK_STATES: QuotaState[] = [
   },
   {
     service: 'copilot',
-    sessionPct: 85,
-    weeklyPct: 55,
-    sessionResetsAt: Date.now() + 3 * 60 * 60 * 1000,
-    weeklyResetsAt: Date.now() + 3 * 24 * 60 * 60 * 1000,
+    honesty: 'seat_active_usage_unknown',
     lastUpdated: Date.now() - 15_000,
+  },
+  {
+    service: 'grok',
+    weeklyPct: 62,
+    weeklyResetsAt: Date.now() + 4 * 24 * 60 * 60 * 1000,
+    lastUpdated: Date.now() - 20_000,
   },
 ];
 

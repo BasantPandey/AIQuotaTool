@@ -10,6 +10,7 @@ describe('isSessionCookieService', () => {
     expect(isSessionCookieService('claude')).toBe(true);
     expect(isSessionCookieService('codex')).toBe(true);
     expect(isSessionCookieService('copilot')).toBe(false);
+    expect(isSessionCookieService('grok')).toBe(false);
   });
 });
 
@@ -50,6 +51,10 @@ describe('sessionAuthFailureAction', () => {
 
   it('returns null for Copilot even on 401-looking messages', () => {
     expect(sessionAuthFailureAction('copilot', new Error('401 unauthorized'))).toBeNull();
+  });
+
+  it('returns null for Grok (no VS Code session secret path)', () => {
+    expect(sessionAuthFailureAction('grok', new Error('401 unauthorized'))).toBeNull();
   });
 
   it('returns null for non-auth network failures', () => {

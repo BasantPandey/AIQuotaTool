@@ -56,3 +56,26 @@ export function CodexLogo({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Simple monochrome mark for Grok (not an official brand asset). */
+export function GrokLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="12" cy="12" r="9" stroke="#fff" strokeWidth="1.75" />
+      <path
+        d="M8 13.5c1.2 1.6 2.5 2.4 4 2.4s2.8-.8 4-2.4"
+        stroke="#fff"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <circle cx="9" cy="10" r="1.1" fill="#fff" />
+      <circle cx="15" cy="10" r="1.1" fill="#fff" />
+    </svg>
+  );
+}

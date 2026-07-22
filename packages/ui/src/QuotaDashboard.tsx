@@ -2,7 +2,7 @@ import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { QuotaCard } from './components/QuotaCard.js';
 import { QuotaPendingCard } from './components/QuotaPendingCard.js';
 
-const ALL_SERVICES: ServiceId[] = ['claude', 'copilot', 'codex'];
+const ALL_SERVICES: ServiceId[] = ['claude', 'copilot', 'codex', 'grok'];
 
 interface Props {
   states: QuotaState[];

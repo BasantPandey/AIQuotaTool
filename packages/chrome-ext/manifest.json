@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AI Quota Tool",
   "version": "0.7.1",
-  "description": "Monitor your remaining AI quota for Claude, Copilot, and Codex in one dashboard.",
+  "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok in one dashboard.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -35,6 +35,7 @@
     "https://claude.ai/*",
     "https://chatgpt.com/*",
     "https://api.github.com/*",
+    "https://grok.com/*",
     "ws://127.0.0.1:54321/"
   ]
 }

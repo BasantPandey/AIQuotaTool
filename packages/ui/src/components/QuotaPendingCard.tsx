@@ -1,12 +1,13 @@
 import type React from 'react';
 import type { ServiceId } from '@ai-quota-tool/core';
 import { SERVICE_COLORS, SERVICE_LABELS } from '@ai-quota-tool/core';
-import { ClaudeLogo, CopilotLogo, CodexLogo } from './logos.js';
+import { ClaudeLogo, CopilotLogo, CodexLogo, GrokLogo } from './logos.js';
 
 const LOGOS: Record<ServiceId, React.ReactNode> = {
   claude: <ClaudeLogo size={20} />,
   copilot: <CopilotLogo size={20} />,
   codex: <CodexLogo size={20} />,
+  grok: <GrokLogo size={20} />,
 };
 
 /** Dual-mode friendly hints (VS Code setup and/or browser session). */
@@ -14,6 +15,7 @@ const PENDING_HINTS: Record<ServiceId, string> = {
   claude: 'Set up a Claude session key, or open claude.ai while signed in',
   copilot: 'Sign in to GitHub for seat status (remaining % often unavailable)',
   codex: 'Set up a ChatGPT session token, or open chatgpt.com while signed in',
+  grok: 'Open grok.com in Chrome with the extension — VS Code does not store Grok secrets',
 };
 
 const REAUTH_HINTS: Partial<Record<ServiceId, string>> = {

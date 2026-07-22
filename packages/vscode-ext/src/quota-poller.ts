@@ -2,6 +2,7 @@
 // This is the standalone path: VS Code fetches quota directly without Chrome.
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import {
+  grokBrowserSessionRequired,
   mapClaudeUsage,
   mapCodexUsage,
   mapCopilotSeatStatus,
@@ -211,6 +212,12 @@ export class QuotaPoller {
           }
         }
       }
+    }
+
+    // Grok V1: no SecretStorage path — always surface a slot (Chrome WS may replace via merge).
+    if (!this.latestStates.some((s) => s.service === 'grok')) {
+      this.upsert(grokBrowserSessionRequired());
+      changed = true;
     }
 
     if (changed) {

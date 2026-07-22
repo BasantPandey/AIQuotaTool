@@ -3,6 +3,7 @@ import { lowestPressureAmong, mergeQuotaStates, upsertQuotaState } from '@ai-quo
 import { ClaudeFetcher } from './fetchers/claude.js';
 import { CopilotFetcher } from './fetchers/copilot.js';
 import { CodexFetcher } from './fetchers/codex.js';
+import { GrokFetcher } from './fetchers/grok.js';
 import { initWsClient, pushQuotaUpdate, sendPing } from './ws-client.js';
 import { scheduleResetNotifications, handleAlarm } from './notifications.js';
 
@@ -10,7 +11,12 @@ const POLL_ALARM = 'quota-poll';
 const WS_KEEPALIVE_ALARM = 'ws-keepalive';
 const POLL_INTERVAL_MINUTES = 1;
 
-const fetchers = [new ClaudeFetcher(), new CopilotFetcher(), new CodexFetcher()];
+const fetchers = [
+  new ClaudeFetcher(),
+  new CopilotFetcher(),
+  new CodexFetcher(),
+  new GrokFetcher(),
+];
 
 function updateBadge(states: QuotaState[]): void {
   // Honesty-only states (no remaining %) must not invent 100 and hide real low pressure.

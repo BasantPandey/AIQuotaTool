@@ -1,5 +1,10 @@
 import type { QuotaState } from '@ai-quota-tool/core';
-import { formatTimeRemaining, QUOTA_HONESTY_LABELS, SERVICE_COLORS } from '@ai-quota-tool/core';
+import {
+  formatTimeRemaining,
+  QUOTA_HONESTY_LABELS,
+  SERVICE_COLORS,
+  SERVICE_URLS,
+} from '@ai-quota-tool/core';
 import { ProgressRing } from './ProgressRing.js';
 import { ServiceHeader } from './ServiceHeader.js';
 import { SubcategoryRow } from './SubcategoryRow.js';
@@ -14,6 +19,8 @@ export function QuotaCard({ state }: Props) {
   const weeklyMs = state.weeklyResetsAt != null ? state.weeklyResetsAt - Date.now() : 0;
   const hasRings = state.sessionPct != null || state.weeklyPct != null;
   const honestyLabel = state.honesty != null ? QUOTA_HONESTY_LABELS[state.honesty] : null;
+  const deepLinkHost =
+    state.service === 'grok' && state.honesty != null ? SERVICE_URLS.grok : null;
 
   return (
     <div
@@ -58,6 +65,18 @@ export function QuotaCard({ state }: Props) {
           }}
         >
           {honestyLabel}
+          {deepLinkHost != null && (
+            <div style={{ marginTop: 8 }}>
+              <a
+                href={`https://${deepLinkHost}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'rgba(130, 180, 255, 0.95)', fontSize: 11, textDecoration: 'none' }}
+              >
+                Open {deepLinkHost} ↗
+              </a>
+            </div>
+          )}
         </div>
       ) : null}
 

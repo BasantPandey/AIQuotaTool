@@ -1,15 +1,29 @@
 import type { QuotaState } from '@ai-quota-tool/core';
 import { SERVICE_LABELS, SERVICE_URLS } from '@ai-quota-tool/core';
 
-const SERVICES = ['claude', 'copilot', 'codex'] as const;
+const SERVICES = ['claude', 'copilot', 'codex', 'grok'] as const;
 type ServiceId = (typeof SERVICES)[number];
 
 interface SettingsTabProps {
   states: QuotaState[];
 }
 
+function isConnectedReading(state: QuotaState): boolean {
+  if (state.honesty === 'not_connected' || state.honesty === 'auth_unavailable') {
+    return false;
+  }
+  if (state.honesty === 'browser_session_required') return false;
+  return (
+    state.sessionPct != null ||
+    state.weeklyPct != null ||
+    state.honesty === 'usage_unknown' ||
+    state.honesty === 'seat_active_usage_unknown' ||
+    state.honesty === 'no_plan'
+  );
+}
+
 function ServiceRow({ serviceId, states }: { serviceId: ServiceId; states: QuotaState[] }) {
-  const connected = states.some((s) => s.service === serviceId);
+  const connected = states.some((s) => s.service === serviceId && isConnectedReading(s));
   const url = SERVICE_URLS[serviceId];
   const label = SERVICE_LABELS[serviceId];
 
@@ -28,7 +42,9 @@ function ServiceRow({ serviceId, states }: { serviceId: ServiceId; states: Quota
         <div style={{ fontSize: 11, color: '#8b949e', marginTop: 2 }}>
           {serviceId === 'copilot'
             ? 'Sign in at github.com — seat status only (no remaining % yet)'
-            : url}
+            : serviceId === 'grok'
+              ? 'Sign in at grok.com — live session only; no keys stored'
+              : url}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -58,6 +74,7 @@ export function SettingsTab({ states }: SettingsTabProps) {
       <p style={{ fontSize: 12, color: '#8b949e', marginBottom: 14, lineHeight: 1.5 }}>
         Sign in to each service in Chrome — quota data flows automatically.
         Copilot shows seat status only; remaining usage % is not available from GitHub.
+        Grok uses your live <strong>grok.com</strong> session only (no stored keys).
       </p>
       <p
         style={{
@@ -72,18 +89,20 @@ export function SettingsTab({ states }: SettingsTabProps) {
         }}
       >
         <strong>Privacy:</strong> This extension uses your <em>logged-in browser sessions</em> (cookies)
-        only to read your own AI quota. It does <strong>not</strong> store session keys as secrets.
-        Local storage holds quota readings for the popup. Optional push to VS Code uses{' '}
-        <code style={{ fontSize: 10 }}>ws://127.0.0.1</code> on this machine only (any local process
-        could spoof that channel).
+        only to read your own AI quota (Claude, Codex, Copilot seat, Grok on grok.com). It does{' '}
+        <strong>not</strong> store session keys as secrets. Local storage holds quota readings for the
+        popup. Optional push to VS Code uses <code style={{ fontSize: 10 }}>ws://127.0.0.1</code> on
+        this machine only (any local process could spoof that channel).
       </p>
       {SERVICES.map((id) => (
         <ServiceRow key={id} serviceId={id} states={states} />
       ))}
       <p style={{ fontSize: 11, color: '#8b949e', marginTop: 14, lineHeight: 1.5 }}>
         For VS Code standalone mode, open the Command Palette and run{' '}
-        <strong>AI Quota Tool: Set Up Accounts</strong>. VS Code stores session cookies in
-        SecretStorage when you paste them there — treat them like passwords.
+        <strong>AI Quota Tool: Set Up Accounts</strong>. VS Code stores Claude/Codex session cookies in
+        SecretStorage when you paste them — treat them like passwords. VS Code does{' '}
+        <strong>not</strong> store Grok secrets; Grok comes from this extension via WebSocket or shows
+        an honest “use Chrome on grok.com” state.
       </p>
     </div>
   );
