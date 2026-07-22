@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Quota Tool",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok in one dashboard.",
   "icons": {
     "16": "icons/icon16.png",

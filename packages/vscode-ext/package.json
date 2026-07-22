@@ -1,8 +1,8 @@
 {
   "name": "ai-quota-tool-vscode",
   "displayName": "AI Quota Tool",
-  "description": "Monitor remaining AI quota for Claude, Copilot, and Codex directly in VS Code.",
-  "version": "0.7.1",
+  "description": "Monitor remaining AI quota for Claude, Copilot, Codex, and Grok directly in VS Code.",
+  "version": "0.7.2",
   "publisher": "BasantPandey",
   "license": "MIT",
   "repository": {
@@ -21,6 +21,7 @@
     "Claude",
     "Copilot",
     "Codex",
+    "Grok",
     "monitoring"
   ],
   "icon": "icons/icon128.png",

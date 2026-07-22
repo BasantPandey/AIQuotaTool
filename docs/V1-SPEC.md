@@ -1,6 +1,6 @@
 # V1 product bar - AI Quota Tool
 
-**Status:** Implemented product bar (packages at 0.7.1).  
+**Status:** Implemented product bar (packages at 0.7.2+; Grok consumer bar in `docs/GROK-SPEC.md`).  
 **Source:** [Spec: V1 dual-mode honest quota bar (gap closure)](https://github.com/BasantPandey/AIQuotaTool/issues/10) plus wayfinder map [Map: V1 gap-closure specification](https://github.com/BasantPandey/AIQuotaTool/issues/1) decisions.  
 **Not this document:** Marketplace / Chrome Web Store publish, Effect-TS, or requiring a real Copilot remaining-% API.  
 **Grok consumer bar:** see [`docs/GROK-SPEC.md`](./GROK-SPEC.md) (fourth service; honesty-first dual-mode).
@@ -95,7 +95,7 @@ Research: [docs/research/store-session-cookie-policy.md](./research/store-sessio
 | --- | --- | --- |
 | Doc1 | Root README + ARCHITECTURE | Dual-mode equal, credentials truth, merge rule, security model |
 | Doc2 | Package agent notes | Match real fetchers / poller / honesty (no "all placeholders") |
-| Doc3 | CHANGELOG / versions | VS Code + Chrome packaging coherent (0.7.1+) |
+| Doc3 | CHANGELOG / versions | VS Code + Chrome packaging coherent (0.7.2+) |
 
 ---
 
@@ -112,7 +112,7 @@ Research: [docs/research/store-session-cookie-policy.md](./research/store-sessio
 
 ## 4. Ordered implementation backlog (for follow-on work)
 
-Most of this bar is **already implemented** on `main` (0.7.1). Remaining / post-V1 items:
+Most of this bar is **already implemented** on `main` (0.7.2+). Remaining / post-V1 items:
 
 1. **Store publish package** - privacy policy artifact, CWS dashboard fields, Marketplace privacy; use research notes under `docs/research/`
 2. **Optional Copilot remaining** - only if GitHub documents a real individual remaining metric; keep honesty builders until then

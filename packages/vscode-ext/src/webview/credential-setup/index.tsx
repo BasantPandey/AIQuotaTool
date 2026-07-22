@@ -124,7 +124,9 @@ function CredentialSetup() {
         They are stored only in this machine&apos;s VS Code <code>SecretStorage</code> (encrypted at rest by the host).
         They are never sent to us or any third-party server — only to claude.ai / chatgpt.com / GitHub for quota reads.
         Clear a secret anytime with <strong>Clear saved key</strong> below. Do not share session keys.
-        Optional Chrome push uses local <code>ws://127.0.0.1</code> — any process on this machine could spoof that channel.
+        <strong>Grok</strong> is not set up here — VS Code does not store Grok secrets. Use the Chrome extension while
+        signed in at grok.com (optional local <code>ws://127.0.0.1</code> push; any process on this machine could spoof
+        that channel).
       </p>
 
       {/* Tab bar — shows ✓/○/✗ status on each tab */}

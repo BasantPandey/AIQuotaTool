@@ -102,6 +102,7 @@ Either surface can show Grok honestly alone (Chrome may show connected/unknown; 
 4. VS Code always-on Grok slot (WS merge or `browser_session_required`) + README  
 5. Shared UI card / logo / deep-link  
 6. This product bar document  
+7. Package versions **0.7.2** (Chrome + VS Code) + VS Code Set Up Accounts privacy note for Grok  
 
 ### Next (after live validation)
 
@@ -110,7 +111,8 @@ Either surface can show Grok honestly alone (Chrome may show connected/unknown; 
 3. Optional product breakdown copy (Chat / Imagine / Voice / …) if fields are stable  
 4. Tier language in UI (SuperGrok / free) only from first-party signals  
 5. Logo/branding polish if needed  
-6. Package version bump + store listing copy when shipping a Grok-enabled release  
+6. Marketplace / store listing copy when shipping a Grok-enabled release  
+
 
 ### Explicitly deferred
 
