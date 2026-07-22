@@ -10,7 +10,7 @@ A pnpm + Turborepo monorepo that builds two **first-class** extensions (dual-mod
 ## Packages
 | Package | npm name | Purpose |
 |---|---|---|
-| `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot honesty, session-auth policy) — no DOM, no Node, no React |
+| `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot/grok honesty, session-auth policy) — no DOM, no Node, no React |
 | `packages/ui` | `@ai-quota-tool/ui` | Shared React 19 components — pure display, no data fetching |
 | `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | Chrome MV3 extension — service worker, content scripts, popup |
 | `packages/vscode-ext` | `ai-quota-tool-vscode` | VS Code extension — poller, credentials, WS server, webview, status bar |
@@ -42,8 +42,8 @@ node scripts/generate-icons.mjs           # regenerate PNG icons
 **Local Chrome testing:** Build chrome-ext, then load `packages/chrome-ext/dist/` as an unpacked extension in `chrome://extensions`.
 
 ## Architecture: dual-mode equal
-- **VS Code standalone:** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub OAuth seat). Credentials in SecretStorage.
-- **Chrome standalone:** SW + content scripts fetch with browser cookies; storage + popup.
+- **VS Code standalone:** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub OAuth seat). Credentials in SecretStorage. Grok has **no** VS Code secret — honesty slot or Chrome WS merge.
+- **Chrome standalone:** SW + content scripts fetch with browser cookies (including grok.com live session); storage + popup.
 - **Together:** Chrome WS client pushes `quota_update` to VS Code WS server. Both sides merge with **freshest-wins** via `mergeQuotaStates` / `upsertQuotaState` (`lastUpdated`; equal time prefers richer fields).
 - Chrome MV3 cannot bind ports — VS Code hosts WS on `:54321`. VS Code never initiates messages to Chrome.
 
@@ -78,12 +78,14 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 ## Fetchers / mappers (not placeholders for Claude/Codex)
 - **Claude / Codex:** real endpoints; parse via pure `mapClaudeUsage` / `mapCodexUsage` in `@ai-quota-tool/core`.
 - **Copilot:** seat check only for remaining %; use `copilotSeatActiveUsageUnknown` / `copilotNoPlan` / `copilotAuthUnavailable` — **never invent 100% remaining**.
+- **Grok:** live grok.com session in Chrome; pure `mapGrokWeeklyUsage` / honesty builders — **never invent 100% remaining**. See `docs/GROK-SPEC.md`.
 
 ## Core pure seams (tested)
 - `preferQuotaState` / `upsertQuotaState` / `mergeQuotaStates`
 - `mapClaudeUsage` / `mapCodexUsage`
 - Copilot honesty builders + `mapCopilotSeatStatus` + `QuotaHonesty`
-- `sessionAuthFailureAction` (Claude/Codex 401/403: drop ring, keep secret, re-auth signal)
+- Grok honesty builders + `mapGrokWeeklyUsage` / `extractGrokWeeklyUsage`
+- `sessionAuthFailureAction` (Claude/Codex 401/403: drop ring, keep secret, re-auth signal; Grok is not a session-cookie service)
 - `pressureRemaining` / `lowestPressureAmong` (badge/status pressure; no inventing 100%)
 
 ## VS Code extension: two tsconfigs — critical

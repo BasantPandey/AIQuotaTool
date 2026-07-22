@@ -2,7 +2,8 @@
 
 **Status:** Implemented product bar (packages at 0.7.1).  
 **Source:** [Spec: V1 dual-mode honest quota bar (gap closure)](https://github.com/BasantPandey/AIQuotaTool/issues/10) plus wayfinder map [Map: V1 gap-closure specification](https://github.com/BasantPandey/AIQuotaTool/issues/1) decisions.  
-**Not this document:** Marketplace / Chrome Web Store publish, Effect-TS, or requiring a real Copilot remaining-% API.
+**Not this document:** Marketplace / Chrome Web Store publish, Effect-TS, or requiring a real Copilot remaining-% API.  
+**Grok consumer bar:** see [`docs/GROK-SPEC.md`](./GROK-SPEC.md) (fourth service; honesty-first dual-mode).
 
 ---
 

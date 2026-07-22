@@ -21,10 +21,11 @@ Chrome Manifest V3 extension. Owns browser-session quota fetching. Runs standalo
 - **Claude** — real orgs + usage APIs; mapped with `mapClaudeUsage`
 - **Codex** — real wham/usage; mapped with `mapCodexUsage`
 - **Copilot** — seat check; honest builders when usage % unknown (**never fake 100% remaining**)
+- **Grok** — live `grok.com` session only; honesty-first (`grokUsageUnknown` / `grokNotConnected`); weekly % only via pure `mapGrokWeeklyUsage` when first-party used% is available. **Never store Grok session keys.**
 
 ## Permissions
 - `storage`, `alarms`, `notifications` - no `cookies` API (session cookies via `credentials: 'include'` + host permissions)
-- Hosts: claude.ai, chatgpt.com, api.github.com, localhost WS - not github.com page or api.openai.com
+- Hosts: claude.ai, chatgpt.com, api.github.com, grok.com, localhost WS - not github.com page or api.openai.com
 
 ## Key patterns
 - Popup: `useSuspenseQuery` + `refetchInterval: 5_000` + `storage.onChanged` invalidation

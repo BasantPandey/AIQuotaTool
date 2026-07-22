@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, and **OpenAI Codex** - all in one dashboard.
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - all in one dashboard.
 
 Ships as two **first-class** extensions from a single TypeScript monorepo (dual-mode equal):
 
@@ -23,6 +23,7 @@ Chrome Extension (MV3)
 
 VS Code Extension
   - Standalone Node poller (Claude sessionKey, Codex session token, GitHub OAuth)
+  - Grok: no SecretStorage - Chrome push or honesty-only card
   - Optional WS server on 127.0.0.1:54321 (Chrome push, freshest-wins merge)
   - Webview dashboard + status bar (min session/weekly remaining)
 ```
@@ -30,6 +31,8 @@ VS Code Extension
 **Credentials (two honest paths):** Chrome uses live browser session cookies and does **not** store session keys (Settings discloses this). VS Code **stores** Claude/ChatGPT session cookies in SecretStorage for standalone mode - treat them like passwords; validate on save, clear anytime via **Set Up Accounts**. Expired sessions surface a re-auth cue; secrets are not auto-deleted. Never claim product-wide "no credentials stored." See `packages/vscode-ext/README.md` and `docs/ARCHITECTURE.md` security model.
 
 **Copilot:** Seat/plan can be detected; remaining usage % is often unavailable from GitHub. The UI shows honest status instead of inventing 100% remaining.
+
+**Grok:** Chrome uses a live **grok.com** session only. VS Code does **not** store Grok secrets; the Grok card comes from Chrome WebSocket push or an honest “use Chrome on grok.com” state. Weekly remaining % only when a first-party used% payload is available - never invented. See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md).
 
 ---
 
@@ -106,11 +109,13 @@ packages/
 docs/
   ARCHITECTURE.md   Dual-mode architecture and design decisions
   V1-SPEC.md        V1 product bar (requirements, acceptance, backlog)
-  research/         Primary-source notes (Copilot usage, store cookie policy)
+  GROK-SPEC.md      Consumer Grok product bar (auth, honesty, backlog)
+  research/         Primary-source notes (Copilot, Grok, store cookie policy)
 ```
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge rules, and security.  
-See [`docs/V1-SPEC.md`](docs/V1-SPEC.md) for the V1 product bar and acceptance criteria.
+See [`docs/V1-SPEC.md`](docs/V1-SPEC.md) for the V1 product bar and acceptance criteria.  
+See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md) for the consumer Grok product bar.
 
 ---
 
@@ -122,6 +127,7 @@ See [`docs/V1-SPEC.md`](docs/V1-SPEC.md) for the V1 product bar and acceptance c
 | Claude + Codex real usage mapping | Done (shared pure mappers in core) |
 | Freshest-wins dual-source merge | Done |
 | Honest Copilot (no fake 100% remaining) | Done |
+| Consumer Grok (Chrome session + VS Code honesty / WS) | Done (honesty-first; weekly % when payload proven) |
 | Credential clear / privacy disclosure (VS Code) | Done |
 | Session auth failure re-auth cue (keep secret) | Done |
 | Chrome Settings privacy disclosure | Done |

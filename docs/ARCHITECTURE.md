@@ -2,10 +2,10 @@
 
 ## Overview
 
-AI Quota Tool monitors remaining session and weekly quotas for **Claude**, **GitHub Copilot**, and **Codex**. It ships as two **first-class** extensions from one TypeScript monorepo (**dual-mode equal**):
+AI Quota Tool monitors remaining session and weekly quotas for **Claude**, **GitHub Copilot**, **Codex**, and **Grok**. It ships as two **first-class** extensions from one TypeScript monorepo (**dual-mode equal**):
 
 - **Chrome extension** — browser session cookies, content scripts, popup, optional WebSocket **client** push to VS Code.
-- **VS Code extension** — standalone Node poller (SecretStorage session secrets + GitHub OAuth), webview, status bar, optional WebSocket **server** on `127.0.0.1:54321`.
+- **VS Code extension** — standalone Node poller (SecretStorage session secrets + GitHub OAuth), webview, status bar, optional WebSocket **server** on `127.0.0.1:54321`. Grok has **no** VS Code secret path.
 
 Either surface works alone. Together they share the same `QuotaState` model and merge with **freshest-wins** by `lastUpdated`.
 
@@ -24,7 +24,8 @@ Either surface works alone. Together they share the same `QuotaState` model and 
 │  │  Popup (React + @ai-quota-tool/ui)           │   │
 │  │  WS client ──────────────────────────────────┼───┼──▶ 127.0.0.1:54321
 │  └──────────────────────────────────────────────┘   │
-│  Cookies: claude.ai, github.com, chatgpt.com        │
+│  Cookies: claude.ai, github.com, chatgpt.com,       │
+│           grok.com (live session; keys not stored)  │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
@@ -44,18 +45,20 @@ Either surface works alone. Together they share the same `QuotaState` model and 
 ## Data Flow
 
 ### Chrome
-1. Poll every ~60s (`chrome.alarms`) — Claude, Copilot, Codex fetchers via `Promise.allSettled`.
+1. Poll every ~60s (`chrome.alarms`) — Claude, Copilot, Codex, Grok fetchers via `Promise.allSettled`.
 2. Content scripts on claude.ai / chatgpt.com push fresher page-origin readings.
 3. Merge into `chrome.storage.local` with `mergeQuotaStates` / `upsertQuotaState` (do not wipe other services on partial poll).
 4. Popup reads storage; optional `quota_update` to VS Code.
 5. Reset alarms → Chrome notifications (VS Code does not own reset notifications in V1).
+6. **Grok:** live `grok.com` session only; honesty-first until SuperGrok weekly used% payload is validated; never store session keys.
 
 ### VS Code
 1. `QuotaPoller` every 60s using stored Claude/Codex secrets and GitHub OAuth token.
 2. Pure mappers: `mapClaudeUsage` / `mapCodexUsage` from `@ai-quota-tool/core`.
 3. Copilot: honest builders when remaining % is unavailable (no fake 100%).
-4. Chrome WS payloads merge with `upsertQuotaState` (freshest-wins).
-5. Status bar shows min(session, weekly) remaining; amber below 10%. Empty → Set Up Accounts.
+4. **Grok:** no SecretStorage; if no Chrome push yet, inject `grokBrowserSessionRequired` so the slot is always present.
+5. Chrome WS payloads merge with `upsertQuotaState` (freshest-wins).
+6. Status bar shows min(session, weekly) remaining; amber below 10%. Empty → Set Up Accounts.
 
 ### Merge rule
 - Higher `lastUpdated` wins for the same `service`.
@@ -93,7 +96,7 @@ Chrome Manifest V3 service workers **cannot** bind TCP ports. VS Code extensions
 ```
 AIQuotaTool/
 ├── packages/
-│   ├── core/           # types, merge, mappers, copilot honesty, utils (+ vitest)
+│   ├── core/           # types, merge, mappers, copilot/grok honesty, utils (+ vitest)
 │   ├── ui/             # pure React display
 │   ├── chrome-ext/     # MV3 worker, content scripts, popup
 │   └── vscode-ext/     # poller, credentials, WS, webviews, status bar
@@ -105,6 +108,7 @@ AIQuotaTool/
 - `mergeQuotaStates`, `upsertQuotaState`, `preferQuotaState`
 - `mapClaudeUsage`, `mapCodexUsage`
 - `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`
+- `grokUsageUnknown`, `grokNotConnected`, `grokBrowserSessionRequired`, `mapGrokWeeklyUsage`
 - `calcPct`, `formatTimeRemaining`, `pctToColor`
 
 ---
@@ -112,12 +116,15 @@ AIQuotaTool/
 ## Data Model (`packages/core/src/types.ts`)
 
 ```typescript
-type ServiceId = 'claude' | 'copilot' | 'codex';
+type ServiceId = 'claude' | 'copilot' | 'codex' | 'grok';
 
 type QuotaHonesty =
   | 'seat_active_usage_unknown'
   | 'no_plan'
-  | 'auth_unavailable';
+  | 'auth_unavailable'
+  | 'usage_unknown'
+  | 'not_connected'
+  | 'browser_session_required';
 
 interface QuotaState {
   service: ServiceId;
@@ -133,9 +140,11 @@ interface QuotaState {
 
 ---
 
-## V1 product bar
+## Product bars
 
-Product requirements, acceptance criteria, and explicit out-of-scope items live in [`docs/V1-SPEC.md`](./V1-SPEC.md). Research notes: [`docs/research/`](./research/).
+- V1 (Claude / Copilot / Codex): [`docs/V1-SPEC.md`](./V1-SPEC.md)
+- Consumer Grok: [`docs/GROK-SPEC.md`](./GROK-SPEC.md)
+- Research notes: [`docs/research/`](./research/)
 
 ---
 
@@ -143,8 +152,8 @@ Product requirements, acceptance criteria, and explicit out-of-scope items live 
 
 Two honest credential paths (product-wide “no credentials stored” is false):
 
-- **Chrome:** uses live browser session cookies; does **not** store session keys as auth secrets (`chrome.storage.local` holds quota readings only). Settings tab discloses cookie use + optional localhost WS.
-- **VS Code:** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — password-grade secrets. GitHub Copilot uses VS Code OAuth (not a pasted cookie). Lifecycle: validate-before-persist (Save & Test), replace, explicit clear. On 401/403 for Claude/Codex: drop the ring, **keep** the secret, surface an explicit re-auth signal (status bar / Set Up Accounts) — never invent full remaining. Pure policy: `sessionAuthFailureAction` in `@ai-quota-tool/core`.
+- **Chrome:** uses live browser session cookies; does **not** store session keys as auth secrets (`chrome.storage.local` holds quota readings only). Settings tab discloses cookie use + optional localhost WS. Grok is **grok.com** live session only.
+- **VS Code:** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — password-grade secrets. GitHub Copilot uses VS Code OAuth (not a pasted cookie). **Grok secrets are not stored** in VS Code. Lifecycle for Claude/Codex: validate-before-persist (Save & Test), replace, explicit clear. On 401/403 for Claude/Codex: drop the ring, **keep** the secret, surface an explicit re-auth signal (status bar / Set Up Accounts) — never invent full remaining. Pure policy: `sessionAuthFailureAction` in `@ai-quota-tool/core` (Grok is not a session-cookie service).
 - **Localhost WebSocket** only (`127.0.0.1`); any process on the machine could spoof the channel (disclosed local-trust model).
 - **Hard rules:** never log secrets; no developer backend for credentials/quota; VS Code secrets only in SecretStorage; Chrome must not persist session keys as auth secrets.
 - **Store publish** (privacy policy URL, CWS Limited Use / consent UX) is post-V1; product + README disclosure is the V1 bar.
