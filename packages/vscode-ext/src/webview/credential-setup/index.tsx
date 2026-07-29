@@ -230,26 +230,19 @@ function CredentialSetup() {
       {activeTab === 'codex' && (
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
-            Sign in to <strong>chatgpt.com</strong>, then copy your session cookie value(s):
+            ChatGPT splits a large session into <code>.0</code> + <code>.1</code> cookies. Both must be sent with those
+            names (not glued into one string).
           </p>
-          <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
-            <li>Open <strong>chatgpt.com</strong> in your browser and sign in</li>
-            <li>Press <code>F12</code> → <strong>Application</strong> tab → Cookies → <code>https://chatgpt.com</code></li>
+          <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.0 }}>
+            <li>Open <strong>chatgpt.com</strong> and sign in</li>
             <li>
-              Find <code>__Secure-next-auth.session-token</code>
-              <ul style={{ paddingLeft: 18, marginTop: 4, lineHeight: 1.8 }}>
-                <li>
-                  If you see <code>.0</code> and <code>.1</code> — <strong>one</strong> session split in two rows
-                  (not two passwords).
-                </li>
-                <li>
-                  <strong>Double-click</strong> the Value of <code>.0</code> → copy full value (not the truncated
-                  <code>…</code> preview) → paste on line 1.
-                </li>
-                <li>
-                  Double-click Value of <code>.1</code> → copy → paste on <strong>line 2</strong> (Enter between them).
-                </li>
-              </ul>
+              <strong>Easiest:</strong> F12 → <strong>Network</strong> → click any request to chatgpt.com → Headers →
+              Request Headers → <strong>Cookie</strong> → copy the whole value
+            </li>
+            <li>
+              <strong>Or:</strong> Application → Cookies → double-click Value of{' '}
+              <code>__Secure-next-auth.session-token.0</code> (full text, not <code>…</code>), paste line 1; then{' '}
+              <code>.1</code> on line 2
             </li>
           </ol>
           <div style={{ marginTop: 14 }}>
@@ -262,11 +255,13 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 16 }}>
             <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
-              Session token — line 1 = .0, line 2 = .1
+              Cookie header or .0 / .1 values
             </label>
             <textarea
-              style={{ ...inputStyle, minHeight: 88, resize: 'vertical' as const }}
-              placeholder={'.0 value on first line\n.1 value on second line'}
+              style={{ ...inputStyle, minHeight: 100, resize: 'vertical' as const }}
+              placeholder={
+                '__Secure-next-auth.session-token.0=...\n__Secure-next-auth.session-token.1=...\n\n— or bare .0 on line 1 and .1 on line 2 —'
+              }
               value={codexToken}
               onChange={(e) => setCodexToken(e.target.value)}
               spellCheck={false}
@@ -295,9 +290,9 @@ function CredentialSetup() {
             </button>
             <StatusBadge s={codexStatus} />
           </div>
-          <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)' }}>
-            Putting only <code>.0</code> (or the truncated value with <code>…</code>) will fail. Both full values, in
-            order, are required when the browser shows two rows.
+          <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)', lineHeight: 1.45 }}>
+            Error &quot;invalid or expired&quot; usually means incomplete paste (only .0, or truncated value), wrong
+            order, or an old cookie after logout. Copy again while still signed in on chatgpt.com.
           </p>
         </div>
       )}

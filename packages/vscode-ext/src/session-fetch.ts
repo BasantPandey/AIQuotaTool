@@ -35,74 +35,69 @@ function claudeHeaders(sessionKey: string): Record<string, string> {
 }
 
 /**
- * ChatGPT may split the session cookie into `.0` / `.1` when large.
- * Parse paste into ordered chunks (preserve boundaries for Cookie header).
- * Accept: one full value, two lines (.0 then .1), or name=value lines.
+ * Build a Cookie header for ChatGPT session auth.
+ *
+ * NextAuth splits large sessions into `.0` / `.1` cookies. Those must be sent
+ * under the original names — joining values into one cookie does NOT work.
+ *
+ * Accepted paste forms:
+ * - Full Cookie header from Network (best): `__Secure-next-auth.session-token.0=…; __Secure-next-auth.session-token.1=…`
+ * - Two lines: bare `.0` value then bare `.1` value
+ * - Single unchunked value (rare): one `__Secure-next-auth.session-token` cookie
  */
-export function parseCodexSessionChunks(raw: string): string[] {
-  const lines = raw
+export function codexCookieHeader(raw: string): string {
+  let s = raw.trim().replace(/^cookie:\s*/i, '');
+  if (!s) return '';
+
+  // Already a Cookie header with named pairs
+  if (/__Secure-next-auth\.session-token/i.test(s) && s.includes('=')) {
+    // Keep only next-auth session-token cookies (drop unrelated noise if user pasted a huge Cookie:)
+    const parts = s.split(';').map((p) => p.trim()).filter(Boolean);
+    const sessionParts = parts.filter((p) =>
+      /^__Secure-next-auth\.session-token(?:\.\d+)?\s*=/i.test(p),
+    );
+    if (sessionParts.length > 0) return sessionParts.join('; ');
+    return s;
+  }
+
+  // Bare chunk values: line1 = .0, line2 = .1 (or more)
+  const lines = s
     .split(/[\r\n]+/)
     .map((l) => l.trim())
     .filter(Boolean);
-
-  const pieces: string[] = [];
-  for (const line of lines) {
-    const eq = line.match(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*(.+)$/i);
-    if (eq?.[1]) {
-      pieces.push(eq[1].trim());
-      continue;
-    }
-    // One bare value per line (preferred for .0 / .1 paste)
-    if (!/\s/.test(line)) {
-      pieces.push(line);
-      continue;
-    }
-    // Space-separated bare values on one line (last resort)
-    for (const part of line.split(/\s+/).filter(Boolean)) {
-      const bare = part.replace(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*/i, '');
-      if (bare) pieces.push(bare);
-    }
+  if (lines.length >= 2) {
+    return lines
+      .map((value, i) => {
+        const v = value.replace(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*/i, '');
+        return `__Secure-next-auth.session-token.${i}=${v}`;
+      })
+      .join('; ');
   }
-  return pieces.filter(Boolean);
+
+  // Single bare value (unchunked)
+  const one = lines[0] ?? s;
+  const bare = one.replace(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*/i, '');
+  return `__Secure-next-auth.session-token=${bare}`;
 }
 
-/** Joined storage form (still works if only one unchunked cookie). */
+/** True when input looks non-empty after Cookie construction. */
 export function normalizeCodexSessionToken(raw: string): string {
-  return parseCodexSessionChunks(raw).join('').trim();
+  return codexCookieHeader(raw).trim();
 }
 
-/**
- * Cookie header matching the browser: when ChatGPT split the session cookie,
- * send `.0` + `.1` separately (NextAuth reassembles by index). Single cookie
- * when there is only one part.
- */
-export function codexCookieHeader(raw: string): string {
-  const chunks = parseCodexSessionChunks(raw);
-  if (chunks.length === 0) return '';
-  if (chunks.length === 1) {
-    // If a previously-joined long token was stored, re-split for next-auth chunk reader.
-    const t = chunks[0]!;
-    if (t.length > 3800) {
-      // Browser typically fills .0 near 4KB; rest goes to .1
-      const cut = 3800;
-      return [
-        `__Secure-next-auth.session-token.0=${t.slice(0, cut)}`,
-        `__Secure-next-auth.session-token.1=${t.slice(cut)}`,
-      ].join('; ');
-    }
-    return `__Secure-next-auth.session-token=${t}`;
-  }
-  return chunks.map((c, i) => `__Secure-next-auth.session-token.${i}=${c}`).join('; ');
-}
-
-function codexBrowserHeaders(raw: string): Record<string, string> {
+function codexBrowserHeaders(cookieRaw: string): Record<string, string> {
   return {
     Accept: 'application/json',
-    Cookie: codexCookieHeader(raw),
+    Cookie: codexCookieHeader(cookieRaw),
     Referer: 'https://chatgpt.com/',
     'User-Agent': BROWSER_UA,
     Origin: 'https://chatgpt.com',
   };
+}
+
+function isHtmlBody(text: string): boolean {
+  const t = text.trimStart().slice(0, 200).toLowerCase();
+  return t.startsWith('<!doctype') || t.startsWith('<html') || t.includes('just a moment');
 }
 
 /**
@@ -110,20 +105,42 @@ function codexBrowserHeaders(raw: string): Record<string, string> {
  * (GET /api/auth/session) — required by backend-api/wham/usage.
  */
 async function fetchCodexAccessToken(sessionRaw: string): Promise<string> {
+  const cookie = codexCookieHeader(sessionRaw);
+  if (!cookie) {
+    throw new Error('Codex session cookie is empty');
+  }
+
   const res = await fetch('https://chatgpt.com/api/auth/session', {
     headers: codexBrowserHeaders(sessionRaw),
   });
-  if (res.status === 401 || res.status === 403) {
+  const text = await res.text();
+
+  if (isHtmlBody(text) || res.status === 403) {
     throw new Error(
-      `ChatGPT session API: ${res.status} invalid or expired session cookie (need both .0 and .1 if split)`,
+      'ChatGPT blocked the request (Cloudflare/HTML). In DevTools Network, open any chatgpt.com request, copy the full Cookie request header, and paste that into Set Up Accounts.',
     );
   }
-  if (!res.ok) throw new Error(`ChatGPT session API: ${res.status}`);
-  const data = (await res.json()) as { accessToken?: string; access_token?: string; user?: unknown };
+  if (res.status === 401) {
+    throw new Error(
+      'ChatGPT session API: 401 invalid or expired — paste BOTH session-token.0 and .1 (full values, double-click to copy)',
+    );
+  }
+  if (!res.ok) {
+    throw new Error(`ChatGPT session API: ${res.status}`);
+  }
+
+  let data: { accessToken?: string; access_token?: string; user?: unknown };
+  try {
+    data = JSON.parse(text) as typeof data;
+  } catch {
+    throw new Error('ChatGPT session API returned non-JSON (check cookie paste)');
+  }
+
   const token = data.accessToken ?? data.access_token;
   if (typeof token !== 'string' || !token) {
+    // Empty {} is the usual “cookies not accepted” response (HTTP 200).
     throw new Error(
-      'ChatGPT session returned no accessToken — paste full session-token (.0 then .1 if the browser shows two rows)',
+      'ChatGPT did not return accessToken (cookie not accepted). Paste line1=.0 and line2=.1 full values, or paste the full Cookie header from Network → /api/auth/session.',
     );
   }
   return token;
@@ -172,25 +189,31 @@ export async function validateCodexSession(sessionToken: string): Promise<void> 
 
 /**
  * Poll Codex usage via pure mapCodexUsage.
- * Auth: session cookie (chunked .0/.1) → /api/auth/session accessToken → Bearer on wham/usage.
+ * Auth: session cookies (.0/.1 names preserved) → /api/auth/session accessToken → Bearer on wham/usage.
  */
 export async function fetchCodexUsage(sessionToken: string): Promise<QuotaState> {
-  const chunks = parseCodexSessionChunks(sessionToken);
-  if (chunks.length === 0) throw new Error('Codex session token is empty');
+  if (!codexCookieHeader(sessionToken)) throw new Error('Codex session token is empty');
 
   const accessToken = await fetchCodexAccessToken(sessionToken);
   const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
     headers: {
-      ...codexBrowserHeaders(sessionToken),
+      Accept: 'application/json',
       Authorization: `Bearer ${accessToken}`,
+      Cookie: codexCookieHeader(sessionToken),
+      'User-Agent': BROWSER_UA,
       Referer: 'https://chatgpt.com/codex/settings/usage',
+      Origin: 'https://chatgpt.com',
     },
   });
+  const text = await res.text();
+  if (isHtmlBody(text)) {
+    throw new Error('Codex usage API blocked (HTML/Cloudflare)');
+  }
   if (res.status === 401 || res.status === 403) {
     throw new Error(`Codex usage API: ${res.status} invalid or expired session token`);
   }
   if (!res.ok) throw new Error(`Codex usage API: ${res.status}`);
-  const data = (await res.json()) as WhamUsageResponse;
+  const data = JSON.parse(text) as WhamUsageResponse;
   return mapCodexUsage(data);
 }
 

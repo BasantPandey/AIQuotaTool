@@ -13,6 +13,19 @@ type WvMsg = Record<string, string>;
 
 function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
+  if (service === 'codex') {
+    // Prefer detailed Codex/ChatGPT guidance (accessToken / chunk cookies / Cloudflare).
+    if (/accessToken|cookie not accepted|\.0|\.1|Cloudflare|Cookie header/i.test(msg)) {
+      return msg;
+    }
+    if (/\b401\b|\b403\b|invalid or expired/i.test(msg)) {
+      return (
+        'ChatGPT session rejected. Double-click cookie Values (not truncated …). ' +
+        'Paste .0 on line 1 and .1 on line 2, or paste the full Cookie header from Network → api/auth/session.'
+      );
+    }
+    return msg;
+  }
   if (/\b401\b|\b403\b|invalid or expired/i.test(msg)) {
     if (service === 'claude') {
       return 'Session key invalid or expired — paste a fresh sessionKey cookie';
@@ -20,10 +33,6 @@ function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown
     if (service === 'grok') {
       return 'sso cookie invalid or expired — paste a fresh sso cookie from grok.com';
     }
-    return (
-      'Session invalid or expired — on chatgpt.com cookies, copy Value of ' +
-      '__Secure-next-auth.session-token.0 then .1 (two lines), double-click each Value so it is not truncated'
-    );
   }
   return msg;
 }
@@ -140,12 +149,8 @@ export class CredentialPanel {
       try {
         await validateCodexSession(creds.codexSessionToken);
         this.send('codex', 'ok', 'Connected');
-      } catch {
-        this.send(
-          'codex',
-          'error',
-          'Session invalid or expired — paste a fresh session cookie or Clear saved key',
-        );
+      } catch (e) {
+        this.send('codex', 'error', userFacingSessionError('codex', e));
       }
     }
 
