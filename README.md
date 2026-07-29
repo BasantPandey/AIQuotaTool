@@ -1,38 +1,34 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - all in one dashboard.
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and (optionally) **Grok** - primarily as a **VS Code extension**.
 
-Ships as two **first-class** extensions from a single TypeScript monorepo (dual-mode equal):
+## Product surface (V1)
 
-| Extension | What it does |
+| Surface | Role |
 |---|---|
-| **Chrome extension** (MV3) | Fetches quota via browser session cookies (and content scripts), popup UI, optional push to VS Code |
-| **VS Code extension** | Standalone poller with SecretStorage credentials, webview dashboard, status bar; optional receive from Chrome |
+| **VS Code extension** | **First-class V1 product:** SecretStorage credentials, standalone poller, webview dashboard, status bar |
+| **Chrome extension** | Optional / legacy package in the monorepo - **not** a V1 acceptance gate. May push readings to VS Code over localhost WebSocket if both are installed |
 
-Either works alone. Together they merge readings with **freshest-wins** (`lastUpdated`).
+**V1 bar:** [`docs/V1-SPEC.md`](docs/V1-SPEC.md) (VS Code only).  
+**Grok bar:** [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md).
 
 ---
 
-## How it works
+## How it works (VS Code)
 
 ```
-Chrome Extension (MV3)
-  - Service worker + content scripts poll / push quota
-  - chrome.storage.local → popup
-  - Optional WS client → ws://127.0.0.1:54321
-
 VS Code Extension
   - Standalone Node poller (Claude sessionKey, Codex session token, GitHub OAuth)
-  - Grok: no SecretStorage - Chrome push or honesty-only card
-  - Optional WS server on 127.0.0.1:54321 (Chrome push, freshest-wins merge)
-  - Webview dashboard + status bar (min session/weekly remaining)
+  - SecretStorage for Claude/Codex session secrets (treat like passwords)
+  - Webview dashboard + status bar (min session/weekly remaining; honest Copilot states)
+  - Optional: receive Chrome WS push on 127.0.0.1:54321 (not required for V1)
 ```
 
-**Credentials (two honest paths):** Chrome uses live browser session cookies and does **not** store session keys (Settings discloses this). VS Code **stores** Claude/ChatGPT session cookies in SecretStorage for standalone mode - treat them like passwords; validate on save, clear anytime via **Set Up Accounts**. Expired sessions surface a re-auth cue; secrets are not auto-deleted. Never claim product-wide "no credentials stored." See `packages/vscode-ext/README.md` and `docs/ARCHITECTURE.md` security model.
+**Credentials:** VS Code **stores** Claude and ChatGPT session cookies in SecretStorage - never claim product-wide “no credentials stored.” Validate on save (Save & Test), replace, clear via **Set Up Accounts**. Expired sessions drop the ring and show re-auth; secrets are not auto-deleted. See `packages/vscode-ext/README.md`.
 
 **Copilot:** Seat/plan can be detected; remaining usage % is often unavailable from GitHub. The UI shows honest status instead of inventing 100% remaining.
 
-**Grok:** Chrome uses a live **grok.com** session only. VS Code does **not** store Grok secrets; the Grok card comes from Chrome WebSocket push or an honest “use Chrome on grok.com” state. Weekly remaining % only when a first-party used% payload is available - never invented. See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md).
+**Grok:** See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md). VS Code does not store Grok secrets; honesty or optional Chrome push only until first-party weekly used% is validated.
 
 ---
 
@@ -40,7 +36,6 @@ VS Code Extension
 
 - Node.js 20+
 - pnpm 9+
-- Chrome (for the browser extension)
 - VS Code 1.95+ (for the editor extension)
 
 ---
@@ -54,12 +49,6 @@ pnpm turbo test       # core pure-function tests
 pnpm turbo type-check
 ```
 
-### Load the Chrome extension
-
-1. Run `pnpm --filter @ai-quota-tool/chrome-ext build`
-2. Open `chrome://extensions`, enable **Developer mode**
-3. Click **Load unpacked** → select `packages/chrome-ext/dist/`
-
 ### Install the VS Code extension
 
 ```bash
@@ -68,20 +57,25 @@ pnpm --filter ai-quota-tool-vscode run package   # produces a .vsix file
 
 Then install the `.vsix` via **Extensions → Install from VSIX…** in VS Code. Run **AI Quota Tool: Set Up Accounts**.
 
-### Publish to Visual Studio Marketplace
+### Publish to Visual Studio Marketplace (maintainers)
 
 Manual GitHub Actions workflow **Publish VS Code extension** (version bump + `vsce publish`).  
 Setup and dry-run steps: [`packages/vscode-ext/README.md`](packages/vscode-ext/README.md#publishing-maintainers).  
 Publisher UI: https://marketplace.visualstudio.com/manage/publishers/basantpandey
+
+### Optional: Chrome extension (legacy)
+
+```bash
+pnpm --filter @ai-quota-tool/chrome-ext build
+```
+
+Load `packages/chrome-ext/dist/` as unpacked in `chrome://extensions` if you want optional browser-session push. Not required for the V1 product bar.
 
 ---
 
 ## Development
 
 ```bash
-# Watch mode for Chrome extension (rebuilds on save)
-pnpm --filter @ai-quota-tool/chrome-ext dev
-
 # Preview shared UI components with mock data (localhost:5173)
 pnpm --filter @ai-quota-tool/ui dev
 
@@ -89,6 +83,9 @@ pnpm --filter @ai-quota-tool/ui dev
 pnpm turbo type-check
 pnpm turbo test
 pnpm turbo build
+
+# Watch mode for Chrome package (optional)
+pnpm --filter @ai-quota-tool/chrome-ext dev
 
 # Regenerate icons
 node scripts/generate-icons.mjs
@@ -102,20 +99,18 @@ CI (GitHub Actions) runs install, type-check, test, and build on push/PR.
 
 ```
 packages/
-  core/        Shared types, pure merge/mappers/copilot builders, utils
+  core/        Shared types, pure merge/mappers/honesty, utils (+ vitest)
   ui/          Shared React 19 components — no data fetching
-  chrome-ext/  Chrome MV3 extension
-  vscode-ext/  VS Code extension (poller + optional WS)
+  vscode-ext/  VS Code extension (V1 product surface)
+  chrome-ext/  Optional Chrome MV3 package (not a V1 gate)
 docs/
-  ARCHITECTURE.md   Dual-mode architecture and design decisions
-  V1-SPEC.md        V1 product bar (requirements, acceptance, backlog)
-  GROK-SPEC.md      Consumer Grok product bar (auth, honesty, backlog)
-  research/         Primary-source notes (Copilot, Grok, store cookie policy)
+  ARCHITECTURE.md   Architecture and design decisions
+  V1-SPEC.md        V1 product bar (VS Code only)
+  GROK-SPEC.md      Consumer Grok product bar
+  research/         Primary-source research notes
 ```
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for diagrams, protocol, merge rules, and security.  
-See [`docs/V1-SPEC.md`](docs/V1-SPEC.md) for the V1 product bar and acceptance criteria.  
-See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md) for the consumer Grok product bar.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/V1-SPEC.md`](docs/V1-SPEC.md), and [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md).
 
 ---
 
@@ -123,29 +118,25 @@ See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md) for the consumer Grok product bar.
 
 | Task | Status |
 |---|---|
-| Dual-mode equal (Chrome + VS Code standalone) | Done (V1 bar) |
-| Claude + Codex real usage mapping | Done (shared pure mappers in core) |
-| Freshest-wins dual-source merge | Done |
+| VS Code standalone poller + dashboard + status bar | Done (V1 bar) |
+| Claude + Codex real usage mapping (core pure mappers) | Done |
 | Honest Copilot (no fake 100% remaining) | Done |
-| Consumer Grok (Chrome session + VS Code honesty / WS) | Done (honesty-first; weekly % when payload proven) |
 | Credential clear / privacy disclosure (VS Code) | Done |
 | Session auth failure re-auth cue (keep secret) | Done |
-| Chrome Settings privacy disclosure | Done |
-| Honest pressure (badge/status) + seat-status mapper | Done |
-| V1-SPEC + research notes on main | Done |
-| Chrome permission hygiene (no unused cookies/hosts) | Done |
 | Core unit tests + CI | Done |
+| VS Code-only V1-SPEC rewrite | Done |
+| Consumer Grok honesty path | Done (see GROK-SPEC; weekly % conditional) |
+| Optional Chrome package | Present; not a V1 gate |
 | Real Copilot remaining-% API (if GitHub ever exposes one) | Optional follow-up |
 | Effect-TS migration | Post-v1 |
-| Publish to Chrome Web Store + VS Code Marketplace | Post-v1 |
+| Marketplace publish | Optional workflow (not a bar gate) |
 
 ---
 
 ## Stack
 
 - TypeScript (strict mode throughout)
-- React 19 + React Compiler
-- TanStack Query v5
-- Vite 6 / esbuild
-- Vitest (core pure seams)
-- pnpm workspaces + Turborepo
+- pnpm + Turborepo monorepo
+- React 19 + React Compiler (shared UI / webviews)
+- TanStack Query v5 (where used)
+- Vitest for core pure seams

@@ -10,8 +10,8 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 
 - **Status bar item** — remaining quota at a glance using the lower of session/weekly %; amber when any service drops below 10%
 - **Dashboard panel** — full quota breakdown with session and weekly progress rings (or honest Copilot status without fake %)
-- **Standalone** — fetches quota directly from VS Code using your session credentials; no Chrome extension required
-- **Optional Chrome push** — merges fresher browser readings over local WebSocket (freshest-wins)
+- **Standalone (V1 product)** — fetches quota directly from VS Code using your session credentials; **no Chrome extension required**
+- **Optional Chrome push** — if you also run the legacy Chrome package, it may merge readings over local WebSocket (freshest-wins); not required
 - **Automatic refresh** — polls every 60 seconds in the background
 
 ---
@@ -52,17 +52,15 @@ Click the status bar item (`$(pulse) AI Quota`) to open the dashboard directly.
 
 ---
 
-## Optional: Chrome Extension
+## Optional: Chrome package (legacy)
 
-For automatic real-time updates without pasting session cookies into VS Code, install the companion [Chrome extension](https://github.com/BasantPandey/AIQuotaTool). It uses your browser login and can push quota data to VS Code over a local WebSocket.
-
-Both modes work simultaneously: the Chrome extension supplements the direct polling.
+A Chrome extension package may exist in this monorepo for optional browser-session push. It is **not** part of the VS Code V1 product bar. This extension works fully standalone.
 
 ---
 
 ## Privacy and security
 
-Two honest paths: **Chrome** uses live browser cookies and does not store session keys; **this extension stores** Claude `sessionKey` and ChatGPT session tokens for standalone mode. **Grok is Chrome-session only** - VS Code does not store Grok secrets; Grok appears via Chrome WebSocket push or an honest “use Chrome on grok.com” card.
+**This extension stores** Claude `sessionKey` and ChatGPT session tokens in SecretStorage for standalone mode. Do not claim “no credentials stored.” **Grok secrets are not stored** here; see [`docs/GROK-SPEC.md`](../../docs/GROK-SPEC.md).
 
 - Session cookies are full browser credentials. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.

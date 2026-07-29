@@ -1,6 +1,6 @@
 # packages/vscode-ext
 
-VS Code extension. **First-class standalone** quota monitor (SecretStorage + poller). Optional Chrome WebSocket push merges with freshest-wins.
+VS Code extension. **V1 product surface** - first-class standalone quota monitor (SecretStorage + poller). Optional Chrome WebSocket push (if present) merges with freshest-wins; Chrome is not a V1 gate.
 
 ## Entry points
 | File | Role |
@@ -31,10 +31,10 @@ QuotaPoller ──upsert──▶ latestStates ◀── merge(WS from Chrome)
 Do NOT add DOM types to `tsconfig.json` and do NOT use Node APIs in `src/webview/`.
 
 ## Graceful degradation
-- No credentials / no data → Set Up Accounts (not “Chrome not connected” as primary copy).
-- Chrome optional; poller works alone.
+- No credentials / no data → Set Up Accounts (not “Chrome not connected”).
+- Poller works with zero Chrome.
 - Auth 401/403 on Claude/Codex: `sessionAuthFailureAction` → drop ring, **keep** SecretStorage, `getReauthNeeded()` → status bar re-auth cue; secrets never logged.
-- **Grok:** no SecretStorage path; poller injects `grokBrowserSessionRequired` when no Grok state yet; Chrome WS merge can replace with fresher readings.
+- **Grok:** no SecretStorage path; poller injects `grokBrowserSessionRequired` when no Grok state yet; optional Chrome WS merge can replace with fresher readings (see GROK-SPEC).
 
 ## Build
 1. esbuild `src/extension.ts` → `dist/extension.js` (Node CJS, external vscode)

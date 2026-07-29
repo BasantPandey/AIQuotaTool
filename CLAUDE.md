@@ -3,17 +3,17 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What this is
-A pnpm + Turborepo monorepo that builds two **first-class** extensions (dual-mode equal):
-- **Chrome extension** (Manifest V3) — browser session cookies + content scripts, popup, optional WebSocket client
-- **VS Code extension** — standalone poller (SecretStorage session secrets + GitHub OAuth), webview, status bar, optional WebSocket server on `127.0.0.1:54321`
+A pnpm + Turborepo monorepo. **V1 product surface is the VS Code extension** (see `docs/V1-SPEC.md`):
+- **VS Code extension** — standalone poller (SecretStorage session secrets + GitHub OAuth), webview, status bar; optional WS server on `127.0.0.1:54321`
+- **Chrome extension** — optional/legacy package in the monorepo; **not** a V1 acceptance gate
 
 ## Packages
 | Package | npm name | Purpose |
 |---|---|---|
 | `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot/grok honesty, session-auth policy) — no DOM, no Node, no React |
 | `packages/ui` | `@ai-quota-tool/ui` | Shared React 19 components — pure display, no data fetching |
-| `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | Chrome MV3 extension — service worker, content scripts, popup |
-| `packages/vscode-ext` | `ai-quota-tool-vscode` | VS Code extension — poller, credentials, WS server, webview, status bar |
+| `packages/vscode-ext` | `ai-quota-tool-vscode` | **V1 product:** poller, credentials, optional WS server, webview, status bar |
+| `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | Optional Chrome MV3 package (not a V1 gate) |
 
 Build order enforced by Turbo: `core` → `ui` → `chrome-ext` / `vscode-ext` (parallel).
 
@@ -39,13 +39,15 @@ pnpm --filter ai-quota-tool-vscode run package  # vsce → .vsix
 node scripts/generate-icons.mjs           # regenerate PNG icons
 ```
 
-**Local Chrome testing:** Build chrome-ext, then load `packages/chrome-ext/dist/` as an unpacked extension in `chrome://extensions`.
+**Local VS Code testing:** Build/package vscode-ext, install `.vsix`, run **Set Up Accounts**.
 
-## Architecture: dual-mode equal
-- **VS Code standalone:** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub OAuth seat). Credentials in SecretStorage. Grok has **no** VS Code secret — honesty slot or Chrome WS merge.
-- **Chrome standalone:** SW + content scripts fetch with browser cookies (including grok.com live session); storage + popup.
-- **Together:** Chrome WS client pushes `quota_update` to VS Code WS server. Both sides merge with **freshest-wins** via `mergeQuotaStates` / `upsertQuotaState` (`lastUpdated`; equal time prefers richer fields).
-- Chrome MV3 cannot bind ports — VS Code hosts WS on `:54321`. VS Code never initiates messages to Chrome.
+**Optional Chrome:** Build chrome-ext, load `packages/chrome-ext/dist/` unpacked - not required for V1.
+
+## Architecture: VS Code primary (V1)
+- **VS Code standalone (required path):** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub OAuth seat). Credentials in SecretStorage. Empty → Set Up Accounts.
+- **Grok:** no VS Code SecretStorage; honesty slot and/or optional Chrome WS merge (see `docs/GROK-SPEC.md`).
+- **Optional Chrome push:** if used, WS client → VS Code server `:54321`; merge with **freshest-wins** via `mergeQuotaStates` / `upsertQuotaState`. Not a V1 ship dependency.
+- VS Code never initiates messages to Chrome.
 
 ## WebSocket protocol (`WsMessage` from `@ai-quota-tool/core`)
 ```

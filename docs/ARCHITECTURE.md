@@ -2,12 +2,14 @@
 
 ## Overview
 
-AI Quota Tool monitors remaining session and weekly quotas for **Claude**, **GitHub Copilot**, **Codex**, and **Grok**. It ships as two **first-class** extensions from one TypeScript monorepo (**dual-mode equal**):
+AI Quota Tool monitors remaining session and weekly quotas for **Claude**, **GitHub Copilot**, **Codex**, and **Grok**.
 
-- **Chrome extension** — browser session cookies, content scripts, popup, optional WebSocket **client** push to VS Code.
-- **VS Code extension** — standalone Node poller (SecretStorage session secrets + GitHub OAuth), webview, status bar, optional WebSocket **server** on `127.0.0.1:54321`. Grok has **no** VS Code secret path.
+**V1 product surface:** the **VS Code extension** (standalone poller, SecretStorage, webview, status bar). See [`docs/V1-SPEC.md`](./V1-SPEC.md).
 
-Either surface works alone. Together they share the same `QuotaState` model and merge with **freshest-wins** by `lastUpdated`.
+- **VS Code extension** — first-class: SecretStorage session secrets + GitHub OAuth, Node poller, webview, status bar; optional WebSocket **server** on `127.0.0.1:54321` (legacy Chrome push only).
+- **Chrome extension** — optional / legacy monorepo package (browser session cookies, popup, optional WS **client**). **Not** a V1 acceptance gate.
+
+Shared `QuotaState` model in `@ai-quota-tool/core`. Optional dual-source merge uses **freshest-wins** by `lastUpdated` when Chrome push is present.
 
 ---
 
@@ -142,7 +144,7 @@ interface QuotaState {
 
 ## Product bars
 
-- V1 (Claude / Copilot / Codex): [`docs/V1-SPEC.md`](./V1-SPEC.md)
+- V1 (**VS Code only**, Claude / Copilot / Codex): [`docs/V1-SPEC.md`](./V1-SPEC.md)
 - Consumer Grok: [`docs/GROK-SPEC.md`](./GROK-SPEC.md)
 - Research notes: [`docs/research/`](./research/)
 
@@ -150,13 +152,13 @@ interface QuotaState {
 
 ## Security Model
 
-Two honest credential paths (product-wide “no credentials stored” is false):
+Product-wide “no credentials stored” is **false**.
 
-- **Chrome:** uses live browser session cookies; does **not** store session keys as auth secrets (`chrome.storage.local` holds quota readings only). Settings tab discloses cookie use + optional localhost WS. Grok is **grok.com** live session only.
-- **VS Code:** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — password-grade secrets. GitHub Copilot uses VS Code OAuth (not a pasted cookie). **Grok secrets are not stored** in VS Code. Lifecycle for Claude/Codex: validate-before-persist (Save & Test), replace, explicit clear. On 401/403 for Claude/Codex: drop the ring, **keep** the secret, surface an explicit re-auth signal (status bar / Set Up Accounts) — never invent full remaining. Pure policy: `sessionAuthFailureAction` in `@ai-quota-tool/core` (Grok is not a session-cookie service).
-- **Localhost WebSocket** only (`127.0.0.1`); any process on the machine could spoof the channel (disclosed local-trust model).
-- **Hard rules:** never log secrets; no developer backend for credentials/quota; VS Code secrets only in SecretStorage; Chrome must not persist session keys as auth secrets.
-- **Store publish** (privacy policy URL, CWS Limited Use / consent UX) is post-V1; product + README disclosure is the V1 bar.
+- **VS Code (V1 bar):** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — password-grade secrets. GitHub Copilot uses VS Code OAuth. **Grok secrets are not stored** in VS Code. Lifecycle for Claude/Codex: validate-before-persist (Save & Test), replace, explicit clear. On 401/403: drop the ring, **keep** the secret, re-auth signal — never invent full remaining. Pure policy: `sessionAuthFailureAction` in `@ai-quota-tool/core` (Claude/Codex only).
+- **Chrome (optional package):** may use live browser sessions without storing session keys; not a V1 gate. Grok on Chrome is live `grok.com` session only if that package is used.
+- **Localhost WebSocket** (optional): `127.0.0.1` only; any process on the machine could spoof the channel (disclosed local-trust model). Not required for VS Code standalone.
+- **Hard rules:** never log secrets; no developer backend for credentials/quota; VS Code session secrets only in SecretStorage.
+- **Store publish** is post-V1 bar; product + README disclosure is the V1 bar.
 
 ---
 
