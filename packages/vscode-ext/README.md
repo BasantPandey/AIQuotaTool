@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - live in VS Code (v0.7.2).
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - live in VS Code (v0.7.3).
 
 ![Status bar showing Claude 72% | Copilot 91% | Codex 8%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.png)
 
@@ -37,7 +37,12 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://chatgpt.com`
 3. Copy the value of `__Secure-next-auth.session-token`
 
-Use **Save & Test** to validate before the secret is kept. Use **Clear saved key / token** to remove a secret. Paste a new value and Save & Test to replace.
+**Grok sso cookie** (grok.com short-window remaining)
+1. Open [grok.com](https://grok.com) in Chrome and sign in
+2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://grok.com`
+3. Copy the value of `sso` (JWT, often starts with `eyJ`)
+
+Use **Save & Test** to validate before the secret is kept. Use **Clear saved key / token / cookie** to remove a secret. Paste a new value and Save & Test to replace.
 
 ---
 
@@ -60,11 +65,11 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 
 ## Privacy and security
 
-**This extension stores** Claude `sessionKey` and ChatGPT session tokens in SecretStorage for standalone mode. Do not claim “no credentials stored.” **Grok secrets are not stored** here; see [`docs/GROK-SPEC.md`](../../docs/GROK-SPEC.md).
+**This extension stores** Claude `sessionKey`, ChatGPT session tokens, and Grok `sso` cookies in SecretStorage for standalone mode. Do not claim “no credentials stored.” See [`docs/GROK-SPEC.md`](../../docs/GROK-SPEC.md).
 
 - Session cookies are full browser credentials. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
-- Secrets are sent only to the owning service (claude.ai, chatgpt.com, or GitHub APIs) for quota reads — no telemetry backend. No Grok cookie is stored in VS Code.
+- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, or GitHub APIs) for quota reads — no telemetry backend.
 - Lifecycle: **Save & Test** validates before persist; replace by saving again; **Clear saved key** removes the secret.
 - Invalid or expired sessions drop the quota ring and show a **session expired** status-bar cue; the secret is **not** auto-deleted. Open **Set Up Accounts** to replace or clear. Stale “full quota” is never invented.
 - Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.

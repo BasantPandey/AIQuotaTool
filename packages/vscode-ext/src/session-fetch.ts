@@ -6,7 +6,9 @@ import {
   mapClaudeUsage,
   mapCodexUsage,
   mapCopilotSeatStatus,
+  mapGrokRateLimits,
   type ClaudeUsageResponse,
+  type GrokRateLimitsResponse,
   type QuotaState,
   type WhamUsageResponse,
 } from '@ai-quota-tool/core';
@@ -103,4 +105,40 @@ export async function fetchCopilotSeat(token: string): Promise<QuotaState> {
     },
   });
   return mapCopilotSeatStatus(seatRes.status);
+}
+
+function grokHeaders(ssoCookie: string): Record<string, string> {
+  // Community first-party clients send both sso and sso-rw (often same JWT value).
+  const cookie = `sso=${ssoCookie}; sso-rw=${ssoCookie}`;
+  return {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    Cookie: cookie,
+    'User-Agent': BROWSER_UA,
+    Referer: 'https://grok.com/',
+    Origin: 'https://grok.com',
+  };
+}
+
+/** Validate Grok session by hitting the same rate-limits endpoint as the poller. */
+export async function validateGrokSession(ssoCookie: string): Promise<void> {
+  await fetchGrokUsage(ssoCookie);
+}
+
+/**
+ * Poll Grok short-window remaining via POST /rest/rate-limits + pure mapGrokRateLimits.
+ * Never invents remaining % when the payload lacks counters.
+ */
+export async function fetchGrokUsage(ssoCookie: string): Promise<QuotaState> {
+  const res = await fetch('https://grok.com/rest/rate-limits', {
+    method: 'POST',
+    headers: grokHeaders(ssoCookie),
+    body: JSON.stringify({ requestKind: 'DEFAULT', modelName: 'grok-3' }),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error(`Grok rate-limits API: ${res.status} invalid or expired session cookie`);
+  }
+  if (!res.ok) throw new Error(`Grok rate-limits API: ${res.status}`);
+  const data = (await res.json()) as GrokRateLimitsResponse;
+  return mapGrokRateLimits(data);
 }

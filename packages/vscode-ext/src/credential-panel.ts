@@ -1,28 +1,37 @@
 import * as vscode from 'vscode';
 import type { CredentialManager } from './credentials.js';
-import { validateClaudeSession, validateCodexSession } from './session-fetch.js';
+import {
+  validateClaudeSession,
+  validateCodexSession,
+  validateGrokSession,
+} from './session-fetch.js';
 
 // ── Panel host ──────────────────────────────────────────────────────────────
 
 type WvMsg = Record<string, string>;
 
-function userFacingSessionError(service: 'claude' | 'codex', e: unknown): string {
+function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/\b401\b|\b403\b|invalid or expired/i.test(msg)) {
-    return service === 'claude'
-      ? 'Session key invalid or expired — paste a fresh sessionKey cookie'
-      : 'Session token invalid or expired — paste a fresh session cookie';
+    if (service === 'claude') {
+      return 'Session key invalid or expired — paste a fresh sessionKey cookie';
+    }
+    if (service === 'grok') {
+      return 'sso cookie invalid or expired — paste a fresh sso cookie from grok.com';
+    }
+    return 'Session token invalid or expired — paste a fresh session cookie';
   }
   return msg;
 }
 
 
-export type SavedCredentialService = 'claude' | 'codex' | 'github';
+export type SavedCredentialService = 'claude' | 'codex' | 'github' | 'grok';
+export type ClearedCredentialService = 'claude' | 'codex' | 'grok';
 
 export class CredentialPanel {
   private panel: vscode.WebviewPanel | null = null;
   private onSaved: ((service?: SavedCredentialService) => void | Promise<void>) | null = null;
-  private onCleared: ((service: 'claude' | 'codex') => void | Promise<void>) | null = null;
+  private onCleared: ((service: ClearedCredentialService) => void | Promise<void>) | null = null;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -35,7 +44,7 @@ export class CredentialPanel {
   }
 
   /** Called after a secret is cleared so the host can drop that service's quota state. */
-  setOnCleared(handler: (service: 'claude' | 'codex') => void | Promise<void>): void {
+  setOnCleared(handler: (service: ClearedCredentialService) => void | Promise<void>): void {
     this.onCleared = handler;
   }
 
@@ -69,6 +78,9 @@ export class CredentialPanel {
         case 'save_test_codex':
           await this.handleSaveTestCodex(msg['token'] ?? '');
           break;
+        case 'save_test_grok':
+          await this.handleSaveTestGrok(msg['cookie'] ?? '');
+          break;
         case 'github_signin':
           await this.handleGithubSignIn();
           break;
@@ -77,6 +89,9 @@ export class CredentialPanel {
           break;
         case 'clear_codex':
           await this.handleClearCodex();
+          break;
+        case 'clear_grok':
+          await this.handleClearGrok();
           break;
         case 'open_external':
           if (msg['url']) await vscode.env.openExternal(vscode.Uri.parse(msg['url']));
@@ -126,6 +141,20 @@ export class CredentialPanel {
           'codex',
           'error',
           'Session invalid or expired — paste a fresh session cookie or Clear saved key',
+        );
+      }
+    }
+
+    if (creds.grokSsoCookie) {
+      this.send('grok', 'testing');
+      try {
+        await validateGrokSession(creds.grokSsoCookie);
+        this.send('grok', 'ok', 'Connected');
+      } catch {
+        this.send(
+          'grok',
+          'error',
+          'sso cookie invalid or expired — paste a fresh cookie or Clear saved cookie',
         );
       }
     }
@@ -192,6 +221,35 @@ export class CredentialPanel {
     await this.credentials.clearCodexToken();
     this.send('codex', 'idle', '');
     await this.onCleared?.('codex');
+  }
+
+  private async handleSaveTestGrok(cookie: string): Promise<void> {
+    if (!cookie) {
+      this.send('grok', 'error', 'Cookie is empty');
+      return;
+    }
+    // Allow paste of "sso=..." or raw JWT value.
+    const value = cookie.includes('=')
+      ? (cookie.match(/(?:^|;\s*)sso=([^;]+)/i)?.[1] ?? cookie).trim()
+      : cookie.trim();
+    if (!value) {
+      this.send('grok', 'error', 'Cookie is empty');
+      return;
+    }
+    try {
+      await validateGrokSession(value);
+      await this.credentials.setGrokSso(value);
+      this.send('grok', 'ok', 'Connected');
+      await this.onSaved?.('grok');
+    } catch (e) {
+      this.send('grok', 'error', userFacingSessionError('grok', e));
+    }
+  }
+
+  private async handleClearGrok(): Promise<void> {
+    await this.credentials.clearGrokSso();
+    this.send('grok', 'idle', '');
+    await this.onCleared?.('grok');
   }
 
   private buildHtml(): string {

@@ -5,6 +5,14 @@
 ### Packaging
 - Manual GitHub Actions workflow to package/publish the VS Code extension (semver bump + Marketplace)
 
+## [0.7.3] - 2026-07-29
+
+### Grok SecretStorage (Claude-style)
+- Store grok.com `sso` cookie in SecretStorage via Set Up Accounts (Save & Test / clear)
+- Poll `POST https://grok.com/rest/rate-limits` and map remaining via pure `mapGrokRateLimits`
+- Session auth failure for Grok: drop ring, keep secret, re-auth cue (same as Claude/Codex)
+- README + setup privacy updated (Grok secrets are stored)
+
 ## [0.7.1] - 2026-07-21
 
 ### Honest Copilot + pressure

@@ -1,11 +1,12 @@
 import type { QuotaState } from './types.js';
+import { calcPct } from './utils.js';
 
 /**
- * Pure Grok QuotaState builders for honest non-percentage outcomes.
- * Hosts call these instead of inventing weeklyPct: 100.
+ * Pure Grok QuotaState builders and mappers.
+ * Hosts must never invent remaining % (especially never invent 100 when unknown).
  *
- * Product bar: Chrome may later map SuperGrok weekly pool used% → remaining%;
- * until a first-party usage payload is available, use honesty states only.
+ * VS Code: store grok.com `sso` cookie and POST /rest/rate-limits (same path as Claude sessionKey).
+ * SuperGrok Settings → Usage weekly used% remains a conditional map via mapGrokWeeklyUsage.
  */
 
 export function grokUsageUnknown(lastUpdated: number = Date.now()): QuotaState {
@@ -24,13 +25,100 @@ export function grokNotConnected(lastUpdated: number = Date.now()): QuotaState {
   };
 }
 
-/** VS Code standalone: no Grok SecretStorage — monitor via Chrome on grok.com. */
+/**
+ * VS Code empty slot when no Grok secret is saved yet (and no fresher Chrome push).
+ * Setup path: paste grok.com `sso` cookie in Set Up Accounts.
+ */
 export function grokBrowserSessionRequired(lastUpdated: number = Date.now()): QuotaState {
   return {
     service: 'grok',
     honesty: 'browser_session_required',
     lastUpdated,
   };
+}
+
+// ──── grok.com /rest/rate-limits (session short-window) ─────────────────────
+
+/** First-party rate-limit window bucket (low/high effort). */
+export interface GrokEffortRateLimits {
+  remainingQueries?: number;
+  totalQueries?: number;
+  waitTimeSeconds?: number;
+  cost?: number;
+}
+
+/**
+ * Body shape observed on POST https://grok.com/rest/rate-limits
+ * (`requestKind` + `modelName`). Field names match first-party JSON.
+ */
+export interface GrokRateLimitsResponse {
+  remainingQueries?: number;
+  totalQueries?: number;
+  remainingTokens?: number;
+  totalTokens?: number;
+  windowSizeSeconds?: number;
+  lowEffortRateLimits?: GrokEffortRateLimits;
+  highEffortRateLimits?: GrokEffortRateLimits;
+}
+
+function finiteNonNeg(n: unknown): number | undefined {
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+/**
+ * Map grok.com rate-limits JSON → QuotaState session remaining %.
+ * Prefers token window (remainingTokens/totalTokens); falls back to query counts.
+ * Invalid/missing counters → usage_unknown (never invent 100).
+ */
+export function mapGrokRateLimits(
+  data: GrokRateLimitsResponse,
+  lastUpdated: number = Date.now(),
+): QuotaState {
+  const remainingTokens = finiteNonNeg(data.remainingTokens);
+  const totalTokens = finiteNonNeg(data.totalTokens);
+  const remainingQueries = finiteNonNeg(data.remainingQueries);
+  const totalQueries = finiteNonNeg(data.totalQueries);
+
+  let remaining: number | undefined;
+  let total: number | undefined;
+
+  if (remainingTokens != null && totalTokens != null && totalTokens > 0) {
+    remaining = remainingTokens;
+    total = totalTokens;
+  } else if (remainingQueries != null && totalQueries != null && totalQueries > 0) {
+    remaining = remainingQueries;
+    total = totalQueries;
+  } else {
+    // Nested low-effort window as last resort
+    const low = data.lowEffortRateLimits;
+    const lowRem = finiteNonNeg(low?.remainingQueries);
+    const lowTot = finiteNonNeg(low?.totalQueries);
+    if (lowRem != null && lowTot != null && lowTot > 0) {
+      remaining = lowRem;
+      total = lowTot;
+    }
+  }
+
+  if (remaining == null || total == null || total <= 0) {
+    return grokUsageUnknown(lastUpdated);
+  }
+
+  const used = Math.max(0, total - remaining);
+  const sessionPct = calcPct(used, total);
+
+  const waitSec =
+    finiteNonNeg(data.lowEffortRateLimits?.waitTimeSeconds) ??
+    finiteNonNeg(data.windowSizeSeconds);
+
+  const state: QuotaState = {
+    service: 'grok',
+    sessionPct,
+    lastUpdated,
+  };
+  if (waitSec != null && waitSec > 0) {
+    state.sessionResetsAt = lastUpdated + Math.round(waitSec * 1000);
+  }
+  return state;
 }
 
 /**

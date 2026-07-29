@@ -10,6 +10,7 @@ import {
   fetchClaudeUsage,
   fetchCodexUsage,
   fetchCopilotSeat,
+  fetchGrokUsage,
 } from './session-fetch.js';
 
 type GetGithubToken = () => Promise<string | undefined>;
@@ -41,7 +42,7 @@ export class QuotaPoller {
     return this.latestStates;
   }
 
-  /** Claude/Codex services that need replace/clear after invalid/expired session. */
+  /** Session-cookie services that need replace/clear after invalid/expired session. */
   getReauthNeeded(): ServiceId[] {
     return [...this.reauthNeeded];
   }
@@ -111,6 +112,12 @@ export class QuotaPoller {
           ? fetchCodexUsage(creds.codexSessionToken)
           : Promise.reject('no credential'),
       },
+      {
+        service: 'grok',
+        promise: creds.grokSsoCookie
+          ? fetchGrokUsage(creds.grokSsoCookie)
+          : Promise.reject('no credential'),
+      },
     ];
 
     const results = await Promise.allSettled(jobs.map((j) => j.promise));
@@ -142,8 +149,8 @@ export class QuotaPoller {
       }
     }
 
-    // Grok V1: no SecretStorage path — always surface a slot (Chrome WS may replace via merge).
-    if (!this.latestStates.some((s) => s.service === 'grok')) {
+    // No Grok secret yet (and no fresher Chrome push): honest setup cue, not fake %.
+    if (!creds.grokSsoCookie && !this.latestStates.some((s) => s.service === 'grok')) {
       this.upsert(grokBrowserSessionRequired());
       changed = true;
     }

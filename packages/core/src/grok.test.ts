@@ -4,6 +4,7 @@ import {
   grokBrowserSessionRequired,
   grokNotConnected,
   grokUsageUnknown,
+  mapGrokRateLimits,
   mapGrokWeeklyUsage,
 } from './grok.js';
 
@@ -45,6 +46,45 @@ describe('grok honest builders', () => {
       expect(s.weeklyPct).not.toBe(100);
       expect(s.sessionPct).not.toBe(100);
     }
+  });
+});
+
+describe('mapGrokRateLimits', () => {
+  it('maps remainingTokens/totalTokens to session remaining %', () => {
+    const s = mapGrokRateLimits(
+      { remainingTokens: 70, totalTokens: 100, windowSizeSeconds: 7200 },
+      1_000,
+    );
+    expect(s.service).toBe('grok');
+    expect(s.sessionPct).toBe(70);
+    expect(s.sessionResetsAt).toBe(1_000 + 7200 * 1000);
+    expect(s.weeklyPct).toBeUndefined();
+    expect(s.honesty).toBeUndefined();
+  });
+
+  it('falls back to remainingQueries/totalQueries', () => {
+    const s = mapGrokRateLimits({ remainingQueries: 3, totalQueries: 10 }, 50);
+    expect(s.sessionPct).toBe(30);
+    expect(s.lastUpdated).toBe(50);
+  });
+
+  it('uses lowEffortRateLimits when top-level counters missing', () => {
+    const s = mapGrokRateLimits(
+      {
+        lowEffortRateLimits: { remainingQueries: 5, totalQueries: 20, waitTimeSeconds: 60 },
+      },
+      10,
+    );
+    expect(s.sessionPct).toBe(25);
+    expect(s.sessionResetsAt).toBe(10 + 60_000);
+  });
+
+  it('fails closed to usage_unknown without inventing 100', () => {
+    expect(mapGrokRateLimits({}, 1)).toEqual(grokUsageUnknown(1));
+    expect(mapGrokRateLimits({ remainingTokens: 5 }, 2)).toEqual(grokUsageUnknown(2));
+    expect(mapGrokRateLimits({ remainingQueries: 1, totalQueries: 0 }, 3)).toEqual(
+      grokUsageUnknown(3),
+    );
   });
 });
 

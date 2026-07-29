@@ -26,10 +26,10 @@ AI Quota Tool treats **consumer Grok** (grok.com web / SuperGrok-style subscript
 
 | Surface | Grok role |
 | --- | --- |
-| **Chrome MV3** | First-class: live **grok.com** browser session only; never store Grok session keys as auth secrets |
-| **VS Code** | Always shows a Grok slot; **no** Grok SecretStorage / Set Up Accounts paste. State from Chrome WS push or honesty-only + deep-link `https://grok.com` |
+| **Chrome MV3** | Optional: live **grok.com** browser session; never store Grok keys in `chrome.storage` |
+| **VS Code** | **Primary:** paste grok.com `sso` cookie into SecretStorage (Claude-style Save & Test); poll `POST /rest/rate-limits` via pure `mapGrokRateLimits` |
 
-Either surface can show Grok honestly alone (Chrome: connected/unknown or weekly when known; VS Code alone: “use Chrome”). Together, Chrome can push fresher Grok `QuotaState` over `ws://127.0.0.1:54321` with **freshest-wins** merge.
+Either surface can show Grok honestly alone. Together, Chrome can push fresher Grok `QuotaState` over `ws://127.0.0.1:54321` with **freshest-wins** merge.
 
 **Never invent remaining %** (especially never invent `100` when usage is unknown).
 
@@ -43,11 +43,11 @@ Either surface can show Grok honestly alone (Chrome: connected/unknown or weekly
 | --- | --- | --- |
 | G-A1 | Chrome live session | Host permission + session-backed fetch for **grok.com** only; no Grok keys in `chrome.storage` as auth secrets |
 | G-A2 | Host scope | **grok.com** only for this bar; **x.com** Grok deferred |
-| G-A3 | No VS Code Grok secret | Set Up Accounts has no Grok paste field; SecretStorage has no Grok key |
-| G-A4 | VS Code presence | Dashboard always includes a Grok row (Chrome merge or `browser_session_required` honesty) |
+| G-A3 | VS Code Grok secret | Set Up Accounts Grok tab pastes `sso` cookie into SecretStorage (Save & Test / clear), same lifecycle as Claude/Codex |
+| G-A4 | VS Code presence | Dashboard includes Grok from poller secret path, Chrome WS merge, or `browser_session_required` when unset |
 | G-A5 | Deep-link | Honesty / unknown UI offers open **https://grok.com** (no guessed Settings deep path required) |
-| G-A6 | Auth failure | Chrome: clear stale remaining on not-connected; no “keep secret + re-auth paste”. VS Code: no Grok re-auth secret flow. Grok is **not** an `isSessionCookieService` |
-| G-A7 | Disclosure | Dual-path honesty: Chrome Settings + VS Code README / setup privacy - live grok.com session; VS Code does not store Grok secrets |
+| G-A6 | Auth failure | VS Code: `sessionAuthFailureAction` (drop ring, **keep** secret, re-auth cue). Chrome: `not_connected` when session missing |
+| G-A7 | Disclosure | VS Code README + setup privacy: Grok `sso` is stored in SecretStorage like other session cookies |
 
 ### 2.2 Usage honesty and remaining %
 
@@ -57,10 +57,10 @@ Either surface can show Grok honestly alone (Chrome: connected/unknown or weekly
 | G-U2 | Conditional weekly % | Map SuperGrok weekly **used % → remaining %** only from first-party used% in **0–100** (pure `mapGrokWeeklyUsage` or equivalent). Invalid/out-of-range → honesty, not clamped invent |
 | G-U3 | Fail closed | Missing/invalid payload → honesty (`usage_unknown` / `not_connected` / `browser_session_required`); never invent rings |
 | G-U4 | Free / Premium short windows | No hardcoded “N messages / 2h” or blog caps. Honesty only. Card still shown for free users |
-| G-U5 | Effort / mode buckets | **No effort UI.** No DEFAULT/REASONING/DEEPSEARCH absolute caps. No product commitment to third-party mode counters |
+| G-U5 | Effort / mode buckets | No hardcoded DEFAULT/REASONING/DEEPSEARCH absolute caps. Map only first-party remaining/total from rate-limits |
 | G-U6 | Weekly empty ≠ total lockout | Weekly **0%** shows as 0% remaining (+ reset if known). Do **not** claim Grok is fully unusable solely from weekly exhaustion (free Chat/Voice may remain) |
 | G-U7 | Developer API | Out of scope for the consumer Grok card |
-| G-U8 | Session window | **No** Grok `sessionPct` for this bar (weekly only when known) |
+| G-U8 | Session window | Short-window remaining from `POST /rest/rate-limits` maps to **sessionPct** via pure `mapGrokRateLimits`. SuperGrok weekly used% still uses `mapGrokWeeklyUsage` when a validated payload exists |
 
 ### 2.3 Domain model
 
@@ -116,8 +116,8 @@ Either surface can show Grok honestly alone (Chrome: connected/unknown or weekly
 
 ### Follow-on engineering (after bar; not required to lock the bar)
 
-1. Capture first-party Settings → Usage JSON schema from a SuperGrok session  
-2. Wire proven payload through weekly map (Chrome fetcher and/or content bridge)  
+1. Capture first-party Settings → Usage JSON schema from a SuperGrok session (weekly pool)  
+2. Wire proven weekly payload through `mapGrokWeeklyUsage`  
 3. Optional product breakdown UI if payload + product re-scope  
 4. Tier badges only from first-party plan label  
 5. Logo/branding polish if needed  
@@ -126,10 +126,16 @@ Either surface can show Grok honestly alone (Chrome: connected/unknown or weekly
 ### Explicitly deferred
 
 - x.com as auth host  
-- VS Code paste of grok.com cookies into SecretStorage  
 - Developer API key as consumer Grok  
 - Invented free-tier or Premium absolute message caps  
 - Effort meter / mode remaining gauges without first-party numbers  
+
+### Implemented (session cookie path)
+
+1. VS Code SecretStorage for grok.com `sso` + Save & Test / clear  
+2. `POST /rest/rate-limits` host fetch + pure `mapGrokRateLimits`  
+3. Grok included in `isSessionCookieService` (401 keep secret + re-auth)  
+
 
 ---
 

@@ -6,11 +6,11 @@ import {
 } from './session-auth.js';
 
 describe('isSessionCookieService', () => {
-  it('is true for Claude and Codex only', () => {
+  it('is true for Claude, Codex, and Grok (session cookies)', () => {
     expect(isSessionCookieService('claude')).toBe(true);
     expect(isSessionCookieService('codex')).toBe(true);
+    expect(isSessionCookieService('grok')).toBe(true);
     expect(isSessionCookieService('copilot')).toBe(false);
-    expect(isSessionCookieService('grok')).toBe(false);
   });
 });
 
@@ -53,8 +53,12 @@ describe('sessionAuthFailureAction', () => {
     expect(sessionAuthFailureAction('copilot', new Error('401 unauthorized'))).toBeNull();
   });
 
-  it('returns null for Grok (no VS Code session secret path)', () => {
-    expect(sessionAuthFailureAction('grok', new Error('401 unauthorized'))).toBeNull();
+  it('returns drop-ring keep-secret reauth for Grok 401', () => {
+    expect(sessionAuthFailureAction('grok', new Error('Grok rate-limits API: 401 invalid or expired'))).toEqual({
+      dropRing: true,
+      keepSecret: true,
+      requireReauthSignal: true,
+    });
   });
 
   it('returns null for non-auth network failures', () => {

@@ -154,8 +154,8 @@ interface QuotaState {
 
 Product-wide “no credentials stored” is **false**.
 
-- **VS Code (V1 bar):** **does store** Claude `sessionKey` and ChatGPT session tokens in SecretStorage — password-grade secrets. GitHub Copilot uses VS Code OAuth. **Grok secrets are not stored** in VS Code. Lifecycle for Claude/Codex: validate-before-persist (Save & Test), replace, explicit clear. On 401/403: drop the ring, **keep** the secret, re-auth signal — never invent full remaining. Pure policy: `sessionAuthFailureAction` in `@ai-quota-tool/core` (Claude/Codex only).
-- **Chrome (optional package):** may use live browser sessions without storing session keys; not a V1 gate. Grok on Chrome is live `grok.com` session only if that package is used.
+- **VS Code (V1 bar):** **does store** Claude `sessionKey`, ChatGPT session tokens, and Grok `sso` cookies in SecretStorage — password-grade secrets. GitHub Copilot uses VS Code OAuth. Lifecycle: validate-before-persist (Save & Test), replace, explicit clear. On 401/403: drop the ring, **keep** the secret, re-auth signal — never invent full remaining. Pure policy: `sessionAuthFailureAction` in `@ai-quota-tool/core` (Claude/Codex/Grok).
+- **Chrome (optional package):** may use live browser sessions without storing session keys; not a V1 gate. Grok on Chrome uses live `grok.com` session + `/rest/rate-limits` if that package is used.
 - **Localhost WebSocket** (optional): `127.0.0.1` only; any process on the machine could spoof the channel (disclosed local-trust model). Not required for VS Code standalone.
 - **Hard rules:** never log secrets; no developer backend for credentials/quota; VS Code session secrets only in SecretStorage.
 - **Store publish** is post-V1 bar; product + README disclosure is the V1 bar.

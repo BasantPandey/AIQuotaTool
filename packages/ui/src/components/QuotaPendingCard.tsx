@@ -15,12 +15,13 @@ const PENDING_HINTS: Record<ServiceId, string> = {
   claude: 'Set up a Claude session key, or open claude.ai while signed in',
   copilot: 'Sign in to GitHub for seat status (remaining % often unavailable)',
   codex: 'Set up a ChatGPT session token, or open chatgpt.com while signed in',
-  grok: 'Open grok.com in Chrome with the extension — VS Code does not store Grok secrets',
+  grok: 'Set up a grok.com sso cookie in Set Up Accounts',
 };
 
 const REAUTH_HINTS: Partial<Record<ServiceId, string>> = {
   claude: 'Session invalid or expired — open Set Up Accounts to replace or clear the key',
   codex: 'Session invalid or expired — open Set Up Accounts to replace or clear the token',
+  grok: 'sso cookie invalid or expired — open Set Up Accounts to replace or clear the cookie',
 };
 
 interface Props {

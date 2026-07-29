@@ -55,7 +55,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // After Save & Test (or Done), clear re-auth flag and re-poll.
   credPanel.setOnSaved((service) => {
-    if (service === 'claude' || service === 'codex') {
+    if (service === 'claude' || service === 'codex' || service === 'grok') {
       poller.clearReauth(service);
     }
     void poller.pollNow();

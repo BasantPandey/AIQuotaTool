@@ -45,7 +45,7 @@ node scripts/generate-icons.mjs           # regenerate PNG icons
 
 ## Architecture: VS Code primary (V1)
 - **VS Code standalone (required path):** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub OAuth seat). Credentials in SecretStorage. Empty → Set Up Accounts.
-- **Grok:** no VS Code SecretStorage; honesty slot and/or optional Chrome WS merge (see `docs/GROK-SPEC.md`).
+- **Grok:** VS Code SecretStorage `sso` cookie (Claude-style) + `POST /rest/rate-limits` / pure `mapGrokRateLimits`; optional Chrome WS merge (see `docs/GROK-SPEC.md`).
 - **Optional Chrome push:** if used, WS client → VS Code server `:54321`; merge with **freshest-wins** via `mergeQuotaStates` / `upsertQuotaState`. Not a V1 ship dependency.
 - VS Code never initiates messages to Chrome.
 

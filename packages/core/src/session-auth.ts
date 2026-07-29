@@ -15,7 +15,7 @@ export interface SessionAuthFailureAction {
 
 /** Services that use pasted/stored session cookies in VS Code standalone mode. */
 export function isSessionCookieService(service: ServiceId): boolean {
-  return service === 'claude' || service === 'codex';
+  return service === 'claude' || service === 'codex' || service === 'grok';
 }
 
 /**

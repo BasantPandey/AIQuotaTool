@@ -25,7 +25,10 @@ export type QuotaHonesty =
   | 'usage_unknown'
   /** Browser session not signed in for this service (Chrome live session path). */
   | 'not_connected'
-  /** VS Code has no stored secret for this service; use Chrome browser session. */
+  /**
+   * No usable Grok reading yet — set up a grok.com sso cookie in VS Code,
+   * or use the optional Chrome live session path.
+   */
   | 'browser_session_required';
 
 export interface QuotaState {
@@ -57,7 +60,7 @@ export const QUOTA_HONESTY_LABELS: Record<QuotaHonesty, string> = {
   usage_unknown: 'Connected — remaining usage % not available',
   not_connected: 'Not signed in — open grok.com while signed in',
   browser_session_required:
-    'Use Chrome on grok.com (or link Chrome → VS Code) — no Grok secret stored here',
+    'Set up a grok.com sso cookie in Set Up Accounts (or use Chrome on grok.com)',
 };
 
 export type WsMessage =

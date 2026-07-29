@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 declare const acquireVsCodeApi: () => { postMessage(msg: unknown): void };
 const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
 
-type ServiceTab = 'claude' | 'codex' | 'github';
+type ServiceTab = 'claude' | 'codex' | 'github' | 'grok';
 type StatusKind = 'idle' | 'testing' | 'ok' | 'error';
 
 interface CredStatus {
@@ -16,6 +16,7 @@ const TAB_LABELS: Record<ServiceTab, string> = {
   claude: 'Claude',
   codex: 'Codex / ChatGPT',
   github: 'GitHub Copilot',
+  grok: 'Grok',
 };
 
 const TABS = Object.keys(TAB_LABELS) as ServiceTab[];
@@ -48,9 +49,11 @@ function CredentialSetup() {
   const [activeTab, setActiveTab] = useState<ServiceTab>('claude');
   const [claudeKey, setClaudeKey] = useState('');
   const [codexToken, setCodexToken] = useState('');
+  const [grokSso, setGrokSso] = useState('');
   const [claudeStatus, setClaudeStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
   const [codexStatus, setCodexStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
   const [githubStatus, setGithubStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
+  const [grokStatus, setGrokStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -60,6 +63,7 @@ function CredentialSetup() {
         if (msg.service === 'claude') setClaudeStatus(update);
         else if (msg.service === 'codex') setCodexStatus(update);
         else if (msg.service === 'github') setGithubStatus(update);
+        else if (msg.service === 'grok') setGrokStatus(update);
       }
     };
     window.addEventListener('message', handler);
@@ -71,6 +75,7 @@ function CredentialSetup() {
     claude: claudeStatus,
     codex: codexStatus,
     github: githubStatus,
+    grok: grokStatus,
   };
 
   const inputStyle: React.CSSProperties = {
@@ -120,13 +125,10 @@ function CredentialSetup() {
           background: 'var(--vscode-inputValidation-warningBackground, rgba(184,149,0,0.08))',
         }}
       >
-        <strong>Privacy:</strong> Claude and Codex use browser <em>session cookies</em> (account-level secrets).
+        <strong>Privacy:</strong> Claude, Codex, and Grok use browser <em>session cookies</em> (account-level secrets).
         They are stored only in this machine&apos;s VS Code <code>SecretStorage</code> (encrypted at rest by the host).
-        They are never sent to us or any third-party server — only to claude.ai / chatgpt.com / GitHub for quota reads.
-        Clear a secret anytime with <strong>Clear saved key</strong> below. Do not share session keys.
-        <strong>Grok</strong> is not set up here — VS Code does not store Grok secrets. Use the Chrome extension while
-        signed in at grok.com (optional local <code>ws://127.0.0.1</code> push; any process on this machine could spoof
-        that channel).
+        They are never sent to us or any third-party server — only to claude.ai / chatgpt.com / grok.com / GitHub for
+        quota reads. Clear a secret anytime with <strong>Clear saved key</strong> below. Do not share session keys.
       </p>
 
       {/* Tab bar — shows ✓/○/✗ status on each tab */}
@@ -305,6 +307,65 @@ function CredentialSetup() {
               GitHub Copilot quota will appear in the dashboard. If you don't have an active Copilot subscription it will show as unavailable.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Grok tab */}
+      {activeTab === 'grok' && (
+        <div>
+          <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
+            Sign in to <strong>grok.com</strong>, then copy your <code>sso</code> cookie so we can read short-window
+            remaining usage (same session as the website).
+          </p>
+          <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
+            <li>Open <strong>grok.com</strong> in your browser and sign in</li>
+            <li>Press <code>F12</code> → <strong>Application</strong> tab → Cookies → <code>https://grok.com</code></li>
+            <li>Copy the value of <code>sso</code> (JWT, often starts with <code>eyJ</code>)</li>
+          </ol>
+          <div style={{ marginTop: 14 }}>
+            <button
+              style={secondaryBtnStyle}
+              onClick={() => vscode?.postMessage({ type: 'open_external', url: 'https://grok.com' })}
+            >
+              Open grok.com
+            </button>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>sso cookie</label>
+            <input
+              type="password"
+              style={inputStyle}
+              placeholder="eyJ…"
+              value={grokSso}
+              onChange={(e) => setGrokSso(e.target.value)}
+            />
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <button
+              style={{ ...btnStyle, opacity: grokSso.trim() ? 1 : 0.5 }}
+              disabled={!grokSso.trim()}
+              onClick={() => {
+                setGrokStatus({ status: 'testing', detail: undefined });
+                vscode?.postMessage({ type: 'save_test_grok', cookie: grokSso.trim() });
+              }}
+            >
+              Save &amp; Test
+            </button>
+            <button
+              style={secondaryBtnStyle}
+              onClick={() => {
+                setGrokSso('');
+                setGrokStatus({ status: 'idle', detail: undefined });
+                vscode?.postMessage({ type: 'clear_grok' });
+              }}
+            >
+              Clear saved cookie
+            </button>
+            <StatusBadge s={grokStatus} />
+          </div>
+          <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)' }}>
+            Paste a new cookie and Save &amp; Test to replace an existing one. Treat this like a password.
+          </p>
         </div>
       )}
 
