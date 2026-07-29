@@ -125,8 +125,9 @@ Research: [docs/research/store-session-cookie-policy.md](./research/store-sessio
 1. Keep docs in sync with this VS Code-only bar  
 2. ~~Reduce VS Code host fetch duplication~~ - shared `session-fetch` module (poller + Save & Test)  
 3. Optional Copilot remaining % only if GitHub documents a real individual metric  
-4. Marketplace publish via existing workflow when ready (not a bar gate)  
-5. Close or supersede open wayfinder tickets that assumed dual-mode equal  
+4. Marketplace publish via existing workflow when ready (not a bar gate) - pipeline implemented (`publish-vscode.yml`)  
+5. ~~Close dual-mode wayfinder leftovers~~ - map #1 and tickets #7–#9 closed/superseded; dual-mode PRD #10 superseded by #25  
+
 
 ---
 
