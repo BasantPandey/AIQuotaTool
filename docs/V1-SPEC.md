@@ -122,8 +122,8 @@ Research: [docs/research/store-session-cookie-policy.md](./research/store-sessio
 
 ### Remaining / follow-on
 
-1. Keep docs in sync with this VS Code-only bar (this rewrite)  
-2. Optional: reduce VS Code host fetch duplication between Save & Test and poller (both should call pure mappers)  
+1. Keep docs in sync with this VS Code-only bar  
+2. ~~Reduce VS Code host fetch duplication~~ - shared `session-fetch` module (poller + Save & Test)  
 3. Optional Copilot remaining % only if GitHub documents a real individual metric  
 4. Marketplace publish via existing workflow when ready (not a bar gate)  
 5. Close or supersede open wayfinder tickets that assumed dual-mode equal  

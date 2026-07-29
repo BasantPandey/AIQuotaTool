@@ -1,49 +1,21 @@
 import * as vscode from 'vscode';
 import type { CredentialManager } from './credentials.js';
-
-// ── Validation helpers (same endpoints as quota-poller) ──────────────────────
-
-const BROWSER_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
-
-async function testClaude(sessionKey: string): Promise<string> {
-  const headers = {
-    Accept: 'application/json',
-    Cookie: `sessionKey=${sessionKey}`,
-    'User-Agent': BROWSER_UA,
-    Referer: 'https://claude.ai/',
-    Origin: 'https://claude.ai',
-  };
-  const orgRes = await fetch('https://claude.ai/api/organizations', { headers });
-  if (orgRes.status === 401 || orgRes.status === 403) {
-    throw new Error('Session key invalid or expired — paste a fresh sessionKey cookie');
-  }
-  if (!orgRes.ok) throw new Error(`HTTP ${orgRes.status}`);
-  const orgs = (await orgRes.json()) as Array<{ uuid: string; name?: string }>;
-  const org = orgs[0];
-  if (!org) throw new Error('No organisation found');
-  return org.name ?? org.uuid;
-}
-
-async function testCodex(sessionToken: string): Promise<void> {
-  const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
-    headers: {
-      Accept: 'application/json',
-      Cookie: `__Secure-next-auth.session-token=${sessionToken}`,
-      Referer: 'https://chatgpt.com/codex/settings/usage',
-      'User-Agent': BROWSER_UA,
-      Origin: 'https://chatgpt.com',
-    },
-  });
-  if (res.status === 401 || res.status === 403) {
-    throw new Error('Session token invalid or expired — paste a fresh session cookie');
-  }
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
+import { validateClaudeSession, validateCodexSession } from './session-fetch.js';
 
 // ── Panel host ──────────────────────────────────────────────────────────────
 
 type WvMsg = Record<string, string>;
+
+function userFacingSessionError(service: 'claude' | 'codex', e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/\b401\b|\b403\b|invalid or expired/i.test(msg)) {
+    return service === 'claude'
+      ? 'Session key invalid or expired — paste a fresh sessionKey cookie'
+      : 'Session token invalid or expired — paste a fresh session cookie';
+  }
+  return msg;
+}
+
 
 export type SavedCredentialService = 'claude' | 'codex' | 'github';
 
@@ -133,7 +105,7 @@ export class CredentialPanel {
     if (creds.claudeSessionKey) {
       this.send('claude', 'testing');
       try {
-        const name = await testClaude(creds.claudeSessionKey);
+        const name = await validateClaudeSession(creds.claudeSessionKey);
         this.send('claude', 'ok', `Connected as ${name}`);
       } catch {
         this.send(
@@ -147,7 +119,7 @@ export class CredentialPanel {
     if (creds.codexSessionToken) {
       this.send('codex', 'testing');
       try {
-        await testCodex(creds.codexSessionToken);
+        await validateCodexSession(creds.codexSessionToken);
         this.send('codex', 'ok', 'Connected');
       } catch {
         this.send(
@@ -174,12 +146,12 @@ export class CredentialPanel {
       return;
     }
     try {
-      const name = await testClaude(key);
+      const name = await validateClaudeSession(key);
       await this.credentials.setClaudeKey(key);
       this.send('claude', 'ok', `Connected as ${name}`);
       await this.onSaved?.('claude');
     } catch (e) {
-      this.send('claude', 'error', e instanceof Error ? e.message : String(e));
+      this.send('claude', 'error', userFacingSessionError('claude', e));
     }
   }
 
@@ -189,12 +161,12 @@ export class CredentialPanel {
       return;
     }
     try {
-      await testCodex(token);
+      await validateCodexSession(token);
       await this.credentials.setCodexToken(token);
       this.send('codex', 'ok', 'Connected');
       await this.onSaved?.('codex');
     } catch (e) {
-      this.send('codex', 'error', e instanceof Error ? e.message : String(e));
+      this.send('codex', 'error', userFacingSessionError('codex', e));
     }
   }
 

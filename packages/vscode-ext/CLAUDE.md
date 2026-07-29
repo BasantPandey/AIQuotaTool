@@ -6,9 +6,10 @@ VS Code extension. **V1 product surface** - first-class standalone quota monitor
 | File | Role |
 |---|---|
 | `src/extension.ts` | `activate` — poller, credentials, WS, panel, status bar, setup |
-| `src/quota-poller.ts` | Node fetchers; `upsertQuotaState`; `pollNow` after save |
+| `src/quota-poller.ts` | Poll loop; uses `session-fetch`; `upsertQuotaState`; `pollNow` after save |
+| `src/session-fetch.ts` | Shared Claude/Codex/Copilot HTTP fetch + core pure mappers (poller + Save & Test) |
 | `src/credentials.ts` | SecretStorage Claude sessionKey / Codex token; clear methods |
-| `src/credential-panel.ts` | Set Up Accounts host; Save & Test; clear |
+| `src/credential-panel.ts` | Set Up Accounts host; Save & Test via `session-fetch`; clear |
 | `src/ws-server.ts` | WebSocket server `127.0.0.1:54321` — optional Chrome sink |
 | `src/quota-panel.ts` | WebviewPanel host — dashboard webview |
 | `src/status-bar.ts` | Status bar: min(session, weekly); setup / re-auth prompts |
