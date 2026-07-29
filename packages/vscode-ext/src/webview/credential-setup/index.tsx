@@ -230,12 +230,24 @@ function CredentialSetup() {
       {activeTab === 'codex' && (
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
-            Sign in to <strong>chatgpt.com</strong> with Google (or any method), then copy your session token:
+            Sign in to <strong>chatgpt.com</strong>, then copy your session cookie value(s):
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
             <li>Open <strong>chatgpt.com</strong> in your browser and sign in</li>
             <li>Press <code>F12</code> → <strong>Application</strong> tab → Cookies → <code>https://chatgpt.com</code></li>
-            <li>Copy the value of <code>__Secure-next-auth.session-token</code></li>
+            <li>
+              Find <code>__Secure-next-auth.session-token</code>
+              <ul style={{ paddingLeft: 18, marginTop: 4, lineHeight: 1.8 }}>
+                <li>
+                  If you see <strong>one</strong> cookie with that exact name — copy its <em>Value</em>
+                </li>
+                <li>
+                  If you see <code>.0</code> and <code>.1</code> (two rows) — that is <strong>one</strong> cookie
+                  split for size. Copy value of <code>.0</code>, then paste value of <code>.1</code>{' '}
+                  <em>right after it</em> (no space). Order matters: <code>.0</code> first.
+                </li>
+              </ul>
+            </li>
           </ol>
           <div style={{ marginTop: 14 }}>
             <button
@@ -246,13 +258,15 @@ function CredentialSetup() {
             </button>
           </div>
           <div style={{ marginTop: 16 }}>
-            <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>Session Token</label>
-            <input
-              type="password"
-              style={inputStyle}
-              placeholder="eyJhbGci…"
+            <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
+              Session token (join .0 + .1 if split)
+            </label>
+            <textarea
+              style={{ ...inputStyle, minHeight: 72, resize: 'vertical' as const }}
+              placeholder="Paste .0 value, then immediately .1 value (or one full token)"
               value={codexToken}
               onChange={(e) => setCodexToken(e.target.value)}
+              spellCheck={false}
             />
           </div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
@@ -279,7 +293,7 @@ function CredentialSetup() {
             <StatusBadge s={codexStatus} />
           </div>
           <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)' }}>
-            Paste a new token and Save &amp; Test to replace an existing one.
+            Not two different logins — only one session. Paste a new combined token and Save &amp; Test to replace.
           </p>
         </div>
       )}

@@ -35,7 +35,8 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://chatgpt.com`
-3. Copy the value of `__Secure-next-auth.session-token`
+3. Copy `__Secure-next-auth.session-token`
+   - If the browser shows **two** rows (`.0` and `.1`), that is **one** cookie split for size — not two keys. Copy the **Value** of `.0`, then paste the **Value** of `.1` immediately after it (no space; `.0` first).
 
 **Grok sso cookie** (grok.com short-window remaining)
 1. Open [grok.com](https://grok.com) in Chrome and sign in

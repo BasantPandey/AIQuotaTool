@@ -34,10 +34,40 @@ function claudeHeaders(sessionKey: string): Record<string, string> {
   };
 }
 
+/**
+ * ChatGPT may split the session cookie into `.0` / `.1` chunks when the JWT is large.
+ * Accept a single full value, or paste of both chunk values (whitespace-separated),
+ * or `name=value` lines. Returns one continuous token string.
+ */
+export function normalizeCodexSessionToken(raw: string): string {
+  const lines = raw
+    .split(/[\r\n]+/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const pieces: string[] = [];
+  for (const line of lines) {
+    // name=value (optionally chunked name .0 / .1)
+    const eq = line.match(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*(.+)$/i);
+    if (eq?.[1]) {
+      pieces.push(eq[1].trim());
+      continue;
+    }
+    // Whitespace-separated bare values on one line
+    for (const part of line.split(/\s+/).filter(Boolean)) {
+      const bare = part.replace(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*/i, '');
+      if (bare) pieces.push(bare);
+    }
+  }
+  return pieces.join('').trim();
+}
+
 function codexHeaders(sessionToken: string): Record<string, string> {
+  const token = normalizeCodexSessionToken(sessionToken);
+  // Full JWT (join of browser .0 + .1 chunks when split). Single cookie name is enough.
   return {
     Accept: 'application/json',
-    Cookie: `__Secure-next-auth.session-token=${sessionToken}`,
+    Cookie: `__Secure-next-auth.session-token=${token}`,
     Referer: 'https://chatgpt.com/codex/settings/usage',
     'User-Agent': BROWSER_UA,
     Origin: 'https://chatgpt.com',
@@ -87,8 +117,10 @@ export async function validateCodexSession(sessionToken: string): Promise<void> 
 
 /** Poll Codex usage via pure mapCodexUsage. */
 export async function fetchCodexUsage(sessionToken: string): Promise<QuotaState> {
+  const token = normalizeCodexSessionToken(sessionToken);
+  if (!token) throw new Error('Codex session token is empty');
   const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
-    headers: codexHeaders(sessionToken),
+    headers: codexHeaders(token),
   });
   if (res.status === 401 || res.status === 403) {
     throw new Error(`Codex usage API: ${res.status} invalid or expired session token`);

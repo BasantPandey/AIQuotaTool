@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { CredentialManager } from './credentials.js';
 import {
+  normalizeCodexSessionToken,
   validateClaudeSession,
   validateCodexSession,
   validateGrokSession,
@@ -185,13 +186,15 @@ export class CredentialPanel {
   }
 
   private async handleSaveTestCodex(token: string): Promise<void> {
-    if (!token) {
+    // Browser may show session-token.0 + .1 chunks — join into one token.
+    const normalized = normalizeCodexSessionToken(token);
+    if (!normalized) {
       this.send('codex', 'error', 'Token is empty');
       return;
     }
     try {
-      await validateCodexSession(token);
-      await this.credentials.setCodexToken(token);
+      await validateCodexSession(normalized);
+      await this.credentials.setCodexToken(normalized);
       this.send('codex', 'ok', 'Connected');
       await this.onSaved?.('codex');
     } catch (e) {
