@@ -3,10 +3,13 @@
  * Remaining % math stays in @ai-quota-tool/core pure mappers only.
  */
 import {
+  combineGrokQuotaState,
+  extractGrokWeeklyUsage,
   mapClaudeUsage,
   mapCodexUsage,
   mapCopilotSeatStatus,
   mapGrokRateLimits,
+  mapGrokWeeklyUsage,
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
   type QuotaState,
@@ -126,10 +129,15 @@ export async function validateGrokSession(ssoCookie: string): Promise<void> {
 }
 
 /**
- * Poll Grok short-window remaining via POST /rest/rate-limits + pure mapGrokRateLimits.
- * Never invents remaining % when the payload lacks counters.
+ * First-party Connect-RPC methods that return SuperGrok pool used%
+ * (Settings → Usage / creditUsagePercent). Fail closed when path/auth fails.
  */
-export async function fetchGrokUsage(ssoCookie: string): Promise<QuotaState> {
+const GROK_WEEKLY_CONNECT_PATHS = [
+  '/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig',
+  '/grok_api_v2.GrokBuildBilling/GetGrokUsageInfo',
+] as const;
+
+async function fetchGrokRateLimitsSession(ssoCookie: string): Promise<QuotaState> {
   const res = await fetch('https://grok.com/rest/rate-limits', {
     method: 'POST',
     headers: grokHeaders(ssoCookie),
@@ -141,4 +149,47 @@ export async function fetchGrokUsage(ssoCookie: string): Promise<QuotaState> {
   if (!res.ok) throw new Error(`Grok rate-limits API: ${res.status}`);
   const data = (await res.json()) as GrokRateLimitsResponse;
   return mapGrokRateLimits(data);
+}
+
+/**
+ * Best-effort weekly SuperGrok pool via Connect-RPC JSON.
+ * Returns null when no path yields a valid used% (never invents remaining).
+ */
+async function fetchGrokWeeklyPool(ssoCookie: string): Promise<QuotaState | null> {
+  const headers = {
+    ...grokHeaders(ssoCookie),
+    'Connect-Protocol-Version': '1',
+  };
+  for (const path of GROK_WEEKLY_CONNECT_PATHS) {
+    try {
+      const res = await fetch(`https://grok.com${path}`, {
+        method: 'POST',
+        headers,
+        body: '{}',
+      });
+      if (res.status === 401 || res.status === 403) {
+        // Same session as rate-limits; bubble only if rate-limits already succeeded.
+        continue;
+      }
+      if (!res.ok) continue;
+      const data: unknown = await res.json();
+      const extracted = extractGrokWeeklyUsage(data);
+      if (!extracted) continue;
+      return mapGrokWeeklyUsage(extracted);
+    } catch {
+      // Try next path — weekly is optional enrichment.
+    }
+  }
+  return null;
+}
+
+/**
+ * Poll Grok: short-window rate-limits (session) + optional SuperGrok weekly pool.
+ * Pure mappers only; never invent remaining % when payloads lack counters.
+ */
+export async function fetchGrokUsage(ssoCookie: string): Promise<QuotaState> {
+  const now = Date.now();
+  const session = await fetchGrokRateLimitsSession(ssoCookie);
+  const weekly = await fetchGrokWeeklyPool(ssoCookie);
+  return combineGrokQuotaState(session, weekly, now);
 }

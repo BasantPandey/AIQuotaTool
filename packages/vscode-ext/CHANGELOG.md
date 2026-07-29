@@ -13,6 +13,11 @@
 - Session auth failure for Grok: drop ring, keep secret, re-auth cue (same as Claude/Codex)
 - README + setup privacy updated (Grok secrets are stored)
 
+### SuperGrok weekly pool (fail-closed)
+- Pure `extractGrokWeeklyUsage` understands first-party `creditUsagePercent` / `currentPeriod`
+- Pure `combineGrokQuotaState` merges session + weekly rings without inventing missing windows
+- Hosts try Connect-RPC `GetGrokCreditsConfig` / `GetGrokUsageInfo` after rate-limits
+
 ## [0.7.1] - 2026-07-21
 
 ### Honest Copilot + pressure

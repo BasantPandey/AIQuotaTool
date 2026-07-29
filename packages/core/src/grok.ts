@@ -174,6 +174,23 @@ function readNumber(obj: Record<string, unknown>, keys: string[]): number | unde
   return undefined;
 }
 
+function readProtobufTimestampMs(value: unknown): number | undefined {
+  if (typeof value === 'string') {
+    const t = Date.parse(value);
+    return Number.isFinite(t) ? t : undefined;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value < 1e12 ? Math.round(value * 1000) : Math.round(value);
+  }
+  const rec = asRecord(value);
+  if (!rec) return undefined;
+  // Connect/protobuf JSON: { seconds, nanos } or { seconds: "123" }
+  const sec = readNumber(rec, ['seconds']);
+  if (sec == null) return undefined;
+  const nanos = readNumber(rec, ['nanos']) ?? 0;
+  return Math.round(sec * 1000 + nanos / 1e6);
+}
+
 function readResetMs(obj: Record<string, unknown>): number | undefined {
   const ms = readNumber(obj, [
     'weeklyResetsAt',
@@ -186,12 +203,20 @@ function readResetMs(obj: Record<string, unknown>): number | undefined {
   if (ms != null) {
     return ms < 1e12 ? Math.round(ms * 1000) : Math.round(ms);
   }
-  for (const key of ['weeklyResetAt', 'weekly_reset_at', 'resetTime', 'reset_time']) {
+  for (const key of ['weeklyResetAt', 'weekly_reset_at', 'resetTime', 'reset_time', 'end']) {
     const v = obj[key];
     if (typeof v === 'string') {
       const t = Date.parse(v);
       if (Number.isFinite(t)) return t;
     }
+    const proto = readProtobufTimestampMs(v);
+    if (proto != null) return proto;
+  }
+  // Nested currentPeriod.end (Settings → Usage / GetGrokCreditsConfig)
+  const period = asRecord(obj['currentPeriod']) ?? asRecord(obj['current_period']);
+  if (period) {
+    const end = readProtobufTimestampMs(period['end']) ?? readResetMs(period);
+    if (end != null) return end;
   }
   return undefined;
 }
@@ -199,6 +224,9 @@ function readResetMs(obj: Record<string, unknown>): number | undefined {
 /**
  * Extract SuperGrok-style weekly used% from an unknown JSON body.
  * Accepts only explicit used-percentage fields in 0–100 — never free-tier message counts.
+ *
+ * First-party Settings → Usage (client) shape from GetGrokCreditsConfig:
+ * `{ config: { creditUsagePercent, currentPeriod: { type, start, end }, productUsage: [...] } }`
  */
 export function extractGrokWeeklyUsage(data: unknown): GrokWeeklyUsageInput | null {
   const root = asRecord(data);
@@ -207,6 +235,7 @@ export function extractGrokWeeklyUsage(data: unknown): GrokWeeklyUsageInput | nu
   // Prefer Settings → Usage shaped objects only (not short-window rate-limit bags).
   const nestedCandidates: Array<Record<string, unknown> | null> = [
     root,
+    asRecord(root['config']),
     asRecord(root['usage']),
     asRecord(root['weekly']),
     asRecord(root['weeklyUsage']),
@@ -215,15 +244,30 @@ export function extractGrokWeeklyUsage(data: unknown): GrokWeeklyUsageInput | nu
 
   for (const obj of nestedCandidates) {
     if (!obj) continue;
+    // Ignore pure short-window rate-limit bags (remainingQueries without used%).
+    if (
+      obj['remainingQueries'] != null &&
+      obj['creditUsagePercent'] == null &&
+      obj['usedPct'] == null &&
+      obj['usagePercent'] == null &&
+      obj['usagePercentage'] == null
+    ) {
+      continue;
+    }
     const usedPct = readNumber(obj, [
+      'creditUsagePercent', // SuperGrok pool used% (first-party Settings UI)
+      'credit_usage_percent',
       'usedPct',
       'used_pct',
       'usagePercentage',
       'usage_percentage',
+      'usagePercent',
+      'usage_percent',
       'percentUsed',
       'percent_used',
       'usedPercentage',
       'used_percentage',
+      'percent', // select() helper on credits config
     ]);
     if (usedPct == null) continue;
     if (usedPct < 0 || usedPct > 100) continue;
@@ -231,4 +275,44 @@ export function extractGrokWeeklyUsage(data: unknown): GrokWeeklyUsageInput | nu
     return weeklyResetsAt != null ? { usedPct, weeklyResetsAt } : { usedPct };
   }
   return null;
+}
+
+/**
+ * Merge short-window (rate-limits) session reading with SuperGrok weekly pool reading.
+ * Pure: no network. Never invents missing windows.
+ */
+export function combineGrokQuotaState(
+  session: QuotaState | null | undefined,
+  weekly: QuotaState | null | undefined,
+  lastUpdated: number = Date.now(),
+): QuotaState {
+  const sessionPct =
+    session?.service === 'grok' && session.sessionPct != null ? session.sessionPct : undefined;
+  const sessionResetsAt =
+    session?.service === 'grok' && session.sessionResetsAt != null
+      ? session.sessionResetsAt
+      : undefined;
+  const weeklyPct =
+    weekly?.service === 'grok' && weekly.weeklyPct != null ? weekly.weeklyPct : undefined;
+  const weeklyResetsAt =
+    weekly?.service === 'grok' && weekly.weeklyResetsAt != null
+      ? weekly.weeklyResetsAt
+      : undefined;
+
+  if (sessionPct == null && weeklyPct == null) {
+    // Prefer the more specific honesty if either side has one.
+    if (session?.honesty != null) return { ...session, lastUpdated };
+    if (weekly?.honesty != null) return { ...weekly, lastUpdated };
+    return grokUsageUnknown(lastUpdated);
+  }
+
+  const state: QuotaState = {
+    service: 'grok',
+    lastUpdated,
+  };
+  if (sessionPct != null) state.sessionPct = sessionPct;
+  if (sessionResetsAt != null) state.sessionResetsAt = sessionResetsAt;
+  if (weeklyPct != null) state.weeklyPct = weeklyPct;
+  if (weeklyResetsAt != null) state.weeklyResetsAt = weeklyResetsAt;
+  return state;
 }

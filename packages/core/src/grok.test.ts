@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  combineGrokQuotaState,
   extractGrokWeeklyUsage,
   grokBrowserSessionRequired,
   grokNotConnected,
@@ -126,10 +127,59 @@ describe('extractGrokWeeklyUsage', () => {
     });
   });
 
+  it('reads first-party GetGrokCreditsConfig creditUsagePercent + period end', () => {
+    const endSec = 1_800_000_000;
+    expect(
+      extractGrokWeeklyUsage({
+        config: {
+          creditUsagePercent: 33,
+          currentPeriod: { type: 20, end: { seconds: endSec, nanos: 0 } },
+          productUsage: [{ product: 'CHAT', usagePercent: 10 }],
+        },
+      }),
+    ).toEqual({ usedPct: 33, weeklyResetsAt: endSec * 1000 });
+  });
+
+  it('ignores short-window rate-limit bags without used%', () => {
+    expect(
+      extractGrokWeeklyUsage({ remainingQueries: 5, totalQueries: 10, windowSizeSeconds: 7200 }),
+    ).toBeNull();
+  });
+
   it('rejects absolute counts outside 0–100 and non-objects', () => {
     expect(extractGrokWeeklyUsage({ usedPct: 250 })).toBeNull();
     expect(extractGrokWeeklyUsage({ remainingMessages: 10 })).toBeNull();
     expect(extractGrokWeeklyUsage(null)).toBeNull();
     expect(extractGrokWeeklyUsage('nope')).toBeNull();
+  });
+});
+
+describe('combineGrokQuotaState', () => {
+  it('merges session from rate-limits with weekly from SuperGrok pool', () => {
+    const session = mapGrokRateLimits({ remainingTokens: 50, totalTokens: 100 }, 1);
+    const weekly = mapGrokWeeklyUsage({ usedPct: 20, weeklyResetsAt: 9_000 }, 2);
+    const combined = combineGrokQuotaState(session, weekly, 3);
+    expect(combined).toEqual({
+      service: 'grok',
+      sessionPct: 50,
+      weeklyPct: 80,
+      weeklyResetsAt: 9_000,
+      lastUpdated: 3,
+    });
+  });
+
+  it('keeps only weekly when session is honesty-only', () => {
+    const combined = combineGrokQuotaState(
+      grokUsageUnknown(1),
+      mapGrokWeeklyUsage({ usedPct: 10 }, 2),
+      5,
+    );
+    expect(combined.sessionPct).toBeUndefined();
+    expect(combined.weeklyPct).toBe(90);
+    expect(combined.honesty).toBeUndefined();
+  });
+
+  it('fails closed to usage_unknown when both sides lack rings', () => {
+    expect(combineGrokQuotaState(grokUsageUnknown(1), null, 7)).toEqual(grokUsageUnknown(7));
   });
 });

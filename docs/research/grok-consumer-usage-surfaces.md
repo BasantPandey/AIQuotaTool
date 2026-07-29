@@ -230,6 +230,40 @@ Chrome Web Store listings (not xAI official):
 
 Unlike Claude’s session usage endpoints (already used by this monorepo) or GitHub’s billing **consumption** APIs (still not remaining % for Copilot - see sibling research), xAI’s **public** docs catalog for consumer Grok does **not** list a third-party-consumable “GET remaining quota” endpoint.
 
+### 6.4 First-party client surfaces (validated from grok.com web bundles, 2026-07-29)
+
+**Judgment / reverse-engineering from first-party JS only** (not a published third-party API). Used to wire fail-closed hosts.
+
+| Surface | Method / path | Role |
+| --- | --- | --- |
+| Short-window rate limits | `POST /rest/rate-limits` body `{ requestKind, modelName }` | Session-style remaining queries/tokens (`remainingQueries`, `totalTokens`, `windowSizeSeconds`, effort buckets) |
+| SuperGrok pool / Settings → Usage | Connect-RPC `GrokBuildBilling.GetGrokCreditsConfig` (client method `getGrokCreditsConfig`) | Weekly/monthly pool **used %** as `config.creditUsagePercent` (0–100), `config.currentPeriod.{type,start,end}`, `config.productUsage[].usagePercent` |
+| Related | `GetGrokUsageInfo`, `GET /rest/usage/free-usage-gates` | Usage info / free-tier gates after pool exhaustion |
+
+**Connect-RPC path candidates** (JSON + `Connect-Protocol-Version: 1`, session cookies):
+
+- `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig`
+- `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokUsageInfo`
+
+**Redacted response shape (no secrets):**
+
+```json
+{
+  "config": {
+    "creditUsagePercent": 33,
+    "currentPeriod": { "type": 20, "start": { "seconds": 0 }, "end": { "seconds": 1800000000 } },
+    "productUsage": [{ "product": "CHAT", "usagePercent": 10 }],
+    "onDemandCap": { "val": "0" },
+    "onDemandUsed": { "val": "0" },
+    "prepaidBalance": { "val": "0" }
+  }
+}
+```
+
+- `UsagePeriodType.WEEKLY = 20`, `MONTHLY = 10` in client enums.
+- UI progress bar uses **`creditUsagePercent` as percentage used** → remaining = `100 - used` via pure `mapGrokWeeklyUsage`.
+- Product hosts **fail closed** if Connect path returns non-OK or extract finds no used% (session ring from rate-limits still shown when valid).
+
 ---
 
 ## 7. Effort / reasoning / multi-product quotas

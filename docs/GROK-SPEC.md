@@ -114,14 +114,15 @@ Either surface can show Grok honestly alone. Together, Chrome can push fresher G
 4. Pure seams tested as G-T*  
 5. This locked bar document  
 
-### Follow-on engineering (after bar; not required to lock the bar)
+### Follow-on engineering (after bar)
 
-1. Capture first-party Settings → Usage JSON schema from a SuperGrok session (weekly pool)  
-2. Wire proven weekly payload through `mapGrokWeeklyUsage`  
-3. Optional product breakdown UI if payload + product re-scope  
+1. ~~Capture first-party Settings → Usage JSON schema~~ - client shape documented in research note §6.4  
+2. ~~Wire proven weekly payload through `mapGrokWeeklyUsage`~~ - Connect-RPC candidates + pure extract/combine (fail closed if path rejects)  
+3. Optional product breakdown UI if product re-scope  
 4. Tier badges only from first-party plan label  
 5. Logo/branding polish if needed  
 6. Marketplace / store listing copy for a Grok-enabled release  
+7. Live SuperGrok HAR confirmation if Connect path names drift  
 
 ### Explicitly deferred
 
@@ -130,11 +131,12 @@ Either surface can show Grok honestly alone. Together, Chrome can push fresher G
 - Invented free-tier or Premium absolute message caps  
 - Effort meter / mode remaining gauges without first-party numbers  
 
-### Implemented (session cookie path)
+### Implemented (session cookie + weekly pool path)
 
 1. VS Code SecretStorage for grok.com `sso` + Save & Test / clear  
-2. `POST /rest/rate-limits` host fetch + pure `mapGrokRateLimits`  
-3. Grok included in `isSessionCookieService` (401 keep secret + re-auth)  
+2. `POST /rest/rate-limits` → pure `mapGrokRateLimits` (session ring)  
+3. Connect-RPC `GetGrokCreditsConfig` / `GetGrokUsageInfo` candidates → pure `extractGrokWeeklyUsage` + `mapGrokWeeklyUsage` + `combineGrokQuotaState`  
+4. Grok included in `isSessionCookieService` (401 keep secret + re-auth)  
 
 
 ---
