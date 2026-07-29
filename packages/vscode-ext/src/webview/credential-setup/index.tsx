@@ -239,12 +239,15 @@ function CredentialSetup() {
               Find <code>__Secure-next-auth.session-token</code>
               <ul style={{ paddingLeft: 18, marginTop: 4, lineHeight: 1.8 }}>
                 <li>
-                  If you see <strong>one</strong> cookie with that exact name — copy its <em>Value</em>
+                  If you see <code>.0</code> and <code>.1</code> — <strong>one</strong> session split in two rows
+                  (not two passwords).
                 </li>
                 <li>
-                  If you see <code>.0</code> and <code>.1</code> (two rows) — that is <strong>one</strong> cookie
-                  split for size. Copy value of <code>.0</code>, then paste value of <code>.1</code>{' '}
-                  <em>right after it</em> (no space). Order matters: <code>.0</code> first.
+                  <strong>Double-click</strong> the Value of <code>.0</code> → copy full value (not the truncated
+                  <code>…</code> preview) → paste on line 1.
+                </li>
+                <li>
+                  Double-click Value of <code>.1</code> → copy → paste on <strong>line 2</strong> (Enter between them).
                 </li>
               </ul>
             </li>
@@ -259,11 +262,11 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 16 }}>
             <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
-              Session token (join .0 + .1 if split)
+              Session token — line 1 = .0, line 2 = .1
             </label>
             <textarea
-              style={{ ...inputStyle, minHeight: 72, resize: 'vertical' as const }}
-              placeholder="Paste .0 value, then immediately .1 value (or one full token)"
+              style={{ ...inputStyle, minHeight: 88, resize: 'vertical' as const }}
+              placeholder={'.0 value on first line\n.1 value on second line'}
               value={codexToken}
               onChange={(e) => setCodexToken(e.target.value)}
               spellCheck={false}
@@ -293,7 +296,8 @@ function CredentialSetup() {
             <StatusBadge s={codexStatus} />
           </div>
           <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)' }}>
-            Not two different logins — only one session. Paste a new combined token and Save &amp; Test to replace.
+            Putting only <code>.0</code> (or the truncated value with <code>…</code>) will fail. Both full values, in
+            order, are required when the browser shows two rows.
           </p>
         </div>
       )}

@@ -35,11 +35,11 @@ function claudeHeaders(sessionKey: string): Record<string, string> {
 }
 
 /**
- * ChatGPT may split the session cookie into `.0` / `.1` chunks when the JWT is large.
- * Accept a single full value, or paste of both chunk values (whitespace-separated),
- * or `name=value` lines. Returns one continuous token string.
+ * ChatGPT may split the session cookie into `.0` / `.1` when large.
+ * Parse paste into ordered chunks (preserve boundaries for Cookie header).
+ * Accept: one full value, two lines (.0 then .1), or name=value lines.
  */
-export function normalizeCodexSessionToken(raw: string): string {
+export function parseCodexSessionChunks(raw: string): string[] {
   const lines = raw
     .split(/[\r\n]+/)
     .map((l) => l.trim())
@@ -47,31 +47,86 @@ export function normalizeCodexSessionToken(raw: string): string {
 
   const pieces: string[] = [];
   for (const line of lines) {
-    // name=value (optionally chunked name .0 / .1)
     const eq = line.match(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*(.+)$/i);
     if (eq?.[1]) {
       pieces.push(eq[1].trim());
       continue;
     }
-    // Whitespace-separated bare values on one line
+    // One bare value per line (preferred for .0 / .1 paste)
+    if (!/\s/.test(line)) {
+      pieces.push(line);
+      continue;
+    }
+    // Space-separated bare values on one line (last resort)
     for (const part of line.split(/\s+/).filter(Boolean)) {
       const bare = part.replace(/^__Secure-next-auth\.session-token(?:\.\d+)?\s*=\s*/i, '');
       if (bare) pieces.push(bare);
     }
   }
-  return pieces.join('').trim();
+  return pieces.filter(Boolean);
 }
 
-function codexHeaders(sessionToken: string): Record<string, string> {
-  const token = normalizeCodexSessionToken(sessionToken);
-  // Full JWT (join of browser .0 + .1 chunks when split). Single cookie name is enough.
+/** Joined storage form (still works if only one unchunked cookie). */
+export function normalizeCodexSessionToken(raw: string): string {
+  return parseCodexSessionChunks(raw).join('').trim();
+}
+
+/**
+ * Cookie header matching the browser: when ChatGPT split the session cookie,
+ * send `.0` + `.1` separately (NextAuth reassembles by index). Single cookie
+ * when there is only one part.
+ */
+export function codexCookieHeader(raw: string): string {
+  const chunks = parseCodexSessionChunks(raw);
+  if (chunks.length === 0) return '';
+  if (chunks.length === 1) {
+    // If a previously-joined long token was stored, re-split for next-auth chunk reader.
+    const t = chunks[0]!;
+    if (t.length > 3800) {
+      // Browser typically fills .0 near 4KB; rest goes to .1
+      const cut = 3800;
+      return [
+        `__Secure-next-auth.session-token.0=${t.slice(0, cut)}`,
+        `__Secure-next-auth.session-token.1=${t.slice(cut)}`,
+      ].join('; ');
+    }
+    return `__Secure-next-auth.session-token=${t}`;
+  }
+  return chunks.map((c, i) => `__Secure-next-auth.session-token.${i}=${c}`).join('; ');
+}
+
+function codexBrowserHeaders(raw: string): Record<string, string> {
   return {
     Accept: 'application/json',
-    Cookie: `__Secure-next-auth.session-token=${token}`,
-    Referer: 'https://chatgpt.com/codex/settings/usage',
+    Cookie: codexCookieHeader(raw),
+    Referer: 'https://chatgpt.com/',
     'User-Agent': BROWSER_UA,
     Origin: 'https://chatgpt.com',
   };
+}
+
+/**
+ * Exchange session cookie for short-lived ChatGPT accessToken
+ * (GET /api/auth/session) — required by backend-api/wham/usage.
+ */
+async function fetchCodexAccessToken(sessionRaw: string): Promise<string> {
+  const res = await fetch('https://chatgpt.com/api/auth/session', {
+    headers: codexBrowserHeaders(sessionRaw),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error(
+      `ChatGPT session API: ${res.status} invalid or expired session cookie (need both .0 and .1 if split)`,
+    );
+  }
+  if (!res.ok) throw new Error(`ChatGPT session API: ${res.status}`);
+  const data = (await res.json()) as { accessToken?: string; access_token?: string; user?: unknown };
+  const token = data.accessToken ?? data.access_token;
+  if (typeof token !== 'string' || !token) {
+    throw new Error(
+      'ChatGPT session returned no accessToken — paste full session-token (.0 then .1 if the browser shows two rows)',
+    );
+  }
+  return token;
 }
 
 async function loadClaudeOrgs(sessionKey: string): Promise<ClaudeOrg[]> {
@@ -115,12 +170,21 @@ export async function validateCodexSession(sessionToken: string): Promise<void> 
   await fetchCodexUsage(sessionToken);
 }
 
-/** Poll Codex usage via pure mapCodexUsage. */
+/**
+ * Poll Codex usage via pure mapCodexUsage.
+ * Auth: session cookie (chunked .0/.1) → /api/auth/session accessToken → Bearer on wham/usage.
+ */
 export async function fetchCodexUsage(sessionToken: string): Promise<QuotaState> {
-  const token = normalizeCodexSessionToken(sessionToken);
-  if (!token) throw new Error('Codex session token is empty');
+  const chunks = parseCodexSessionChunks(sessionToken);
+  if (chunks.length === 0) throw new Error('Codex session token is empty');
+
+  const accessToken = await fetchCodexAccessToken(sessionToken);
   const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
-    headers: codexHeaders(token),
+    headers: {
+      ...codexBrowserHeaders(sessionToken),
+      Authorization: `Bearer ${accessToken}`,
+      Referer: 'https://chatgpt.com/codex/settings/usage',
+    },
   });
   if (res.status === 401 || res.status === 403) {
     throw new Error(`Codex usage API: ${res.status} invalid or expired session token`);

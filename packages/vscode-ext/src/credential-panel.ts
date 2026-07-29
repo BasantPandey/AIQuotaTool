@@ -20,7 +20,10 @@ function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown
     if (service === 'grok') {
       return 'sso cookie invalid or expired — paste a fresh sso cookie from grok.com';
     }
-    return 'Session token invalid or expired — paste a fresh session cookie';
+    return (
+      'Session invalid or expired — on chatgpt.com cookies, copy Value of ' +
+      '__Secure-next-auth.session-token.0 then .1 (two lines), double-click each Value so it is not truncated'
+    );
   }
   return msg;
 }
@@ -186,15 +189,16 @@ export class CredentialPanel {
   }
 
   private async handleSaveTestCodex(token: string): Promise<void> {
-    // Browser may show session-token.0 + .1 chunks — join into one token.
-    const normalized = normalizeCodexSessionToken(token);
-    if (!normalized) {
-      this.send('codex', 'error', 'Token is empty');
+    // Keep multi-line paste (.0 on line 1, .1 on line 2) so Cookie can send chunks.
+    const cleaned = token.trim();
+    if (!cleaned || !normalizeCodexSessionToken(cleaned)) {
+      this.send('codex', 'error', 'Token is empty — paste session-token (.0 and .1 if split)');
       return;
     }
     try {
-      await validateCodexSession(normalized);
-      await this.credentials.setCodexToken(normalized);
+      await validateCodexSession(cleaned);
+      // Store raw multi-line form when user pasted two chunks (preserve boundaries).
+      await this.credentials.setCodexToken(cleaned);
       this.send('codex', 'ok', 'Connected');
       await this.onSaved?.('codex');
     } catch (e) {
