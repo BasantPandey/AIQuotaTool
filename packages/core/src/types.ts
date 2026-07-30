@@ -80,7 +80,8 @@ export const SERVICE_COLORS: Record<ServiceId, string> = {
   claude: '#1a1a2e',
   copilot: '#2ea44f',
   codex: '#0066ff',
-  grok: '#111111',
+  /** Elevated charcoal so the card reads on #0d1117 panels (not pure black). */
+  grok: '#1c1c1e',
 };
 
 export const SERVICE_URLS: Record<ServiceId, string> = {

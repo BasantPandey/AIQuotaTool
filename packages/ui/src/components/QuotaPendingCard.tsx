@@ -32,6 +32,7 @@ interface Props {
 
 export function QuotaPendingCard({ service, needsReauth = false }: Props) {
   const reauth = needsReauth && REAUTH_HINTS[service] != null;
+  const isGrok = service === 'grok';
   return (
     <div
       style={{
@@ -41,7 +42,11 @@ export function QuotaPendingCard({ service, needsReauth = false }: Props) {
         marginBottom: 10,
         boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
         opacity: reauth ? 0.85 : 0.55,
-        outline: reauth ? '1px solid rgba(227, 179, 65, 0.55)' : undefined,
+        outline: reauth
+          ? '1px solid rgba(227, 179, 65, 0.55)'
+          : isGrok
+            ? '1px solid rgba(255,255,255,0.14)'
+            : undefined,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

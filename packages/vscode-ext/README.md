@@ -2,14 +2,15 @@
 
 Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - live in VS Code (v0.7.3).
 
-![Status bar showing Claude 72% | Copilot 91% | Codex 8%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.png)
+![Status bar showing Claude 72% | Copilot 91% | Codex 8% | Grok 55%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.png)
 
 ---
 
 ## Features
 
-- **Status bar item** — remaining quota at a glance using the lower of session/weekly %; amber when any service drops below 10%
-- **Dashboard panel** — full quota breakdown with session and weekly progress rings (or honest Copilot status without fake %)
+- **Status bar item** — remaining quota at a glance for Claude, Copilot, Codex, and Grok (lower of session/weekly %); amber when any service drops below 10%
+- **Dashboard panel** — full quota breakdown with session and weekly progress rings (or honest Copilot / Grok status without fake %)
+- **Grok** — paste grok.com `sso` cookie in Set Up Accounts; short-window rate-limits plus SuperGrok weekly pool when available
 - **Standalone (V1 product)** — fetches quota directly from VS Code using your session credentials; **no Chrome extension required**
 - **Optional Chrome push** — if you also run the legacy Chrome package, it may merge readings over local WebSocket (freshest-wins); not required
 - **Automatic refresh** — polls every 60 seconds in the background
@@ -82,7 +83,7 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 ## Requirements
 
 - VS Code 1.95 or later
-- Active accounts on the services you want to monitor (Claude Pro/Free, GitHub Copilot, ChatGPT)
+- Active accounts on the services you want to monitor (Claude Pro/Free, GitHub Copilot, ChatGPT, Grok)
 
 ---
 

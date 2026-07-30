@@ -115,61 +115,84 @@
     <text x="316" y="424" fill="#cccccc">}</text>
   </g>
 
-  <!-- Dashboard panel overlay (right side) -->
-  <rect x="900" y="66" width="380" height="460" rx="0" fill="#0d1117"/>
-  <rect x="900" y="66" width="380" height="36" fill="#161b22"/>
-  <text x="920" y="89" font-family="Segoe UI, sans-serif" font-size="13" fill="#c9d1d9">AI Quota Tool</text>
+  <!-- Dashboard panel overlay (right side) — four services including Grok -->
+  <rect x="900" y="66" width="380" height="580" rx="0" fill="#0d1117"/>
+  <rect x="900" y="66" width="380" height="32" fill="#161b22"/>
+  <text x="920" y="87" font-family="Segoe UI, sans-serif" font-size="13" fill="#c9d1d9">AI Quota Tool</text>
 
-  <!-- Claude card -->
-  <rect x="910" y="112" width="360" height="120" rx="14" fill="#1a1a2e"/>
-  <!-- Claude icon placeholder -->
-  <circle cx="934" cy="136" r="10" fill="#da7756"/>
-  <text x="950" y="141" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Claude</text>
-  <text x="1230" y="141" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)" text-anchor="end">Updated just now</text>
-  <!-- Session ring (72%) -->
-  <circle cx="954" cy="195" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
-  <circle cx="954" cy="195" r="28" fill="none" stroke="#f39c12" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="49.26" stroke-linecap="round" transform="rotate(-90 954 195)"/>
-  <text x="954" y="199" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">72%</text>
-  <text x="954" y="215" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Session · 2h 54m</text>
-  <!-- Weekly ring (97%) -->
-  <circle cx="1020" cy="195" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
-  <circle cx="1020" cy="195" r="28" fill="none" stroke="#2ecc71" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="5.28" stroke-linecap="round" transform="rotate(-90 1020 195)"/>
-  <text x="1020" y="199" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">97%</text>
-  <text x="1020" y="215" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weekly · 149h 54m</text>
+  <!-- Claude card (#1a1a2e) -->
+  <rect x="910" y="106" width="360" height="108" rx="14" fill="#1a1a2e"/>
+  <circle cx="934" cy="128" r="9" fill="#da7756"/>
+  <text x="950" y="133" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Claude</text>
+  <text x="1230" y="133" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)" text-anchor="end">Updated just now</text>
+  <!-- Session ring 72% -->
+  <circle cx="954" cy="180" r="26" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5.5"/>
+  <circle cx="954" cy="180" r="26" fill="none" stroke="#f39c12" stroke-width="5.5" stroke-dasharray="163.36" stroke-dashoffset="45.74" stroke-linecap="round" transform="rotate(-90 954 180)"/>
+  <text x="954" y="184" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">72%</text>
+  <text x="954" y="199" font-family="Segoe UI, sans-serif" font-size="8" fill="rgba(255,255,255,0.6)" text-anchor="middle">Session · 2h 54m</text>
+  <!-- Weekly ring 97% -->
+  <circle cx="1020" cy="180" r="26" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5.5"/>
+  <circle cx="1020" cy="180" r="26" fill="none" stroke="#2ecc71" stroke-width="5.5" stroke-dasharray="163.36" stroke-dashoffset="4.90" stroke-linecap="round" transform="rotate(-90 1020 180)"/>
+  <text x="1020" y="184" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">97%</text>
+  <text x="1020" y="199" font-family="Segoe UI, sans-serif" font-size="8" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weekly · 149h 54m</text>
 
-  <!-- Copilot card -->
-  <rect x="910" y="242" width="360" height="90" rx="14" fill="#2ea44f"/>
-  <circle cx="934" cy="265" r="10" fill="rgba(255,255,255,0.3)"/>
-  <text x="950" y="270" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Copilot</text>
-  <circle cx="954" cy="305" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
-  <circle cx="954" cy="305" r="28" fill="none" stroke="#2ecc71" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="5.28" stroke-linecap="round" transform="rotate(-90 954 305)"/>
-  <text x="954" y="309" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">91%</text>
-  <text x="954" y="325" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Monthly</text>
+  <!-- Copilot card (#2ea44f) -->
+  <rect x="910" y="224" width="360" height="80" rx="14" fill="#2ea44f"/>
+  <circle cx="934" cy="245" r="9" fill="rgba(255,255,255,0.3)"/>
+  <text x="950" y="250" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Copilot</text>
+  <circle cx="954" cy="280" r="22" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5"/>
+  <circle cx="954" cy="280" r="22" fill="none" stroke="#2ecc71" stroke-width="5" stroke-dasharray="138.23" stroke-dashoffset="12.44" stroke-linecap="round" transform="rotate(-90 954 280)"/>
+  <text x="954" y="284" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">91%</text>
+  <text x="954" y="297" font-family="Segoe UI, sans-serif" font-size="8" fill="rgba(255,255,255,0.6)" text-anchor="middle">Monthly</text>
 
-  <!-- Codex card -->
-  <rect x="910" y="342" width="360" height="120" rx="14" fill="#0066ff"/>
-  <circle cx="934" cy="366" r="10" fill="rgba(255,255,255,0.3)"/>
-  <text x="950" y="371" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Codex</text>
-  <!-- Session ring (8% - almost empty, red) -->
-  <circle cx="954" cy="415" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
-  <circle cx="954" cy="415" r="28" fill="none" stroke="#e74c3c" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="161.86" stroke-linecap="round" transform="rotate(-90 954 415)"/>
-  <text x="954" y="419" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">8%</text>
-  <text x="954" y="435" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Session · 1h 2m</text>
-  <!-- Weekly ring (43%) -->
-  <circle cx="1020" cy="415" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
-  <circle cx="1020" cy="415" r="28" fill="none" stroke="#f39c12" stroke-width="6" stroke-dasharray="175.93" stroke-dashoffset="100.28" stroke-linecap="round" transform="rotate(-90 1020 415)"/>
-  <text x="1020" y="419" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">43%</text>
-  <text x="1020" y="435" font-family="Segoe UI, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weekly · 72h 10m</text>
+  <!-- Codex card (#0066ff) -->
+  <rect x="910" y="314" width="360" height="108" rx="14" fill="#0066ff"/>
+  <circle cx="934" cy="336" r="9" fill="rgba(255,255,255,0.3)"/>
+  <text x="950" y="341" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Codex</text>
+  <!-- Session ring 8% -->
+  <circle cx="954" cy="388" r="26" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5.5"/>
+  <circle cx="954" cy="388" r="26" fill="none" stroke="#e74c3c" stroke-width="5.5" stroke-dasharray="163.36" stroke-dashoffset="150.29" stroke-linecap="round" transform="rotate(-90 954 388)"/>
+  <text x="954" y="392" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">8%</text>
+  <text x="954" y="407" font-family="Segoe UI, sans-serif" font-size="8" fill="rgba(255,255,255,0.6)" text-anchor="middle">Session · 1h 2m</text>
+  <!-- Weekly ring 43% -->
+  <circle cx="1020" cy="388" r="26" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5.5"/>
+  <circle cx="1020" cy="388" r="26" fill="none" stroke="#f39c12" stroke-width="5.5" stroke-dasharray="163.36" stroke-dashoffset="93.12" stroke-linecap="round" transform="rotate(-90 1020 388)"/>
+  <text x="1020" y="392" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">43%</text>
+  <text x="1020" y="407" font-family="Segoe UI, sans-serif" font-size="8" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weekly · 72h 10m</text>
+
+  <!-- Grok card (#1c1c1e) — session short-window + weekly SuperGrok pool -->
+  <rect x="910" y="432" width="360" height="108" rx="14" fill="#1c1c1e"/>
+  <rect x="910" y="432" width="360" height="108" rx="14" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+  <!-- Simple monochrome Grok mark (face) -->
+  <circle cx="934" cy="454" r="9" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <circle cx="931" cy="452" r="1.2" fill="#ffffff"/>
+  <circle cx="937" cy="452" r="1.2" fill="#ffffff"/>
+  <path d="M929.5 457.2c1 1.3 2.1 1.9 3.5 1.9s2.5-.6 3.5-1.9" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round"/>
+  <text x="950" y="459" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Grok</text>
+  <text x="1230" y="459" font-family="Segoe UI, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)" text-anchor="end">Updated just now</text>
+  <!-- Session ring 55% -->
+  <circle cx="954" cy="506" r="26" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5.5"/>
+  <circle cx="954" cy="506" r="26" fill="none" stroke="#f39c12" stroke-width="5.5" stroke-dasharray="163.36" stroke-dashoffset="73.51" stroke-linecap="round" transform="rotate(-90 954 506)"/>
+  <text x="954" y="510" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">55%</text>
+  <text x="954" y="525" font-family="Segoe UI, sans-serif" font-size="8" fill="rgba(255,255,255,0.6)" text-anchor="middle">Session · 1h 48m</text>
+  <!-- Weekly ring 84% -->
+  <circle cx="1020" cy="506" r="26" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5.5"/>
+  <circle cx="1020" cy="506" r="26" fill="none" stroke="#2ecc71" stroke-width="5.5" stroke-dasharray="163.36" stroke-dashoffset="26.14" stroke-linecap="round" transform="rotate(-90 1020 506)"/>
+  <text x="1020" y="510" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">84%</text>
+  <text x="1020" y="525" font-family="Segoe UI, sans-serif" font-size="8" fill="rgba(255,255,255,0.6)" text-anchor="middle">Weekly · 3d 12h</text>
+
+  <!-- Panel bottom edge fade into editor -->
+  <rect x="900" y="550" width="380" height="96" fill="#0d1117"/>
 
   <!-- Status bar -->
   <rect x="0" y="778" width="1280" height="22" fill="#007acc"/>
   <!-- Left side status bar items -->
   <text x="10" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">⎇ main</text>
   <text x="80" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">⚠ 0</text>
-  <!-- Right side - our extension -->
-  <rect x="860" y="778" width="400" height="22" fill="#005a9e"/>
-  <text x="872" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff" font-weight="500">⚡ Claude 72% | Copilot 91% | Codex 8%</text>
+  <!-- Right side - extension status includes Grok -->
+  <rect x="700" y="778" width="460" height="22" fill="#005a9e"/>
+  <text x="712" y="793" font-family="Segoe UI, sans-serif" font-size="11" fill="#ffffff" font-weight="500">⚡ Claude 72% | Copilot 91% | Codex 8% | Grok 55%</text>
   <!-- Other right-side items -->
-  <text x="1170" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">UTF-8</text>
+  <text x="1175" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">UTF-8</text>
   <text x="1220" y="793" font-family="Segoe UI, sans-serif" font-size="12" fill="#ffffff">TypeScript</text>
 </svg>

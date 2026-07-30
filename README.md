@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and (optionally) **Grok** - primarily as a **VS Code extension**.
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - primarily as a **VS Code extension**.
 
 ## Product surface (V1)
 
@@ -18,17 +18,17 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 
 ```
 VS Code Extension
-  - Standalone Node poller (Claude sessionKey, Codex session token, GitHub OAuth)
-  - SecretStorage for Claude/Codex session secrets (treat like passwords)
-  - Webview dashboard + status bar (min session/weekly remaining; honest Copilot states)
+  - Standalone Node poller (Claude sessionKey, Codex session token, Grok sso, GitHub OAuth)
+  - SecretStorage for Claude / Codex / Grok session secrets (treat like passwords)
+  - Webview dashboard + status bar (min session/weekly remaining; honest Copilot/Grok states)
   - Optional: receive Chrome WS push on 127.0.0.1:54321 (not required for V1)
 ```
 
-**Credentials:** VS Code **stores** Claude and ChatGPT session cookies in SecretStorage - never claim product-wide “no credentials stored.” Validate on save (Save & Test), replace, clear via **Set Up Accounts**. Expired sessions drop the ring and show re-auth; secrets are not auto-deleted. See `packages/vscode-ext/README.md`.
+**Credentials:** VS Code **stores** Claude, ChatGPT, and Grok session cookies in SecretStorage - never claim product-wide “no credentials stored.” Validate on save (Save & Test), replace, clear via **Set Up Accounts**. Expired sessions drop the ring and show re-auth; secrets are not auto-deleted. See `packages/vscode-ext/README.md`.
 
 **Copilot:** Seat/plan can be detected; remaining usage % is often unavailable from GitHub. The UI shows honest status instead of inventing 100% remaining.
 
-**Grok:** See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md). VS Code does not store Grok secrets; honesty or optional Chrome push only until first-party weekly used% is validated.
+**Grok:** See [`docs/GROK-SPEC.md`](docs/GROK-SPEC.md). VS Code stores the grok.com `sso` cookie and polls rate-limits (plus SuperGrok weekly pool when available). Optional Chrome live session remains a freshest-wins merge path.
 
 ---
 

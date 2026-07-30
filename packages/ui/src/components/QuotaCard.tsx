@@ -22,6 +22,8 @@ export function QuotaCard({ state }: Props) {
   const deepLinkHost =
     state.service === 'grok' && state.honesty != null ? SERVICE_URLS.grok : null;
 
+  const isGrok = state.service === 'grok';
+
   return (
     <div
       style={{
@@ -30,6 +32,8 @@ export function QuotaCard({ state }: Props) {
         padding: '16px 18px',
         marginBottom: 10,
         boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+        // Grok is near-black; a light edge keeps it peer-visible on dark panels
+        outline: isGrok ? '1px solid rgba(255,255,255,0.14)' : undefined,
       }}
     >
       <ServiceHeader service={state.service} lastUpdated={state.lastUpdated} />

@@ -32,8 +32,10 @@ const MOCK_STATES: QuotaState[] = [
   },
   {
     service: 'grok',
-    weeklyPct: 62,
-    weeklyResetsAt: Date.now() + 4 * 24 * 60 * 60 * 1000,
+    sessionPct: 55,
+    weeklyPct: 84,
+    sessionResetsAt: Date.now() + 1 * 60 * 60 * 1000 + 48 * 60 * 1000,
+    weeklyResetsAt: Date.now() + 3 * 24 * 60 * 60 * 1000 + 12 * 60 * 60 * 1000,
     lastUpdated: Date.now() - 20_000,
   },
 ];

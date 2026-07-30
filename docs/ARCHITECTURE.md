@@ -55,10 +55,10 @@ Shared `QuotaState` model in `@ai-quota-tool/core`. Optional dual-source merge u
 6. **Grok:** live `grok.com` session only; honesty-first until SuperGrok weekly used% payload is validated; never store session keys.
 
 ### VS Code
-1. `QuotaPoller` every 60s using stored Claude/Codex secrets and GitHub OAuth token.
-2. Pure mappers: `mapClaudeUsage` / `mapCodexUsage` from `@ai-quota-tool/core`.
+1. `QuotaPoller` every 60s using stored Claude/Codex/Grok secrets and GitHub OAuth token.
+2. Pure mappers: `mapClaudeUsage` / `mapCodexUsage` / `mapGrokRateLimits` (+ weekly combine) from `@ai-quota-tool/core`.
 3. Copilot: honest builders when remaining % is unavailable (no fake 100%).
-4. **Grok:** no SecretStorage; if no Chrome push yet, inject `grokBrowserSessionRequired` so the slot is always present.
+4. **Grok:** SecretStorage `sso` cookie → `POST /rest/rate-limits` (+ SuperGrok weekly when available). No secret and no fresher Chrome push → inject `grokBrowserSessionRequired` so the slot is always present.
 5. Chrome WS payloads merge with `upsertQuotaState` (freshest-wins).
 6. Status bar shows min(session, weekly) remaining; amber below 10%. Empty → Set Up Accounts.
 

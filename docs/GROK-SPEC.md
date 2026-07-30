@@ -80,14 +80,14 @@ Either surface can show Grok honestly alone. Together, Chrome can push fresher G
 | G-I1 | Dashboard card | Shared UI lists Grok with other services |
 | G-I2 | Known weekly | When `weeklyPct` present: weekly ring + optional reset; no session ring; no effort/mode sub-rows |
 | G-I3 | Unknown / honesty | Honesty label + deep-link; no fake rings |
-| G-I4 | Pending / VS Code alone | Hint: Chrome on grok.com; VS Code does not store Grok secrets |
+| G-I4 | Pending / VS Code alone | Hint: Set Up Accounts for grok.com `sso` cookie (or optional Chrome on grok.com) |
 | G-I5 | Tier copy | Card title **Grok** only for this bar; SuperGrok / X Premium badges deferred until first-party plan signal |
 
 ### 2.5 Quality
 
 | ID | Requirement | Acceptance |
 | --- | --- | --- |
-| G-T1 | Pure seam tests | Vitest (or equivalent) on Grok honesty builders, weekly map, session-auth exclusion of Grok |
+| G-T1 | Pure seam tests | Vitest (or equivalent) on Grok honesty builders, weekly/session maps, session-auth for Grok |
 | G-T2 | Hosts thin | Chrome/VS Code call pure core mapping; do not re-implement remaining math in hosts |
 
 ---
@@ -99,7 +99,7 @@ Either surface can show Grok honestly alone. Together, Chrome can push fresher G
 | Grok honesty builders | `usage_unknown` / `not_connected` / `browser_session_required` → `QuotaState` without % |
 | Weekly map | First-party used% (0–100) → `weeklyPct` remaining (+ optional reset) |
 | Optional extract | Parse usage-shaped JSON only when fields are explicit used% in 0–100 |
-| Session-cookie policy | Claude/Codex only; Grok false |
+| Session-cookie policy | Claude/Codex/Grok (`sessionAuthFailureAction`); Chrome live session still no stored Grok keys |
 | Merge / pressure | Service-agnostic; honesty never invents full remaining |
 
 ---
