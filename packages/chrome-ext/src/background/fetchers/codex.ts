@@ -17,8 +17,10 @@ export class CodexFetcher implements ServiceFetcher {
       },
     });
 
-    // Session expired: drop the ring, signal re-auth (never keep stale data).
-    if (res.status === 401 || res.status === 403) {
+    // 401 = session truly expired: drop the ring, signal re-auth.
+    // 403 from the service worker is usually a bot check, not auth - throw so
+    // the freshest-wins merge keeps the content bridge's last good reading.
+    if (res.status === 401) {
       return sessionExpired('codex');
     }
     if (!res.ok) {

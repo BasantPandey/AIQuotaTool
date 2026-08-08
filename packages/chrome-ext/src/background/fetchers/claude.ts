@@ -18,8 +18,10 @@ export class ClaudeFetcher implements ServiceFetcher {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
-    // Session expired: drop the ring, signal re-auth (never keep stale data).
-    if (orgRes.status === 401 || orgRes.status === 403) {
+    // 401 = session truly expired: drop the ring, signal re-auth.
+    // 403 from the service worker is usually a bot check, not auth - throw so
+    // the freshest-wins merge keeps the content bridge's last good reading.
+    if (orgRes.status === 401) {
       return sessionExpired('claude');
     }
     if (!orgRes.ok) throw new Error(`Claude orgs API returned ${orgRes.status}`);
@@ -31,7 +33,7 @@ export class ClaudeFetcher implements ServiceFetcher {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       return sessionExpired('claude');
     }
     if (!res.ok) throw new Error(`Claude usage API returned ${res.status}`);
