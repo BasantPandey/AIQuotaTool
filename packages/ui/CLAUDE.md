@@ -1,6 +1,6 @@
 # packages/ui
 
-Shared React 19 component library. Used by both `chrome-ext` (popup) and `vscode-ext` (webview panel).
+Shared React 19 component library. Used by both `chrome-ext` (side panel) and `vscode-ext` (webview panel).
 
 ## Components
 - `QuotaDashboard` — root component; receives `QuotaState[]` and renders one `QuotaCard` per service. Also exports `QuotaLoadingFallback` and `QuotaErrorFallback` for use in `<Suspense>` and `<ErrorBoundary>`.
@@ -11,7 +11,7 @@ Shared React 19 component library. Used by both `chrome-ext` (popup) and `vscode
 
 ## Rules
 - **No data fetching** — pure display only. All async logic lives in the consuming package.
-- **No router** — no routing needed; both Chrome popup and VS Code webview are single-view
+- **No router** — no routing needed; both Chrome side panel and VS Code webview are single-view
 - **No state management** — components are props-driven; TanStack Query lives in the consumer
 - React Compiler is enabled — do not add `useMemo` or `useCallback`
 - Wrap consumers in `<Suspense fallback={<QuotaLoadingFallback />}>` and `<ErrorBoundary FallbackComponent={QuotaErrorFallback}>`

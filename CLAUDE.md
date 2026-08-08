@@ -102,10 +102,13 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 
 Build: esbuild bundles `extension.ts` → `dist/extension.js`; Vite builds webviews.
 
+## Writing standard
+- **All specifications, docs, issues, and user-facing copy use ASD-STE100 Simplified Technical English.** Short sentences, approved words, one instruction per sentence, no em dashes.
+
 ## Stack rules
 - **React Compiler** is enabled (`babel-plugin-react-compiler`) — do not add `useMemo` or `useCallback`
 - **Suspense + ErrorBoundary everywhere** — no `isLoading`/`isError` conditionals in components
 - **`@ai-quota-tool/ui` components are pure display** — no async logic, no routing, no state management
 - **`@ai-quota-tool/core`** must remain importable in browser, service worker, and Node.js
 - **`calcPct(used, limit)`** returns percentage **REMAINING** (not used)
-- TanStack Query v5: popup uses `useSuspenseQuery`; VS Code webview uses `queryClient.setQueryData` (push pattern)
+- TanStack Query v5: side panel uses `useSuspenseQuery`; VS Code webview uses `queryClient.setQueryData` (push pattern)
