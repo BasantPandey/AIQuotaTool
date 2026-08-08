@@ -9,7 +9,7 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 - **Mappers:** `mapClaudeUsage`, `mapCodexUsage` (+ response types)
 - **Copilot honesty:** `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`, `mapCopilotSeatStatus`
 - **Grok honesty / weekly map:** `grokUsageUnknown`, `grokNotConnected`, `grokBrowserSessionRequired`, `mapGrokWeeklyUsage`, `extractGrokWeeklyUsage`
-- **Session auth failure:** `sessionAuthFailureAction`, `isSessionAuthFailure`, `isSessionCookieService` (drop ring, keep secret, re-auth signal; Grok is **not** a session-cookie service)
+- **Session auth failure:** `sessionAuthFailureAction`, `isSessionAuthFailure`, `isSessionCookieService` (drop ring, keep secret, re-auth signal; Grok is **not** a session-cookie service); `sessionExpired` builder + `session_expired` honesty (Chrome live-session expiry drops the ring)
 - **Pressure:** `pressureRemaining`, `lowestPressureAmong` (never invent 100% for honesty-only states)
 - **Badge:** `deriveBadge` + `BADGE_COLORS` (lowest remaining %; amber < 10%, red < 5%; empty when no real %)
 - **Low-quota alerts:** `decideLowQuotaAlerts`, `initialLowQuotaArmed`, `LOW_QUOTA_THRESHOLD` (once per drop; re-arm on recovery)
