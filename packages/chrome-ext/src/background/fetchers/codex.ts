@@ -1,5 +1,5 @@
 import type { QuotaState } from '@ai-quota-tool/core';
-import { mapCodexUsage, type WhamUsageResponse } from '@ai-quota-tool/core';
+import { mapCodexUsage, sessionExpired, type WhamUsageResponse } from '@ai-quota-tool/core';
 import type { ServiceFetcher } from './base.js';
 
 // Confirmed via reverse-engineering of chatgpt.com network traffic.
@@ -17,6 +17,10 @@ export class CodexFetcher implements ServiceFetcher {
       },
     });
 
+    // Session expired: drop the ring, signal re-auth (never keep stale data).
+    if (res.status === 401 || res.status === 403) {
+      return sessionExpired('codex');
+    }
     if (!res.ok) {
       throw new Error(`Codex usage API returned ${res.status}`);
     }

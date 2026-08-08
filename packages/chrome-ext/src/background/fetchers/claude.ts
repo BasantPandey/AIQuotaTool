@@ -1,5 +1,5 @@
 import type { QuotaState } from '@ai-quota-tool/core';
-import { mapClaudeUsage, type ClaudeUsageResponse } from '@ai-quota-tool/core';
+import { mapClaudeUsage, sessionExpired, type ClaudeUsageResponse } from '@ai-quota-tool/core';
 import type { ServiceFetcher } from './base.js';
 
 // Endpoint discovered via DevTools on claude.ai/new#settings/usage.
@@ -18,6 +18,10 @@ export class ClaudeFetcher implements ServiceFetcher {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
+    // Session expired: drop the ring, signal re-auth (never keep stale data).
+    if (orgRes.status === 401 || orgRes.status === 403) {
+      return sessionExpired('claude');
+    }
     if (!orgRes.ok) throw new Error(`Claude orgs API returned ${orgRes.status}`);
     const orgs = (await orgRes.json()) as ClaudeOrg[];
     const orgId = orgs[0]?.uuid;
@@ -27,6 +31,9 @@ export class ClaudeFetcher implements ServiceFetcher {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
+    if (res.status === 401 || res.status === 403) {
+      return sessionExpired('claude');
+    }
     if (!res.ok) throw new Error(`Claude usage API returned ${res.status}`);
 
     const data = (await res.json()) as ClaudeUsageResponse;

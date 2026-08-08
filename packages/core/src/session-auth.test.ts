@@ -3,6 +3,7 @@ import {
   isSessionAuthFailure,
   isSessionCookieService,
   sessionAuthFailureAction,
+  sessionExpired,
 } from './session-auth.js';
 
 describe('isSessionCookieService', () => {
@@ -73,5 +74,22 @@ describe('sessionAuthFailureAction', () => {
     // Policy object has no remainingPct / inventFull fields by design.
     expect('remainingPct' in action!).toBe(false);
     expect('clearSecret' in action!).toBe(false);
+  });
+});
+
+describe('sessionExpired', () => {
+  it('returns a session_expired honesty state with a fresh timestamp', () => {
+    const state = sessionExpired('claude', 123);
+    expect(state).toEqual({
+      service: 'claude',
+      honesty: 'session_expired',
+      lastUpdated: 123,
+    });
+  });
+
+  it('never carries remaining percentages (drop the ring)', () => {
+    const state = sessionExpired('codex', 1);
+    expect(state.sessionPct).toBeUndefined();
+    expect(state.weeklyPct).toBeUndefined();
   });
 });

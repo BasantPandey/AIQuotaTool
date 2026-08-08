@@ -28,6 +28,9 @@ describe('isConnectedReading', () => {
     expect(
       isConnectedReading(state({ service: 'grok', honesty: 'browser_session_required' })),
     ).toBe(false);
+    expect(
+      isConnectedReading(state({ service: 'claude', honesty: 'session_expired' })),
+    ).toBe(false);
   });
 
   it('treats an empty reading as not connected', () => {

@@ -132,6 +132,7 @@ export function AccountsSection({
       <p style={{ fontSize: 11, color: '#8b949e', marginTop: 12, lineHeight: 1.5 }}>
         Claude, Codex, and Grok read your live browser session - to disconnect them,
         sign out on their sites. Copilot disconnect removes the stored GitHub token.
+        To revoke access fully, visit github.com/settings/applications.
       </p>
     </div>
   );

@@ -1,4 +1,15 @@
-import type { ServiceId } from './types.js';
+import type { QuotaState, ServiceId } from './types.js';
+
+/**
+ * Honest state for an expired or missing browser session (Chrome live-session
+ * path). Fresh lastUpdated makes the freshest-wins merge drop the stale ring.
+ */
+export function sessionExpired(
+  service: ServiceId,
+  lastUpdated: number = Date.now(),
+): QuotaState {
+  return { service, honesty: 'session_expired', lastUpdated };
+}
 
 /**
  * Pure policy for Claude/Codex session-cookie poll failures.

@@ -25,6 +25,8 @@ export type QuotaHonesty =
   | 'usage_unknown'
   /** Browser session not signed in for this service (Chrome live session path). */
   | 'not_connected'
+  /** Browser session expired or missing (Chrome live session path; drop the ring). */
+  | 'session_expired'
   /**
    * No usable Grok reading yet — set up a grok.com sso cookie in VS Code,
    * or use the optional Chrome live session path.
@@ -59,6 +61,7 @@ export const QUOTA_HONESTY_LABELS: Record<QuotaHonesty, string> = {
   auth_unavailable: 'Could not verify Copilot access — sign in to GitHub',
   usage_unknown: 'Connected — remaining usage % not available',
   not_connected: 'Not signed in — open grok.com while signed in',
+  session_expired: 'Session expired - sign in again on the service website',
   browser_session_required:
     'Set up a grok.com sso cookie in Set Up Accounts (or use Chrome on grok.com)',
 };
