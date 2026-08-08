@@ -6,3 +6,7 @@ export * from './grok.js';
 export * from './mappers.js';
 export * from './session-auth.js';
 export * from './pressure.js';
+export * from './badge.js';
+export * from './low-quota.js';
+export * from './github-oauth.js';
+export * from './connections.js';

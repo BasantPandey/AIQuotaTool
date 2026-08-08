@@ -1,19 +1,22 @@
 {
   "manifest_version": 3,
   "name": "AI Quota Tool",
-  "version": "0.7.2",
-  "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok in one dashboard.",
+  "version": "2.0.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr4pLqv3Rcj1W4mgOOt82dWRKpKOVFIOlTYYVmp3wlYgSJFvq8dSGLvryoYNezdburIl1wsUdzjRzEYgl+EqRhHcI22PiG3fVfrJiwHPFNnzR6/GDyUNyiBbTHFSQrQ3peyQcJOrHT0aRJ0E6DbBwupQ0iE9UKRpkXxXlXpXgvshBNf35IXK2O3aLgboKZysKqNYkyj3KHP2lE4rp3al0UAxVgNRDBK+jcJSFPIwPxwuUZ/yGJzPpu4iJluBUXXT/fyzvpVBvUyenHULcczs8JsN3V0fVldHv8LvZHrgVQ4xlN2SGf2imwOzurNTK6y/fzAFETHl/H/uZZc1hvr4/CQIDAQAB",
+  "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok in one side panel dashboard.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
     }
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
   },
   "background": {
     "service_worker": "worker.js",
@@ -29,14 +32,15 @@
   "permissions": [
     "storage",
     "alarms",
-    "notifications"
+    "notifications",
+    "identity",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://claude.ai/*",
     "https://chatgpt.com/*",
     "https://api.github.com/*",
-    "https://grok.com/*",
-    "ws://127.0.0.1:54321/"
+    "https://github.com/*",
+    "https://grok.com/*"
   ]
 }
-

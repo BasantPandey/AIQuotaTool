@@ -41,7 +41,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         worker: resolve(__dirname, 'src/background/worker.ts'),
-        popup: resolve(__dirname, 'src/popup/index.html'),
+        sidepanel: resolve(__dirname, 'src/sidepanel/index.html'),
       },
       output: {
         entryFileNames: '[name].js',

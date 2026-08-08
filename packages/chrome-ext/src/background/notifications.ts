@@ -1,8 +1,20 @@
-import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
+import type { LowQuotaAlert, QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { SERVICE_LABELS } from '@ai-quota-tool/core';
 
 const ALARM_PREFIX_SESSION = 'quota-reset-session-';
 const ALARM_PREFIX_WEEKLY = 'quota-reset-weekly-';
+
+/** Fire low-quota alerts; stable per-service IDs make repeats update, not stack. */
+export function notifyLowQuota(alerts: LowQuotaAlert[]): void {
+  for (const alert of alerts) {
+    chrome.notifications.create(`notif-low-${alert.service}`, {
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: `${SERVICE_LABELS[alert.service]} quota low`,
+      message: `Only ${Math.round(alert.pct)}% remaining in the current window.`,
+    });
+  }
+}
 
 export function scheduleResetNotifications(states: QuotaState[]): void {
   for (const state of states) {
@@ -25,7 +37,7 @@ export function handleAlarm(alarm: chrome.alarms.Alarm): void {
       type: 'basic',
       iconUrl: 'icons/icon48.png',
       title: `${SERVICE_LABELS[service]} session reset`,
-      message: "Your session quota has refreshed — you're ready to go.",
+      message: "Your session quota has refreshed - you're ready to go.",
     });
   } else if (alarm.name.startsWith(ALARM_PREFIX_WEEKLY)) {
     const service = alarm.name.slice(ALARM_PREFIX_WEEKLY.length) as ServiceId;
@@ -33,7 +45,7 @@ export function handleAlarm(alarm: chrome.alarms.Alarm): void {
       type: 'basic',
       iconUrl: 'icons/icon48.png',
       title: `${SERVICE_LABELS[service]} weekly quota reset`,
-      message: 'Your weekly quota has refreshed — full capacity restored.',
+      message: 'Your weekly quota has refreshed - full capacity restored.',
     });
   }
 }
