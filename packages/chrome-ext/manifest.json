@@ -2,7 +2,6 @@
   "manifest_version": 3,
   "name": "AI Quota Tool",
   "version": "2.0.0",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr4pLqv3Rcj1W4mgOOt82dWRKpKOVFIOlTYYVmp3wlYgSJFvq8dSGLvryoYNezdburIl1wsUdzjRzEYgl+EqRhHcI22PiG3fVfrJiwHPFNnzR6/GDyUNyiBbTHFSQrQ3peyQcJOrHT0aRJ0E6DbBwupQ0iE9UKRpkXxXlXpXgvshBNf35IXK2O3aLgboKZysKqNYkyj3KHP2lE4rp3al0UAxVgNRDBK+jcJSFPIwPxwuUZ/yGJzPpu4iJluBUXXT/fyzvpVBvUyenHULcczs8JsN3V0fVldHv8LvZHrgVQ4xlN2SGf2imwOzurNTK6y/fzAFETHl/H/uZZc1hvr4/CQIDAQAB",
   "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok in one side panel dashboard.",
   "icons": {
     "16": "icons/icon16.png",

@@ -56,7 +56,7 @@ The V1 WebSocket push to VS Code is removed. The VS Code WS server stays but is 
 | K3 | Token storage | The `gho_` token lives in `chrome.storage.local` only. Never synced. Disconnect deletes it |
 | K4 | Revocation | Disconnect copy points to github.com/settings/applications for full grant revocation |
 | K5 | Silent re-auth | A dead token triggers one silent re-auth per service worker activation. Never loop (GitHub allows 10 tokens per hour) |
-| K6 | Stable identity | The manifest `key` is pinned so the `https://<extension-id>.chromiumapp.org/` OAuth callback is stable |
+| K6 | Stable identity | The store assigns the extension ID on first upload (the manifest must not contain a `key` field). The OAuth callback `https://<store-id>.chromiumapp.org/` is registered after that upload |
 
 ### 2.4 Badge and notifications
 
@@ -139,7 +139,7 @@ Research: [docs/research/chrome-web-store-publishing.md](./research/chrome-web-s
 
 | # | Work | Type |
 | --- | --- | --- |
-| 1 | Register the GitHub OAuth App (callback `https://<extension-id>.chromiumapp.org/`) and set `GITHUB_OAUTH_CLIENT_ID` in `github-auth.ts` | Manual task (repo owner) |
+| 1 | Upload the zip once to get the store-assigned extension ID. Then register the GitHub OAuth App (callback `https://<store-id>.chromiumapp.org/`) and set `GITHUB_OAUTH_CLIENT_ID` in `github-auth.ts`. Rebuild and re-upload the zip with the client id | Manual task (repo owner) |
 | 2 | Manual E2E in Chrome: load `dist/` unpacked, connect each service, verify panel, badge, notifications, disconnect, session expiry | Manual task |
 | 3 | Produce screenshots (1-5 at 1280x800 or 640x400) and the 440x280 promo tile | Manual task |
 | 4 | Register the Chrome Web Store developer account and complete the Privacy practices tab with the approved texts | Manual task |

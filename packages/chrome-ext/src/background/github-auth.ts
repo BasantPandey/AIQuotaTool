@@ -16,7 +16,9 @@ import {
  */
 
 // TODO(store): register the GitHub OAuth App and paste its client id here.
-// Callback URL to register: https://<extension-id>.chromiumapp.org/
+// The Chrome Web Store assigns the extension ID on first upload (the manifest
+// must NOT contain a "key" field). Register the callback URL as
+// https://<store-assigned-extension-id>.chromiumapp.org/ after that upload.
 export const GITHUB_OAUTH_CLIENT_ID = '';
 
 export const GITHUB_TOKEN_STORAGE_KEY = 'githubToken';

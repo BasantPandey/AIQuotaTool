@@ -26,7 +26,8 @@ Chrome Manifest V3 extension. **V2: fully standalone, first-class product** - si
 
 ## GitHub OAuth
 - Self-registered GitHub OAuth App + PKCE; **client id placeholder in `github-auth.ts` must be filled before store release**
-- Callback `https://<extension-id>.chromiumapp.org/`; token exchange at `github.com/login/oauth/access_token` (public client, no secret)
+- The store forbids the manifest `key` field and assigns the extension ID on first upload. Register the callback `https://<store-assigned-id>.chromiumapp.org/` after that upload
+- Token exchange at `github.com/login/oauth/access_token` (public client, no secret)
 - `identity` permission shows no install warning; manifest `oauth2` section is Google-only, unused
 
 ## Permissions
