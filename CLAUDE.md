@@ -13,7 +13,7 @@ A pnpm + Turborepo monorepo. **V1 product surface is the VS Code extension** (se
 | `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot/grok honesty, session-auth policy) — no DOM, no Node, no React |
 | `packages/ui` | `@ai-quota-tool/ui` | Shared React 19 components — pure display, no data fetching |
 | `packages/vscode-ext` | `ai-quota-tool-vscode` | **V1 product:** poller, credentials, optional WS server, webview, status bar |
-| `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | Optional Chrome MV3 package (not a V1 gate) |
+| `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | **V2 standalone product:** side panel dashboard, GitHub OAuth (PKCE), badge + notifications (spec: issue #38) |
 
 Build order enforced by Turbo: `core` → `ui` → `chrome-ext` / `vscode-ext` (parallel).
 
@@ -41,12 +41,12 @@ node scripts/generate-icons.mjs           # regenerate PNG icons
 
 **Local VS Code testing:** Build/package vscode-ext, install `.vsix`, run **Set Up Accounts**.
 
-**Optional Chrome:** Build chrome-ext, load `packages/chrome-ext/dist/` unpacked - not required for V1.
+**Chrome V2 (standalone):** Build chrome-ext, load `packages/chrome-ext/dist/` unpacked - action click opens the side panel.
 
 ## Architecture: VS Code primary (V1)
 - **VS Code standalone (required path):** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub OAuth seat). Credentials in SecretStorage. Empty → Set Up Accounts.
 - **Grok:** VS Code SecretStorage `sso` cookie (Claude-style) + `POST /rest/rate-limits` / pure `mapGrokRateLimits`; optional Chrome WS merge (see `docs/GROK-SPEC.md`).
-- **Optional Chrome push:** if used, WS client → VS Code server `:54321`; merge with **freshest-wins** via `mergeQuotaStates` / `upsertQuotaState`. Not a V1 ship dependency.
+- **Chrome push (dormant):** VS Code still runs the WS server `:54321`, but chrome-ext V2 no longer ships a WS client - nothing currently pushes. Kept for a possible future bridge.
 - VS Code never initiates messages to Chrome.
 
 ## WebSocket protocol (`WsMessage` from `@ai-quota-tool/core`)
@@ -57,13 +57,13 @@ VS Code → Chrome:  { type: "pong" }
                    { type: "error", message: string }
 ```
 
-## Chrome extension data flow
+## Chrome extension data flow (V2 standalone - no WS push)
 1. `chrome.alarms` `quota-poll` every 60 s → fetchers in parallel (`Promise.allSettled`)
 2. Results **merge** into `chrome.storage.local` `quotaStates` (freshest-wins; partial poll keeps other services)
 3. Content scripts on claude.ai / chatgpt.com push `content_quota` → same merge path
-4. Popup: `useSuspenseQuery` + `refetchInterval: 5000` + `onChanged` invalidation
-5. Optional push over WebSocket (`ws-client.ts`); alarms recreated on install/startup/SW wake
-6. Reset timestamps → per-service alarms → `chrome.notifications`
+4. After each merge: `deriveBadge` → action badge; `decideLowQuotaAlerts` (persisted latch) + reset alarms → `chrome.notifications`
+5. Side panel: `useSuspenseQuery` + `storage.onChanged` invalidation (push freshness, no panel polling)
+6. Copilot connect/disconnect: panel message → worker → GitHub OAuth (PKCE) via `chrome.identity`; token in `chrome.storage.local`
 
 ## VS Code extension data flow
 ```
@@ -89,6 +89,10 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 - Grok honesty builders + `mapGrokWeeklyUsage` / `extractGrokWeeklyUsage`
 - `sessionAuthFailureAction` (Claude/Codex 401/403: drop ring, keep secret, re-auth signal; Grok is not a session-cookie service)
 - `pressureRemaining` / `lowestPressureAmong` (badge/status pressure; no inventing 100%)
+- `deriveBadge` (badge text/color; amber < 10%, red < 5%)
+- `decideLowQuotaAlerts` (alert once per drop; re-arm on recovery)
+- `buildGitHubAuthorizeUrl` / `extractAuthorizationCode` (PKCE web-flow pieces)
+- `isConnectedReading` / `deriveConnections` (onboarding connection flags)
 
 ## VS Code extension: two tsconfigs — critical
 - `tsconfig.json` — Node.js extension host (`lib: ["ES2022"]`, no DOM). Excludes `src/webview/`.

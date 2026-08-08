@@ -11,6 +11,10 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 - **Grok honesty / weekly map:** `grokUsageUnknown`, `grokNotConnected`, `grokBrowserSessionRequired`, `mapGrokWeeklyUsage`, `extractGrokWeeklyUsage`
 - **Session auth failure:** `sessionAuthFailureAction`, `isSessionAuthFailure`, `isSessionCookieService` (drop ring, keep secret, re-auth signal; Grok is **not** a session-cookie service)
 - **Pressure:** `pressureRemaining`, `lowestPressureAmong` (never invent 100% for honesty-only states)
+- **Badge:** `deriveBadge` + `BADGE_COLORS` (lowest remaining %; amber < 10%, red < 5%; empty when no real %)
+- **Low-quota alerts:** `decideLowQuotaAlerts`, `initialLowQuotaArmed`, `LOW_QUOTA_THRESHOLD` (once per drop; re-arm on recovery)
+- **GitHub OAuth (PKCE):** `buildGitHubAuthorizeUrl`, `extractAuthorizationCode` (state-checked code extraction)
+- **Onboarding:** `isConnectedReading`, `deriveConnections`
 - `formatTimeRemaining(ms)`, `calcPct(used, limit)`, `pctToColor(pct)`
 
 ## Rules

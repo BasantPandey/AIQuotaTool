@@ -69,6 +69,12 @@ export type WsMessage =
   | { type: 'pong' }
   | { type: 'error'; message: string };
 
+/** Messages the Chrome side panel sends to the service worker. */
+export type PanelMessage =
+  | { type: 'github_connect' }
+  | { type: 'github_disconnect' }
+  | { type: 'content_quota'; payload: QuotaState };
+
 export const SERVICE_LABELS: Record<ServiceId, string> = {
   claude: 'Claude',
   copilot: 'Copilot',
