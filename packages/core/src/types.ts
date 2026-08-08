@@ -56,11 +56,11 @@ export interface QuotaState {
 
 /** User-facing copy for honesty states (shared by UI hosts). */
 export const QUOTA_HONESTY_LABELS: Record<QuotaHonesty, string> = {
-  seat_active_usage_unknown: 'Connected — remaining usage % not available',
+  seat_active_usage_unknown: 'Connected - remaining usage % not available',
   no_plan: 'No active Copilot plan on this account',
-  auth_unavailable: 'Could not verify Copilot access — sign in to GitHub',
-  usage_unknown: 'Connected — remaining usage % not available',
-  not_connected: 'Not signed in — open grok.com while signed in',
+  auth_unavailable: 'Could not verify Copilot access - sign in to GitHub',
+  usage_unknown: 'Connected - remaining usage % not available',
+  not_connected: 'Not signed in - open grok.com while signed in',
   session_expired: 'Session expired - sign in again on the service website',
   browser_session_required:
     'Set up a grok.com sso cookie in Set Up Accounts (or use Chrome on grok.com)',
