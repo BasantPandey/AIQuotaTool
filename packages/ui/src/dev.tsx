@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { QuotaState } from '@ai-quota-tool/core';
-import { QuotaDashboard } from './QuotaDashboard.js';
+import { SidePanelPrototype } from './prototype-sidepanel.js';
 
 const MOCK_STATES: QuotaState[] = [
   {
@@ -45,8 +45,6 @@ if (!root) throw new Error('No #root element');
 
 createRoot(root).render(
   <StrictMode>
-    <div style={{ background: '#0d1117', minHeight: '100vh', padding: 8, fontFamily: 'system-ui, sans-serif' }}>
-      <QuotaDashboard states={MOCK_STATES} />
-    </div>
+    <SidePanelPrototype states={MOCK_STATES} />
   </StrictMode>,
 );
