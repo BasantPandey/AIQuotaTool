@@ -140,3 +140,5 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/V1-SPEC.md`](docs/V1-
 - React 19 + React Compiler (shared UI / webviews)
 - TanStack Query v5 (where used)
 - Vitest for core pure seams
+
+This repository uses an automated agent pipeline to resolve issues. See .github/workflows/agent-pipeline.yml for details.
