@@ -66,7 +66,7 @@ export const QUOTA_HONESTY_LABELS: Record<QuotaHonesty, string> = {
     'Set up a grok.com sso cookie in Set Up Accounts (or use Chrome on grok.com)',
 };
 
-export type WsMessage =
+export type WebSocketMessage =
   | { type: 'quota_update'; payload: QuotaState[] }
   | { type: 'ping' }
   | { type: 'pong' }
