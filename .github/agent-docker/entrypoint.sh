@@ -22,6 +22,9 @@ if [ -n "$ISSUE_TITLE" ]; then
 fi
 echo "## Issue body:" >> "$PROMPT_FILE"
 echo "$ISSUE_BODY" >> "$PROMPT_FILE"
+echo "" >> "$PROMPT_FILE"
+echo "## Instructions" >> "$PROMPT_FILE"
+echo "Complete the task described above. After implementing changes, run pnpm turbo type-check and pnpm turbo test to verify your work." >> "$PROMPT_FILE"
 
 MODEL_ARG=()
 if [ -n "$OPENCODE_MODEL" ]; then
@@ -35,8 +38,7 @@ opencode run \
     --auto \
     --format json \
     "${MODEL_ARG[@]}" \
-    --file "$PROMPT_FILE" \
-    "Complete the task described in the attached file. After implementing changes, run pnpm turbo type-check and pnpm turbo test to verify."
+    --file "$PROMPT_FILE"
 
 EXIT_CODE=$?
 
