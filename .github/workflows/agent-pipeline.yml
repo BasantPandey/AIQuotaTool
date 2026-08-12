@@ -67,7 +67,7 @@ jobs:
           FAILED=0
 
           echo "=== type-check ==="
-          if pnpm turbo type-check 2>&1 | tee /tmp/type-check.log; then
+          if pnpm turbo type-check --force 2>&1 | tee /tmp/type-check.log; then
             echo "type-check: PASSED"
           else
             echo "type-check: FAILED"
@@ -75,7 +75,7 @@ jobs:
           fi
 
           echo "=== test ==="
-          if pnpm turbo test 2>&1 | tee /tmp/test.log; then
+          if pnpm turbo test --force 2>&1 | tee /tmp/test.log; then
             echo "test: PASSED"
           else
             echo "test: FAILED"
