@@ -34,7 +34,7 @@ fi
 echo "=== Running opencode with model: ${OPENCODE_MODEL:-deepseek/deepseek-chat} ==="
 echo ""
 
-opencode run \
+opencode run "Complete the task described in the attached file." \
     --auto \
     --format json \
     "${MODEL_ARG[@]}" \
