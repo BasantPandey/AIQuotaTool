@@ -48,7 +48,8 @@ function StatusBadge({ s }: { s: CredStatus }) {
 function CredentialSetup() {
   const [activeTab, setActiveTab] = useState<ServiceTab>('claude');
   const [claudeKey, setClaudeKey] = useState('');
-  const [codexToken, setCodexToken] = useState('');
+  const [codexLine1, setCodexLine1] = useState('');
+  const [codexLine2, setCodexLine2] = useState('');
   const [grokSso, setGrokSso] = useState('');
   const [claudeStatus, setClaudeStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
   const [codexStatus, setCodexStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
@@ -230,22 +231,30 @@ function CredentialSetup() {
       {activeTab === 'codex' && (
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
-            ChatGPT splits a large session into <code>.0</code> + <code>.1</code> cookies. Both must be sent with those
-            names (not glued into one string).
+            ChatGPT splits a large session into two cookies, <code>.0</code> and <code>.1</code>. Paste each one into
+            its own field below — do not merge them into a single value.
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.0 }}>
             <li>Open <strong>chatgpt.com</strong> and sign in</li>
             <li>
-              <strong>Easiest:</strong> F12 → <strong>Network</strong> → click any request to chatgpt.com → Headers →
-              Request Headers → <strong>Cookie</strong> → copy the whole value
+              Press <code>F12</code> → <strong>Application</strong> tab → Cookies → <code>https://chatgpt.com</code>
             </li>
             <li>
-              <strong>Or:</strong> Application → Cookies → double-click Value of{' '}
-              <code>__Secure-next-auth.session-token.0</code> (full text, not <code>…</code>), paste line 1; then{' '}
-              <code>.1</code> on line 2
+              Find <code>__Secure-next-auth.session-token.0</code>. Double-click its <strong>Value</strong> cell to
+              select the full text (it is long — do not copy the truncated <code>…</code> preview). Paste it into{' '}
+              <strong>Line 1</strong> below.
+            </li>
+            <li>
+              Find <code>__Secure-next-auth.session-token.1</code> the same way and paste it into{' '}
+              <strong>Line 2</strong> below.
             </li>
           </ol>
-          <div style={{ marginTop: 14 }}>
+          <p style={{ fontSize: 11, color: 'var(--vscode-descriptionForeground)', lineHeight: 1.5, marginBottom: 4 }}>
+            Only see one cookie, no <code>.0</code>/<code>.1</code> suffix? Paste it into Line 1 and leave Line 2
+            blank. Alternatively, paste the whole <strong>Cookie</strong> request header (Network tab → any
+            chatgpt.com request → Headers → Request Headers → Cookie) into Line 1 and leave Line 2 blank.
+          </p>
+          <div style={{ marginTop: 10 }}>
             <button
               style={secondaryBtnStyle}
               onClick={() => vscode?.postMessage({ type: 'open_external', url: 'https://chatgpt.com' })}
@@ -255,25 +264,38 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 16 }}>
             <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
-              Cookie header or .0 / .1 values
+              Line 1 — <code>__Secure-next-auth.session-token.0</code> value
             </label>
             <textarea
-              style={{ ...inputStyle, minHeight: 100, resize: 'vertical' as const }}
-              placeholder={
-                '__Secure-next-auth.session-token.0=...\n__Secure-next-auth.session-token.1=...\n\n— or bare .0 on line 1 and .1 on line 2 —'
-              }
-              value={codexToken}
-              onChange={(e) => setCodexToken(e.target.value)}
+              style={{ ...inputStyle, minHeight: 56, resize: 'vertical' as const }}
+              placeholder="__Secure-next-auth.session-token.0=... (or the full Cookie header)"
+              value={codexLine1}
+              onChange={(e) => setCodexLine1(e.target.value)}
+              spellCheck={false}
+            />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
+              Line 2 — <code>__Secure-next-auth.session-token.1</code> value (leave blank if you only see one cookie)
+            </label>
+            <textarea
+              style={{ ...inputStyle, minHeight: 56, resize: 'vertical' as const }}
+              placeholder="__Secure-next-auth.session-token.1=..."
+              value={codexLine2}
+              onChange={(e) => setCodexLine2(e.target.value)}
               spellCheck={false}
             />
           </div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
-              style={{ ...btnStyle, opacity: codexToken.trim() ? 1 : 0.5 }}
-              disabled={!codexToken.trim()}
+              style={{ ...btnStyle, opacity: codexLine1.trim() ? 1 : 0.5 }}
+              disabled={!codexLine1.trim()}
               onClick={() => {
                 setCodexStatus({ status: 'testing', detail: undefined });
-                vscode?.postMessage({ type: 'save_test_codex', token: codexToken.trim() });
+                const token = codexLine2.trim()
+                  ? `${codexLine1.trim()}\n${codexLine2.trim()}`
+                  : codexLine1.trim();
+                vscode?.postMessage({ type: 'save_test_codex', token });
               }}
             >
               Save &amp; Test
@@ -281,7 +303,8 @@ function CredentialSetup() {
             <button
               style={secondaryBtnStyle}
               onClick={() => {
-                setCodexToken('');
+                setCodexLine1('');
+                setCodexLine2('');
                 setCodexStatus({ status: 'idle', detail: undefined });
                 vscode?.postMessage({ type: 'clear_codex' });
               }}
@@ -291,8 +314,9 @@ function CredentialSetup() {
             <StatusBadge s={codexStatus} />
           </div>
           <p style={{ marginTop: 10, fontSize: 11, color: 'var(--vscode-descriptionForeground)', lineHeight: 1.45 }}>
-            Error &quot;invalid or expired&quot; usually means incomplete paste (only .0, or truncated value), wrong
-            order, or an old cookie after logout. Copy again while still signed in on chatgpt.com.
+            Error &quot;invalid or expired&quot; usually means Line 2 was left empty when a <code>.1</code> cookie
+            exists, a value was truncated, or the cookie is old after logout. Copy both values again while still
+            signed in on chatgpt.com.
           </p>
         </div>
       )}

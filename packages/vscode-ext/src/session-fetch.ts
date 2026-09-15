@@ -51,8 +51,9 @@ export function codexCookieHeader(raw: string): string {
 
   // Already a Cookie header with named pairs
   if (/__Secure-next-auth\.session-token/i.test(s) && s.includes('=')) {
-    // Keep only next-auth session-token cookies (drop unrelated noise if user pasted a huge Cookie:)
-    const parts = s.split(';').map((p) => p.trim()).filter(Boolean);
+    // Keep only next-auth session-token cookies (drop unrelated noise if user pasted a huge Cookie:).
+    // Split on ';' (a real Cookie header) AND newlines (user pasted "name=value" pairs one per line).
+    const parts = s.split(/[;\r\n]+/).map((p) => p.trim()).filter(Boolean);
     const sessionParts = parts.filter((p) =>
       /^__Secure-next-auth\.session-token(?:\.\d+)?\s*=/i.test(p),
     );
