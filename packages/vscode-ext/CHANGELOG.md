@@ -5,6 +5,14 @@
 ### Packaging
 - Manual GitHub Actions workflow to package/publish the VS Code extension (semver bump + Marketplace)
 
+## [0.7.4] - 2026-09-16
+
+### Codex / ChatGPT setup fix
+- Split the Codex setup textarea into explicit Line 1 / Line 2 cookie fields, so both the
+  `__Secure-next-auth.session-token.0` and `.1` cookies are unambiguous to paste
+- Fix `codexCookieHeader` to split on newlines as well as `;` — pasting `name=value` pairs one
+  per line no longer joins them with a raw embedded newline (an invalid header value)
+
 ## [0.7.3] - 2026-07-29
 
 ### Grok SecretStorage (Claude-style)
