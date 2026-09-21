@@ -51,4 +51,34 @@ describe('deriveBadge', () => {
     const badge = deriveBadge([copilotHonesty(), claude(3, 50)]);
     expect(badge).toEqual({ text: '3', color: BADGE_COLORS.critical });
   });
+
+  it('ignores a funded prepaid balance so dollars never become a percent', () => {
+    const funded = {
+      service: 'deepseek' as const,
+      lastUpdated: 1,
+      balance: {
+        available: true,
+        infos: [{ currency: 'USD', total: '50.00', granted: '0.00', toppedUp: '50.00' }],
+      },
+    };
+    expect(deriveBadge([funded]).text).toBe('');
+    expect(deriveBadge([funded, claude(40)]).text).toBe('40');
+  });
+
+  it('turns the badge critical when a prepaid balance is empty', () => {
+    const empty = {
+      service: 'deepseek' as const,
+      honesty: 'balance_empty' as const,
+      lastUpdated: 1,
+      balance: {
+        available: false,
+        infos: [{ currency: 'USD', total: '0.00', granted: '0.00', toppedUp: '0.00' }],
+      },
+    };
+    expect(deriveBadge([empty])).toEqual({ text: '0', color: BADGE_COLORS.critical });
+    expect(deriveBadge([empty, claude(80)])).toEqual({
+      text: '0',
+      color: BADGE_COLORS.critical,
+    });
+  });
 });

@@ -1,4 +1,14 @@
-export type ServiceId = 'claude' | 'copilot' | 'codex' | 'grok';
+import type { ServiceId } from './services.js';
+
+export type { ServiceId, ServiceAuth } from './services.js';
+export {
+  SERVICES,
+  SERVICE_IDS,
+  SERVICE_LABELS,
+  SERVICE_COLORS,
+  SERVICE_URLS,
+  serviceById,
+} from './services.js';
 
 export type ClaudeSubcategoryName = 'Sonnet' | 'Designs' | 'Daily Routines';
 
@@ -31,7 +41,31 @@ export type QuotaHonesty =
    * No usable Grok reading yet — set up a grok.com sso cookie in VS Code,
    * or use the optional Chrome live session path.
    */
-  | 'browser_session_required';
+  | 'browser_session_required'
+  /** No API key stored for a balance provider. */
+  | 'api_key_required'
+  /** Stored API key was rejected (401/403). Drop any stale balance. */
+  | 'api_key_invalid'
+  /** Balance parsed, and the provider reports nothing left to spend. */
+  | 'balance_empty'
+  /** Authenticated, but the balance payload was not usable. */
+  | 'balance_unreadable';
+
+/** One currency bucket inside a prepaid provider balance. Amounts stay decimal strings. */
+export interface AccountBalance {
+  currency: string;
+  /** Total available, including granted credit and topped-up funds. */
+  total: string;
+  granted: string;
+  toppedUp: string;
+}
+
+/** Prepaid balance reading. This is money left, not a remaining percent. */
+export interface ProviderBalance {
+  /** Provider flag: the balance can still pay for API calls. */
+  available: boolean;
+  infos: AccountBalance[];
+}
 
 export interface QuotaState {
   service: ServiceId;
@@ -50,6 +84,11 @@ export interface QuotaState {
    * an honest status instead of inventing 100% remaining.
    */
   honesty?: QuotaHonesty;
+  /**
+   * Prepaid balance for providers that bill from a topped-up account.
+   * Omit sessionPct and weeklyPct — there is no percent cap to invent.
+   */
+  balance?: ProviderBalance;
   /** Unix timestamp (ms) of the last successful poll */
   lastUpdated: number;
 }
@@ -64,6 +103,10 @@ export const QUOTA_HONESTY_LABELS: Record<QuotaHonesty, string> = {
   session_expired: 'Session expired - sign in again on the service website',
   browser_session_required:
     'Set up a grok.com sso cookie in Set Up Accounts (or use Chrome on grok.com)',
+  api_key_required: 'Add an API key to see your balance',
+  api_key_invalid: 'API key rejected - paste a new key',
+  balance_empty: 'No balance left - top up to keep calling the API',
+  balance_unreadable: 'Connected - balance response was not usable',
 };
 
 export type WsMessage =
@@ -76,26 +119,8 @@ export type WsMessage =
 export type PanelMessage =
   | { type: 'github_connect' }
   | { type: 'github_disconnect' }
+  | { type: 'api_key_connect'; service: ServiceId; apiKey: string }
+  | { type: 'api_key_disconnect'; service: ServiceId }
   | { type: 'content_quota'; payload: QuotaState };
 
-export const SERVICE_LABELS: Record<ServiceId, string> = {
-  claude: 'Claude',
-  copilot: 'Copilot',
-  codex: 'Codex',
-  grok: 'Grok',
-};
 
-export const SERVICE_COLORS: Record<ServiceId, string> = {
-  claude: '#1a1a2e',
-  copilot: '#2ea44f',
-  codex: '#0066ff',
-  /** Elevated charcoal so the card reads on #0d1117 panels (not pure black). */
-  grok: '#1c1c1e',
-};
-
-export const SERVICE_URLS: Record<ServiceId, string> = {
-  claude: 'claude.ai',
-  copilot: 'github.com',
-  codex: 'chatgpt.com',
-  grok: 'grok.com',
-};

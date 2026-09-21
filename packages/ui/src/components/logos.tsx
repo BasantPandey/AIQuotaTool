@@ -57,6 +57,25 @@ export function CodexLogo({ size = 20 }: { size?: number }) {
   );
 }
 
+/** Simple original mark for DeepSeek (not an official brand asset). */
+export function DeepSeekLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M4 13.2c2.1-4.2 4.8-6.4 7.8-6.4 2.3 0 4 1.1 5.3 2.6.9.2 2 .7 2.4 2-.8.3-1.5 1-1.5 2.1 0 1.3 1 2.1 2 2.4-1.1 2.1-3.2 3.3-5.8 3.3-3.1 0-6-1.5-7.9-4-1.1-1.1-1.8-1.7-2.3-2Z"
+        fill="#4D6BFE"
+      />
+      <circle cx="9.1" cy="12.1" r="0.85" fill="#fff" />
+    </svg>
+  );
+}
+
 /** Simple monochrome mark for Grok (not an official brand asset). */
 export function GrokLogo({ size = 20 }: { size?: number }) {
   return (

@@ -36,6 +36,29 @@ describe('isConnectedReading', () => {
   it('treats an empty reading as not connected', () => {
     expect(isConnectedReading(state({ service: 'codex' }))).toBe(false);
   });
+
+  it('treats a prepaid balance as connected and a missing or rejected key as not', () => {
+    expect(
+      isConnectedReading(
+        state({
+          service: 'deepseek',
+          balance: {
+            available: true,
+            infos: [{ currency: 'USD', total: '1.00', granted: '0.00', toppedUp: '1.00' }],
+          },
+        }),
+      ),
+    ).toBe(true);
+    expect(isConnectedReading(state({ service: 'deepseek', honesty: 'balance_empty' }))).toBe(
+      true,
+    );
+    expect(isConnectedReading(state({ service: 'deepseek', honesty: 'api_key_required' }))).toBe(
+      false,
+    );
+    expect(isConnectedReading(state({ service: 'deepseek', honesty: 'api_key_invalid' }))).toBe(
+      false,
+    );
+  });
 });
 
 describe('deriveConnections', () => {
@@ -49,6 +72,7 @@ describe('deriveConnections', () => {
       copilot: false,
       codex: false,
       grok: false,
+      deepseek: false,
     });
   });
 
@@ -58,6 +82,7 @@ describe('deriveConnections', () => {
       copilot: false,
       codex: false,
       grok: false,
+      deepseek: false,
     });
   });
 });

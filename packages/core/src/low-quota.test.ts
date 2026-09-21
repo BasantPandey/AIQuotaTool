@@ -59,6 +59,51 @@ describe('decideLowQuotaAlerts', () => {
     expect(alerts).toEqual([]);
   });
 
+  it('alerts once when a prepaid balance is empty, then re-arms after a top-up', () => {
+    const empty = {
+      service: 'deepseek' as const,
+      honesty: 'balance_empty' as const,
+      lastUpdated: 1,
+      balance: {
+        available: false,
+        infos: [{ currency: 'USD', total: '0.00', granted: '0.00', toppedUp: '0.00' }],
+      },
+    };
+    const funded = {
+      service: 'deepseek' as const,
+      lastUpdated: 2,
+      balance: {
+        available: true,
+        infos: [{ currency: 'USD', total: '12.00', granted: '0.00', toppedUp: '12.00' }],
+      },
+    };
+    const first = decideLowQuotaAlerts([empty], initialLowQuotaArmed());
+    expect(first.alerts).toEqual([{ service: 'deepseek', pct: 0, kind: 'balance' }]);
+    const stillEmpty = decideLowQuotaAlerts([empty], first.armed);
+    expect(stillEmpty.alerts).toEqual([]);
+    const toppedUp = decideLowQuotaAlerts([funded], stillEmpty.armed);
+    expect(toppedUp.alerts).toEqual([]);
+    const emptiedAgain = decideLowQuotaAlerts([empty], toppedUp.armed);
+    expect(emptiedAgain.alerts).toEqual([{ service: 'deepseek', pct: 0, kind: 'balance' }]);
+  });
+
+  it('does not alert on a funded prepaid balance', () => {
+    const { alerts } = decideLowQuotaAlerts(
+      [
+        {
+          service: 'deepseek',
+          lastUpdated: 1,
+          balance: {
+            available: true,
+            infos: [{ currency: 'CNY', total: '110.00', granted: '10.00', toppedUp: '100.00' }],
+          },
+        },
+      ],
+      initialLowQuotaArmed(),
+    );
+    expect(alerts).toEqual([]);
+  });
+
   it('tracks services independently', () => {
     const first = decideLowQuotaAlerts(
       [claude(8), codex(50)],

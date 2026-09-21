@@ -1,8 +1,12 @@
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
+import { SERVICES } from '@ai-quota-tool/core';
 import { QuotaCard } from './components/QuotaCard.js';
 import { QuotaPendingCard } from './components/QuotaPendingCard.js';
 
-const ALL_SERVICES: ServiceId[] = ['claude', 'copilot', 'codex', 'grok'];
+/** Session and OAuth services. API-key services stay off until a host opts in. */
+const DEFAULT_SERVICES: ServiceId[] = SERVICES.filter((service) => service.auth !== 'api_key').map(
+  (service) => service.id,
+);
 
 interface Props {
   states: QuotaState[];
@@ -10,6 +14,8 @@ interface Props {
   disconnected?: boolean;
   /** Services whose saved session failed auth (secret may still be stored). */
   reauthServices?: ServiceId[];
+  /** Cards to render. Chrome passes the full catalog, including balance providers. */
+  services?: readonly ServiceId[];
 }
 
 /** Pure display component. Wrap with <Suspense> and <ErrorBoundary> at the call site. */
@@ -17,6 +23,7 @@ export function QuotaDashboard({
   states,
   disconnected = false,
   reauthServices = [],
+  services = DEFAULT_SERVICES,
 }: Props) {
   const reauthSet = new Set(reauthServices);
 
@@ -41,13 +48,16 @@ export function QuotaDashboard({
 
   return (
     <div style={{ padding: '8px 10px' }}>
-      {ALL_SERVICES.map((serviceId) => {
+      {services.map((serviceId) => {
         const state = stateMap.get(serviceId);
         const needsReauth = reauthSet.has(serviceId);
         const hasData =
           !needsReauth &&
           state != null &&
-          (state.sessionPct != null || state.weeklyPct != null || state.honesty != null);
+          (state.sessionPct != null ||
+            state.weeklyPct != null ||
+            state.balance != null ||
+            state.honesty != null);
         return hasData
           ? <QuotaCard key={serviceId} state={state} />
           : <QuotaPendingCard key={serviceId} service={serviceId} needsReauth={needsReauth} />;

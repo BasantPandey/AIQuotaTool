@@ -27,8 +27,11 @@ export class QuotaStatusBar {
     const parts: string[] = [];
     for (const s of states) {
       const pct = pressureRemaining(s);
+      const balance = s.balance?.infos[0];
       if (pct != null) {
         parts.push(`${SERVICE_LABELS[s.service]} ${pct}%`);
+      } else if (balance != null) {
+        parts.push(`${SERVICE_LABELS[s.service]} ${balance.total} ${balance.currency}`);
       } else if (s.honesty === 'seat_active_usage_unknown') {
         parts.push(`${SERVICE_LABELS[s.service]} ·`);
       }
@@ -37,9 +40,10 @@ export class QuotaStatusBar {
     this.item.command = this.openPanelCommand;
 
     const lowest = lowestPressureAmong(states);
+    const emptyBalance = states.some((s) => s.honesty === 'balance_empty');
     // No percentage pressure (empty or honesty-only) is not treated as 100% remaining.
     this.item.color =
-      lowest != null && lowest < 10
+      emptyBalance || (lowest != null && lowest < 10)
         ? new vscode.ThemeColor('statusBarItem.warningBackground')
         : undefined;
   }

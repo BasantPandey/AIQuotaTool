@@ -1,6 +1,5 @@
 import type { QuotaState, ServiceId } from './types.js';
-
-const SERVICE_IDS: ServiceId[] = ['claude', 'copilot', 'codex', 'grok'];
+import { SERVICE_IDS } from './services.js';
 
 /**
  * Does this reading prove an account is connected? Real remaining percentages
@@ -11,16 +10,21 @@ export function isConnectedReading(state: QuotaState): boolean {
   if (
     state.honesty === 'not_connected' ||
     state.honesty === 'auth_unavailable' ||
-    state.honesty === 'browser_session_required'
+    state.honesty === 'browser_session_required' ||
+    state.honesty === 'api_key_required' ||
+    state.honesty === 'api_key_invalid'
   ) {
     return false;
   }
   return (
     state.sessionPct != null ||
     state.weeklyPct != null ||
+    (state.balance != null && state.balance.infos.length > 0) ||
     state.honesty === 'usage_unknown' ||
     state.honesty === 'seat_active_usage_unknown' ||
-    state.honesty === 'no_plan'
+    state.honesty === 'no_plan' ||
+    state.honesty === 'balance_empty' ||
+    state.honesty === 'balance_unreadable'
   );
 }
 

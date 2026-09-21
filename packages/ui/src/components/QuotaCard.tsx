@@ -1,5 +1,6 @@
-import type { QuotaState } from '@ai-quota-tool/core';
+import type { ProviderBalance, QuotaState } from '@ai-quota-tool/core';
 import {
+  formatAccountBalance,
   formatTimeRemaining,
   QUOTA_HONESTY_LABELS,
   SERVICE_COLORS,
@@ -13,6 +14,32 @@ interface Props {
   state: QuotaState;
 }
 
+function BalanceFigures({ balance, empty }: { balance: ProviderBalance; empty: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 8 }}>
+      {balance.infos.map((info) => (
+        <div key={info.currency}>
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 700,
+              letterSpacing: '-0.03em',
+              color: empty ? '#ffb4a8' : '#fff',
+            }}
+          >
+            {formatAccountBalance(info.total, info.currency)}
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginTop: 2 }}>
+            Granted {formatAccountBalance(info.granted, info.currency)}
+            {' · '}
+            Topped up {formatAccountBalance(info.toppedUp, info.currency)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function QuotaCard({ state }: Props) {
   const bgColor = SERVICE_COLORS[state.service];
   const sessionMs = state.sessionResetsAt != null ? state.sessionResetsAt - Date.now() : 0;
@@ -20,7 +47,10 @@ export function QuotaCard({ state }: Props) {
   const hasRings = state.sessionPct != null || state.weeklyPct != null;
   const honestyLabel = state.honesty != null ? QUOTA_HONESTY_LABELS[state.honesty] : null;
   const deepLinkHost =
-    state.service === 'grok' && state.honesty != null ? SERVICE_URLS.grok : null;
+    state.honesty != null && (state.service === 'grok' || state.service === 'deepseek')
+      ? SERVICE_URLS[state.service]
+      : null;
+  const hasBalance = state.balance != null && state.balance.infos.length > 0;
 
   const isGrok = state.service === 'grok';
 
@@ -37,6 +67,10 @@ export function QuotaCard({ state }: Props) {
       }}
     >
       <ServiceHeader service={state.service} lastUpdated={state.lastUpdated} />
+
+      {hasBalance && state.balance != null && (
+        <BalanceFigures balance={state.balance} empty={state.honesty === 'balance_empty'} />
+      )}
 
       {hasRings ? (
         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
@@ -58,11 +92,13 @@ export function QuotaCard({ state }: Props) {
             </div>
           )}
         </div>
-      ) : honestyLabel != null ? (
+      ) : null}
+
+      {!hasRings && honestyLabel != null ? (
         <div
           style={{
-            textAlign: 'center',
-            padding: '12px 8px 4px',
+            textAlign: hasBalance ? 'left' : 'center',
+            padding: hasBalance ? '4px 0 0' : '12px 8px 4px',
             color: 'rgba(255,255,255,0.75)',
             fontSize: 12,
             lineHeight: 1.45,

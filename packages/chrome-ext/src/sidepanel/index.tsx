@@ -2,10 +2,11 @@ import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
-import type { QuotaState } from '@ai-quota-tool/core';
-import { deriveConnections } from '@ai-quota-tool/core';
+import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
+import { deriveConnections, SERVICES } from '@ai-quota-tool/core';
 import { QuotaDashboard, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
 import { AccountsSection } from './AccountsSection.js';
+import { API_KEYS_STORAGE_KEY, type StoredApiKeys } from '../background/api-keys.js';
 import { GITHUB_TOKEN_STORAGE_KEY } from '../background/github-auth.js';
 
 const GITHUB_TOKEN_KEY = GITHUB_TOKEN_STORAGE_KEY;
@@ -32,7 +33,8 @@ function ConsentView({ onAccept }: { onAccept: () => void }) {
         Welcome to AI Quota Tool
       </div>
       <p style={{ color: '#8b949e' }}>
-        See your remaining quota for Claude, Codex, Copilot, and Grok in one place.
+        See your remaining quota for Claude, Codex, Copilot, and Grok, plus your DeepSeek
+        API balance, in one place.
       </p>
       <p
         style={{
@@ -44,9 +46,11 @@ function ConsentView({ onAccept }: { onAccept: () => void }) {
         }}
       >
         <strong>Privacy:</strong> this extension reads your own AI quota through your{' '}
-        <em>logged-in browser sessions</em> (Claude, Codex, Grok) and an optional GitHub
-        sign-in (Copilot seat status). It never stores session keys, never sends your
-        data anywhere, and everything stays on this device.
+        <em>logged-in browser sessions</em> (Claude, Codex, Grok), an optional GitHub
+        sign-in (Copilot seat status), and an optional DeepSeek API key (balance only).
+        The key stays on this device and is sent only to api.deepseek.com. Disconnect
+        removes it. The extension never stores session keys and does not send your data
+        to a server of ours.
       </p>
       <button
         onClick={onAccept}
@@ -74,10 +78,21 @@ function EmptyState() {
       </div>
       <p>
         Sign in to a service below (Claude, Codex, or Grok in their own tabs, Copilot via
-        GitHub). Readings appear here automatically within a minute.
+        GitHub, DeepSeek with an API key). Readings appear here automatically within a
+        minute.
       </p>
     </div>
   );
+}
+
+function apiKeyTails(keys: StoredApiKeys): Partial<Record<ServiceId, string>> {
+  const tails: Partial<Record<ServiceId, string>> = {};
+  for (const service of SERVICES) {
+    if (service.auth !== 'api_key') continue;
+    const key = keys[service.id];
+    if (typeof key === 'string' && key.length >= 4) tails[service.id] = key.slice(-4);
+  }
+  return tails;
 }
 
 function Panel() {
@@ -88,6 +103,10 @@ function Panel() {
   const { data: githubConnected } = useSuspenseQuery({
     queryKey: ['github-connected'],
     queryFn: () => readStorage<string>(GITHUB_TOKEN_KEY, '').then((t) => t.length > 0),
+  });
+  const { data: keyTails } = useSuspenseQuery({
+    queryKey: ['api-key-tails'],
+    queryFn: () => readStorage<StoredApiKeys>(API_KEYS_STORAGE_KEY, {}).then(apiKeyTails),
   });
   const { data: consent } = useSuspenseQuery({
     queryKey: ['privacy-consent'],
@@ -108,8 +127,17 @@ function Panel() {
 
   return (
     <div>
-      {states.length === 0 ? <EmptyState /> : <QuotaDashboard states={states} />}
-      <AccountsSection connections={connections} githubConnected={githubConnected} />
+      {states.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <QuotaDashboard states={states} services={SERVICES.map((service) => service.id)} />
+      )}
+      <AccountsSection
+        connections={connections}
+        githubConnected={githubConnected}
+        apiKeyTails={keyTails}
+        states={states}
+      />
     </div>
   );
 }
@@ -122,6 +150,9 @@ chrome.storage.local.onChanged.addListener((changes) => {
   }
   if (changes[GITHUB_TOKEN_KEY]) {
     queryClient.invalidateQueries({ queryKey: ['github-connected'] });
+  }
+  if (changes[API_KEYS_STORAGE_KEY]) {
+    queryClient.invalidateQueries({ queryKey: ['api-key-tails'] });
   }
   if (changes[CONSENT_KEY]) {
     queryClient.invalidateQueries({ queryKey: ['privacy-consent'] });

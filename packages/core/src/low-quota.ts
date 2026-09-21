@@ -6,8 +6,10 @@ export const LOW_QUOTA_THRESHOLD = 10;
 
 export interface LowQuotaAlert {
   service: ServiceId;
-  /** Lowest remaining % that triggered the alert. */
+  /** Lowest remaining % that triggered the alert. 0 when kind is 'balance'. */
   pct: number;
+  /** Empty prepaid balance. The notification must not describe this as a percent. */
+  kind?: 'balance';
 }
 
 /** Per-service latch: true means the service may alert on the next low reading. */
@@ -36,8 +38,20 @@ export function decideLowQuotaAlerts(
   const alerts: LowQuotaAlert[] = [];
 
   for (const state of states) {
+    if (state.honesty === 'balance_empty') {
+      if (next[state.service] !== false) {
+        alerts.push({ service: state.service, pct: 0, kind: 'balance' });
+        next[state.service] = false;
+      }
+      continue;
+    }
+
     const pct = pressureRemaining(state);
-    if (pct == null) continue;
+    if (pct == null) {
+      // A funded balance has no percent. Re-arm so the next empty reading alerts once.
+      if (state.balance?.available === true) next[state.service] = true;
+      continue;
+    }
     if (pct >= LOW_QUOTA_THRESHOLD) {
       next[state.service] = true;
     } else if (next[state.service] !== false) {

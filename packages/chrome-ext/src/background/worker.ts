@@ -6,20 +6,18 @@ import {
   mergeQuotaStates,
   upsertQuotaState,
 } from '@ai-quota-tool/core';
-import { ClaudeFetcher } from './fetchers/claude.js';
-import { CopilotFetcher } from './fetchers/copilot.js';
-import { CodexFetcher } from './fetchers/codex.js';
-import { GrokFetcher } from './fetchers/grok.js';
 import {
   notifyLowQuota,
   scheduleResetNotifications,
   handleAlarm,
 } from './notifications.js';
+import { clearServiceApiKey, saveServiceApiKey } from './api-keys.js';
 import {
   connectGitHub,
   disconnectGitHub,
   trySilentGitHubReauth,
 } from './github-auth.js';
+import { createFetchers } from './providers.js';
 
 const POLL_ALARM = 'quota-poll';
 const POLL_INTERVAL_MINUTES = 1;
@@ -27,13 +25,8 @@ const LOW_QUOTA_ARMED_KEY = 'lowQuotaArmed';
 /** Legacy V1 alarm from the removed WS client - cleared once on install. */
 const LEGACY_WS_KEEPALIVE_ALARM = 'ws-keepalive';
 
-const copilotFetcher = new CopilotFetcher();
-const fetchers = [
-  new ClaudeFetcher(),
-  copilotFetcher,
-  new CodexFetcher(),
-  new GrokFetcher(),
-];
+const fetchers = createFetchers();
+const copilotFetcher = fetchers.find((fetcher) => fetcher.serviceId === 'copilot');
 
 // Guard against re-auth loops: GitHub rate-limits token creation (10/hour).
 // The flag resets on each service worker activation.
@@ -75,6 +68,7 @@ async function recoverCopilotIfTokenDied(states: QuotaState[]): Promise<QuotaSta
   if (copilot?.honesty !== 'auth_unavailable') return states;
   silentReauthAttempted = true;
   if (!(await trySilentGitHubReauth())) return states;
+  if (!copilotFetcher) return states;
   const fresh = await copilotFetcher.fetch();
   return states.map((s) => (s.service === 'copilot' ? fresh : s));
 }
@@ -150,6 +144,24 @@ chrome.runtime.onMessage.addListener(
           });
         });
       return true; // async sendResponse
+    }
+    if (msg.type === 'api_key_connect' || msg.type === 'api_key_disconnect') {
+      const action =
+        msg.type === 'api_key_connect'
+          ? saveServiceApiKey(msg.service, msg.apiKey)
+          : clearServiceApiKey(msg.service);
+      action
+        .then(async () => {
+          await pollAll();
+          sendResponse({ ok: true });
+        })
+        .catch((err: unknown) => {
+          sendResponse({
+            ok: false,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        });
+      return true;
     }
     return;
   },

@@ -23,6 +23,9 @@ Chrome Manifest V3 extension. **V2: fully standalone, first-class product** - si
 - **Codex** - real wham/usage; mapped with `mapCodexUsage`
 - **Copilot** - seat check with the stored GitHub OAuth token (`Authorization: Bearer`); honest builders when usage % unknown (**never fake 100% remaining**); no token → `copilotAuthUnavailable`
 - **Grok** - live `grok.com` session only; honesty-first (`grokUsageUnknown` / `grokNotConnected`); weekly % only via pure `mapGrokWeeklyUsage` when first-party used% is available. **Never store Grok session keys.**
+- **DeepSeek** - official `GET https://api.deepseek.com/user/balance` with a user-pasted API key (`chrome.storage.local` key `apiKeys`, removed on disconnect, never synced). Card shows currency amounts (granted vs topped-up), never a percent. 401/403 drops the amount (`api_key_invalid`). A funded balance does not move the toolbar badge; an empty balance does.
+
+Fetchers are registered in `src/background/providers.ts`, one factory per `ServiceId` from `@ai-quota-tool/core`.
 
 ## GitHub OAuth
 - Self-registered GitHub OAuth App + PKCE; **client id placeholder in `github-auth.ts` must be filled before store release**
@@ -32,7 +35,7 @@ Chrome Manifest V3 extension. **V2: fully standalone, first-class product** - si
 
 ## Permissions
 - `storage`, `alarms`, `notifications`, `identity`, `sidePanel` - no `cookies` API
-- Hosts: claude.ai, chatgpt.com, api.github.com, github.com (token exchange only), grok.com - named hosts only, never `<all_urls>`
+- Hosts: claude.ai, chatgpt.com, api.github.com, github.com (token exchange only), grok.com, api.deepseek.com - named hosts only, never `<all_urls>`
 
 ## Key patterns
 - Panel: `useSuspenseQuery` + `storage.onChanged` invalidation (push freshness, no `refetchInterval`)

@@ -10,8 +10,14 @@ export function notifyLowQuota(alerts: LowQuotaAlert[]): void {
     chrome.notifications.create(`notif-low-${alert.service}`, {
       type: 'basic',
       iconUrl: 'icons/icon48.png',
-      title: `${SERVICE_LABELS[alert.service]} quota low`,
-      message: `Only ${Math.round(alert.pct)}% remaining in the current window.`,
+      title:
+        alert.kind === 'balance'
+          ? `${SERVICE_LABELS[alert.service]} balance empty`
+          : `${SERVICE_LABELS[alert.service]} quota low`,
+      message:
+        alert.kind === 'balance'
+          ? 'API balance is empty. Top up to keep calling the API.'
+          : `Only ${Math.round(alert.pct)}% remaining in the current window.`,
     });
   }
 }

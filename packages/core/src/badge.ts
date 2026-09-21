@@ -20,9 +20,14 @@ const CRITICAL_THRESHOLD = 5;
 /**
  * Toolbar badge from the lowest remaining % across services.
  * Honesty-only states (no remaining %) are ignored - never treated as 100.
+ * A funded prepaid balance is ignored so a dollar amount never becomes a percent.
+ * An empty balance forces a critical "0" so the badge reacts without inventing a cap.
  * Amber below 10%, red below 5%; empty badge when no real percentages exist.
  */
 export function deriveBadge(states: QuotaState[]): BadgeSpec {
+  if (states.some((state) => state.honesty === 'balance_empty')) {
+    return { text: '0', color: BADGE_COLORS.critical };
+  }
   const lowest = lowestPressureAmong(states);
   if (lowest == null) return { text: '', color: BADGE_COLORS.normal };
   const color =
