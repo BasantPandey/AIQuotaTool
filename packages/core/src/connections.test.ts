@@ -73,6 +73,7 @@ describe('deriveConnections', () => {
       codex: false,
       grok: false,
       deepseek: false,
+      kimi: false,
     });
   });
 
@@ -83,6 +84,7 @@ describe('deriveConnections', () => {
       codex: false,
       grok: false,
       deepseek: false,
+      kimi: false,
     });
   });
 });

@@ -47,7 +47,8 @@ export function QuotaCard({ state }: Props) {
   const hasRings = state.sessionPct != null || state.weeklyPct != null;
   const honestyLabel = state.honesty != null ? QUOTA_HONESTY_LABELS[state.honesty] : null;
   const deepLinkHost =
-    state.honesty != null && (state.service === 'grok' || state.service === 'deepseek')
+    state.honesty != null &&
+    (state.service === 'grok' || state.service === 'deepseek' || state.service === 'kimi')
       ? SERVICE_URLS[state.service]
       : null;
   const hasBalance = state.balance != null && state.balance.infos.length > 0;

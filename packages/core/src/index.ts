@@ -11,5 +11,6 @@ export * from './low-quota.js';
 export * from './github-oauth.js';
 export * from './connections.js';
 export * from './deepseek.js';
+export * from './kimi.js';
 export * from './api-key.js';
 export * from './balance.js';

@@ -4,7 +4,9 @@ import {
   normalizeCodexSessionToken,
   validateClaudeSession,
   validateCodexSession,
+  validateDeepSeekApiKey,
   validateGrokSession,
+  validateKimiApiKey,
 } from './session-fetch.js';
 
 // ── Panel host ──────────────────────────────────────────────────────────────
@@ -38,8 +40,14 @@ function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown
 }
 
 
-export type SavedCredentialService = 'claude' | 'codex' | 'github' | 'grok';
-export type ClearedCredentialService = 'claude' | 'codex' | 'grok';
+export type SavedCredentialService =
+  | 'claude'
+  | 'codex'
+  | 'github'
+  | 'grok'
+  | 'deepseek'
+  | 'kimi';
+export type ClearedCredentialService = 'claude' | 'codex' | 'grok' | 'deepseek' | 'kimi';
 
 export class CredentialPanel {
   private panel: vscode.WebviewPanel | null = null;
@@ -94,6 +102,12 @@ export class CredentialPanel {
         case 'save_test_grok':
           await this.handleSaveTestGrok(msg['cookie'] ?? '');
           break;
+        case 'save_test_deepseek':
+          await this.handleSaveTestDeepSeek(msg['key'] ?? '');
+          break;
+        case 'save_test_kimi':
+          await this.handleSaveTestKimi(msg['key'] ?? '');
+          break;
         case 'github_signin':
           await this.handleGithubSignIn();
           break;
@@ -105,6 +119,12 @@ export class CredentialPanel {
           break;
         case 'clear_grok':
           await this.handleClearGrok();
+          break;
+        case 'clear_deepseek':
+          await this.handleClearDeepSeek();
+          break;
+        case 'clear_kimi':
+          await this.handleClearKimi();
           break;
         case 'open_external':
           if (msg['url']) await vscode.env.openExternal(vscode.Uri.parse(msg['url']));
@@ -175,6 +195,26 @@ export class CredentialPanel {
       if (session) this.send('github', 'ok', `Connected as @${session.account.label}`);
     } catch {
       // not signed in — stay in idle state
+    }
+
+    if (creds.deepseekApiKey) {
+      this.send('deepseek', 'testing');
+      try {
+        await validateDeepSeekApiKey(creds.deepseekApiKey);
+        this.send('deepseek', 'ok', 'Connected');
+      } catch (e) {
+        this.send('deepseek', 'error', e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    if (creds.kimiApiKey) {
+      this.send('kimi', 'testing');
+      try {
+        await validateKimiApiKey(creds.kimiApiKey);
+        this.send('kimi', 'ok', 'Connected');
+      } catch (e) {
+        this.send('kimi', 'error', e instanceof Error ? e.message : String(e));
+      }
     }
   }
 
@@ -262,6 +302,50 @@ export class CredentialPanel {
     await this.credentials.clearGrokSso();
     this.send('grok', 'idle', '');
     await this.onCleared?.('grok');
+  }
+
+  private async handleSaveTestDeepSeek(key: string): Promise<void> {
+    const trimmed = key.trim();
+    if (!trimmed) {
+      this.send('deepseek', 'error', 'API key is empty');
+      return;
+    }
+    try {
+      await validateDeepSeekApiKey(trimmed);
+      await this.credentials.setDeepSeekApiKey(trimmed);
+      this.send('deepseek', 'ok', 'Connected');
+      await this.onSaved?.('deepseek');
+    } catch (e) {
+      this.send('deepseek', 'error', e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  private async handleClearDeepSeek(): Promise<void> {
+    await this.credentials.clearDeepSeekApiKey();
+    this.send('deepseek', 'idle', '');
+    await this.onCleared?.('deepseek');
+  }
+
+  private async handleSaveTestKimi(key: string): Promise<void> {
+    const trimmed = key.trim();
+    if (!trimmed) {
+      this.send('kimi', 'error', 'API key is empty');
+      return;
+    }
+    try {
+      await validateKimiApiKey(trimmed);
+      await this.credentials.setKimiApiKey(trimmed);
+      this.send('kimi', 'ok', 'Connected');
+      await this.onSaved?.('kimi');
+    } catch (e) {
+      this.send('kimi', 'error', e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  private async handleClearKimi(): Promise<void> {
+    await this.credentials.clearKimiApiKey();
+    this.send('kimi', 'idle', '');
+    await this.onCleared?.('kimi');
   }
 
   private buildHtml(): string {

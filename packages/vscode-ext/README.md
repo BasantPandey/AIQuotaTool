@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - live in VS Code (v0.7.3).
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus your **DeepSeek** and **Kimi** API balance - live in VS Code (v0.8.0).
 
 ![Status bar showing Claude 72% | Copilot 91% | Codex 8% | Grok 55%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.png)
 
@@ -11,6 +11,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 - **Status bar item** — remaining quota at a glance for Claude, Copilot, Codex, and Grok (lower of session/weekly %); amber when any service drops below 10%
 - **Dashboard panel** — full quota breakdown with session and weekly progress rings (or honest Copilot / Grok status without fake %)
 - **Grok** — paste grok.com `sso` cookie in Set Up Accounts; short-window rate-limits plus SuperGrok weekly pool when available
+- **DeepSeek and Kimi** — paste an API key in Set Up Accounts to see account balance (money left, not a percent)
 - **Standalone (V1 product)** — fetches quota directly from VS Code using your session credentials; **no Chrome extension required**
 - **Optional Chrome push** — if you also run the legacy Chrome package, it may merge readings over local WebSocket (freshest-wins); not required
 - **Automatic refresh** — polls every 60 seconds in the background
@@ -46,6 +47,16 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://grok.com`
 3. Copy the value of `sso` (JWT, often starts with `eyJ`)
 
+**DeepSeek API key** (platform.deepseek.com account balance)
+1. Open [platform.deepseek.com](https://platform.deepseek.com) and sign in
+2. Go to **API keys** and create or copy a key
+3. Paste it into Set Up Accounts
+
+**Kimi API key** (platform.kimi.ai account balance)
+1. Open [platform.kimi.ai](https://platform.kimi.ai) and sign in
+2. Go to **API keys** and create or copy a key
+3. Paste it into Set Up Accounts
+
 Use **Save & Test** to validate before the secret is kept. Use **Clear saved key / token / cookie** to remove a secret. Paste a new value and Save & Test to replace.
 
 ---
@@ -69,11 +80,13 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 
 ## Privacy and security
 
-**This extension stores** Claude `sessionKey`, ChatGPT session tokens, and Grok `sso` cookies in SecretStorage for standalone mode. Do not claim “no credentials stored.” See [`docs/GROK-SPEC.md`](../../docs/GROK-SPEC.md).
+**This extension stores** Claude `sessionKey`, ChatGPT session tokens, and Grok `sso` cookies, plus DeepSeek and
+Kimi API keys, in SecretStorage for standalone mode. Do not claim “no credentials stored.” See
+[`docs/GROK-SPEC.md`](../../docs/GROK-SPEC.md).
 
-- Session cookies are full browser credentials. Treat them like passwords.
+- Session cookies and API keys are account-level secrets. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
-- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, or GitHub APIs) for quota reads — no telemetry backend.
+- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, or GitHub APIs) for quota reads — no telemetry backend.
 - Lifecycle: **Save & Test** validates before persist; replace by saving again; **Clear saved key** removes the secret.
 - Invalid or expired sessions drop the quota ring and show a **session expired** status-bar cue; the secret is **not** auto-deleted. Open **Set Up Accounts** to replace or clear. Stale “full quota” is never invented.
 - Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.
@@ -83,7 +96,7 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 ## Requirements
 
 - VS Code 1.95 or later
-- Active accounts on the services you want to monitor (Claude Pro/Free, GitHub Copilot, ChatGPT, Grok)
+- Active accounts on the services you want to monitor (Claude Pro/Free, GitHub Copilot, ChatGPT, Grok, DeepSeek, Kimi)
 
 ---
 

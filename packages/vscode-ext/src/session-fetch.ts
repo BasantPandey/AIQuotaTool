@@ -4,12 +4,18 @@
  */
 import {
   combineGrokQuotaState,
+  deepseekApiKeyInvalid,
+  deepseekBalanceUnreadable,
   extractGrokWeeklyUsage,
+  kimiApiKeyInvalid,
+  kimiBalanceUnreadable,
   mapClaudeUsage,
   mapCodexUsage,
   mapCopilotSeatStatus,
+  mapDeepSeekBalance,
   mapGrokRateLimits,
   mapGrokWeeklyUsage,
+  mapKimiBalance,
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
   type QuotaState,
@@ -312,4 +318,59 @@ export async function fetchGrokUsage(ssoCookie: string): Promise<QuotaState> {
   const session = await fetchGrokRateLimitsSession(ssoCookie);
   const weekly = await fetchGrokWeeklyPool(ssoCookie);
   return combineGrokQuotaState(session, weekly, now);
+}
+
+/**
+ * DeepSeek API balance. Official GET /user/balance with a user-pasted key.
+ * 401/403 return an honesty state (not thrown) so a stored-but-rejected key
+ * shows "API key rejected" instead of a generic poll error. Network and
+ * other HTTP errors throw so the poller keeps the last good reading.
+ */
+export async function fetchDeepSeekBalance(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const res = await fetch('https://api.deepseek.com/user/balance', {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
+  if (res.status === 401 || res.status === 403) return deepseekApiKeyInvalid(now);
+  if (!res.ok) throw new Error(`DeepSeek balance API: ${res.status}`);
+  try {
+    return mapDeepSeekBalance(await res.json(), now);
+  } catch {
+    return deepseekBalanceUnreadable(now);
+  }
+}
+
+/** Validate a DeepSeek API key for Save & Test. Throws only on a rejected key. */
+export async function validateDeepSeekApiKey(apiKey: string): Promise<void> {
+  const state = await fetchDeepSeekBalance(apiKey);
+  if (state.honesty === 'api_key_invalid') {
+    throw new Error('DeepSeek API key invalid or expired');
+  }
+}
+
+/**
+ * Kimi (Moonshot AI) API balance. Official GET /v1/users/me/balance with a
+ * user-pasted key. Same honesty-vs-throw split as DeepSeek above.
+ * https://platform.kimi.ai/docs/api/balance
+ */
+export async function fetchKimiBalance(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const res = await fetch('https://api.moonshot.ai/v1/users/me/balance', {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
+  if (res.status === 401 || res.status === 403) return kimiApiKeyInvalid(now);
+  if (!res.ok) throw new Error(`Kimi balance API: ${res.status}`);
+  try {
+    return mapKimiBalance(await res.json(), now);
+  } catch {
+    return kimiBalanceUnreadable(now);
+  }
+}
+
+/** Validate a Kimi API key for Save & Test. Throws only on a rejected key. */
+export async function validateKimiApiKey(apiKey: string): Promise<void> {
+  const state = await fetchKimiBalance(apiKey);
+  if (state.honesty === 'api_key_invalid') {
+    throw new Error('Kimi API key invalid or expired');
+  }
 }

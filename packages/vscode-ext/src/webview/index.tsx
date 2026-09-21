@@ -3,7 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
+import { SERVICES } from '@ai-quota-tool/core';
 import { QuotaDashboard, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
+
+const ALL_SERVICES = SERVICES.map((service) => service.id);
 
 declare const acquireVsCodeApi: () => { postMessage: (msg: unknown) => void };
 const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
@@ -58,6 +61,7 @@ function QuotaView() {
       states={states}
       disconnected={disconnected}
       reauthServices={reauthServices}
+      services={ALL_SERVICES}
     />
   );
 }

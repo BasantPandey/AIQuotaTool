@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI Quota Tool",
-  "version": "2.1.1",
-  "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok, plus your DeepSeek API balance, in one side panel.",
+  "version": "2.2.0",
+  "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok, plus your DeepSeek and Kimi API balance, in one side panel.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -41,6 +41,7 @@
     "https://api.github.com/*",
     "https://github.com/*",
     "https://grok.com/*",
-    "https://api.deepseek.com/*"
+    "https://api.deepseek.com/*",
+    "https://api.moonshot.ai/*"
   ]
 }

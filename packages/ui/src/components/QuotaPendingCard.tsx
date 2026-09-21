@@ -1,7 +1,7 @@
 import type React from 'react';
 import type { ServiceId } from '@ai-quota-tool/core';
 import { SERVICE_COLORS, SERVICE_LABELS } from '@ai-quota-tool/core';
-import { ClaudeLogo, CopilotLogo, CodexLogo, DeepSeekLogo, GrokLogo } from './logos.js';
+import { ClaudeLogo, CopilotLogo, CodexLogo, DeepSeekLogo, GrokLogo, KimiLogo } from './logos.js';
 
 const LOGOS: Record<ServiceId, React.ReactNode> = {
   claude: <ClaudeLogo size={20} />,
@@ -9,6 +9,7 @@ const LOGOS: Record<ServiceId, React.ReactNode> = {
   codex: <CodexLogo size={20} />,
   grok: <GrokLogo size={20} />,
   deepseek: <DeepSeekLogo size={20} />,
+  kimi: <KimiLogo size={20} />,
 };
 
 /** Dual-mode friendly hints (VS Code setup and/or browser session). */
@@ -18,6 +19,7 @@ const PENDING_HINTS: Record<ServiceId, string> = {
   codex: 'Set up a ChatGPT session token, or open chatgpt.com while signed in',
   grok: 'Set up a grok.com sso cookie in Set Up Accounts',
   deepseek: 'Paste an API key from platform.deepseek.com',
+  kimi: 'Paste an API key from platform.kimi.ai',
 };
 
 const REAUTH_HINTS: Partial<Record<ServiceId, string>> = {

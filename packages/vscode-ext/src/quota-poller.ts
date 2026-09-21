@@ -1,7 +1,9 @@
 // Node.js poller — credentials from SecretStorage; remaining math in core pure mappers.
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import {
+  deepseekApiKeyRequired,
   grokBrowserSessionRequired,
+  kimiApiKeyRequired,
   sessionAuthFailureAction,
   upsertQuotaState,
 } from '@ai-quota-tool/core';
@@ -10,7 +12,9 @@ import {
   fetchClaudeUsage,
   fetchCodexUsage,
   fetchCopilotSeat,
+  fetchDeepSeekBalance,
   fetchGrokUsage,
+  fetchKimiBalance,
 } from './session-fetch.js';
 
 type GetGithubToken = () => Promise<string | undefined>;
@@ -117,6 +121,18 @@ export class QuotaPoller {
         promise: creds.grokSsoCookie
           ? fetchGrokUsage(creds.grokSsoCookie)
           : Promise.reject('no credential'),
+      },
+      {
+        service: 'deepseek',
+        promise: creds.deepseekApiKey
+          ? fetchDeepSeekBalance(creds.deepseekApiKey)
+          : Promise.resolve(deepseekApiKeyRequired()),
+      },
+      {
+        service: 'kimi',
+        promise: creds.kimiApiKey
+          ? fetchKimiBalance(creds.kimiApiKey)
+          : Promise.resolve(kimiApiKeyRequired()),
       },
     ];
 

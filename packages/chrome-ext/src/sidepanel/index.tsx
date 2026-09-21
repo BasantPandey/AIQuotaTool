@@ -34,7 +34,7 @@ function ConsentView({ onAccept }: { onAccept: () => void }) {
       </div>
       <p style={{ color: '#8b949e' }}>
         See your remaining quota for Claude, Codex, Copilot, and Grok, plus your DeepSeek
-        API balance, in one place.
+        and Kimi API balance, in one place.
       </p>
       <p
         style={{
@@ -47,10 +47,10 @@ function ConsentView({ onAccept }: { onAccept: () => void }) {
       >
         <strong>Privacy:</strong> this extension reads your own AI quota through your{' '}
         <em>logged-in browser sessions</em> (Claude, Codex, Grok), an optional GitHub
-        sign-in (Copilot seat status), and an optional DeepSeek API key (balance only).
-        The key stays on this device and is sent only to api.deepseek.com. Disconnect
-        removes it. The extension never stores session keys and does not send your data
-        to a server of ours.
+        sign-in (Copilot seat status), and optional DeepSeek / Kimi API keys (balance
+        only). Each key stays on this device and is sent only to api.deepseek.com or
+        api.moonshot.ai. Disconnect removes it. The extension never stores session keys
+        and does not send your data to a server of ours.
       </p>
       <button
         onClick={onAccept}
@@ -78,8 +78,8 @@ function EmptyState() {
       </div>
       <p>
         Sign in to a service below (Claude, Codex, or Grok in their own tabs, Copilot via
-        GitHub, DeepSeek with an API key). Readings appear here automatically within a
-        minute.
+        GitHub, DeepSeek or Kimi with an API key). Readings appear here automatically
+        within a minute.
       </p>
     </div>
   );

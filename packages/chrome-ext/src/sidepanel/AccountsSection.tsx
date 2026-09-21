@@ -16,6 +16,7 @@ const SERVICE_HINTS: Record<ServiceId, string> = {
   grok: 'Sign in at grok.com - live session only, no keys stored',
   copilot: 'GitHub sign-in - seat status only (GitHub exposes no remaining %)',
   deepseek: 'API key from platform.deepseek.com - balance only, stored on this device',
+  kimi: 'API key from platform.kimi.ai - balance only, stored on this device',
 };
 
 function sendPanelMessage(

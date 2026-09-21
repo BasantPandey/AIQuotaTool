@@ -69,7 +69,7 @@ Publisher UI: https://marketplace.visualstudio.com/manage/publishers/basantpande
 pnpm --filter @ai-quota-tool/chrome-ext build
 ```
 
-Load `packages/chrome-ext/dist/` as unpacked in `chrome://extensions` if you want optional browser-session push. Not required for the V1 product bar. The Chrome package also shows a DeepSeek API balance when you paste a key from platform.deepseek.com.
+Load `packages/chrome-ext/dist/` as unpacked in `chrome://extensions` if you want optional browser-session push. Not required for the V1 product bar. The Chrome package also shows a DeepSeek or Kimi API balance when you paste a key from platform.deepseek.com or platform.kimi.ai.
 
 ---
 

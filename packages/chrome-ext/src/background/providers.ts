@@ -6,6 +6,7 @@ import { CodexFetcher } from './fetchers/codex.js';
 import { CopilotFetcher } from './fetchers/copilot.js';
 import { DeepSeekFetcher } from './fetchers/deepseek.js';
 import { GrokFetcher } from './fetchers/grok.js';
+import { KimiFetcher } from './fetchers/kimi.js';
 
 /**
  * One factory per catalog service. Adding a ServiceId without a factory
@@ -17,6 +18,7 @@ const FETCHER_FACTORIES = {
   codex: () => new CodexFetcher(),
   grok: () => new GrokFetcher(),
   deepseek: () => new DeepSeekFetcher(),
+  kimi: () => new KimiFetcher(),
 } satisfies Record<ServiceId, () => ServiceFetcher>;
 
 export function createFetchers(): ServiceFetcher[] {

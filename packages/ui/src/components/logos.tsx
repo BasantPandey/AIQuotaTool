@@ -76,6 +76,24 @@ export function DeepSeekLogo({ size = 20 }: { size?: number }) {
   );
 }
 
+/** Simple original mark for Kimi / Moonshot AI (not an official brand asset). */
+export function KimiLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M15.5 3a9 9 0 1 0 5.5 16.1A9 9 0 0 1 15.5 3Z"
+        fill="#2DD4BF"
+      />
+    </svg>
+  );
+}
+
 /** Simple monochrome mark for Grok (not an official brand asset). */
 export function GrokLogo({ size = 20 }: { size?: number }) {
   return (

@@ -44,6 +44,13 @@ export const SERVICES = [
     host: 'platform.deepseek.com',
     auth: 'api_key',
   },
+  {
+    id: 'kimi',
+    label: 'Kimi',
+    color: '#0b3d3e',
+    host: 'platform.kimi.ai',
+    auth: 'api_key',
+  },
 ] as const satisfies readonly {
   id: string;
   label: string;

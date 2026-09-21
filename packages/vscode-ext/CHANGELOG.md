@@ -5,6 +5,17 @@
 ### Packaging
 - Manual GitHub Actions workflow to package/publish the VS Code extension (semver bump + Marketplace)
 
+## [0.8.0] - 2026-09-21
+
+### DeepSeek and Kimi API balance
+- New optional DeepSeek (`platform.deepseek.com`) and Kimi (`platform.kimi.ai`) tabs in Set Up Accounts —
+  paste an API key to see account balance (money left, not a remaining percent)
+- Poller fetches `GET /user/balance` (DeepSeek) and `GET /v1/users/me/balance` (Kimi); a rejected key shows
+  "API key rejected" instead of a generic error, a missing key shows "Add an API key to see your balance"
+- Dashboard now renders the full service catalog (previously balance-only services were hidden)
+- Shared `mapKimiBalance` honesty builder in `@ai-quota-tool/core`, tested alongside the existing
+  `mapDeepSeekBalance`
+
 ## [0.7.4] - 2026-09-16
 
 ### Codex / ChatGPT setup fix
