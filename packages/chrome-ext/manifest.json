@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Quota Tool",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok, plus your DeepSeek API balance, in one side panel.",
   "icons": {
     "16": "icons/icon16.png",
