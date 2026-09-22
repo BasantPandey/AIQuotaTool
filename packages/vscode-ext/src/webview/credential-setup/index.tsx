@@ -205,7 +205,7 @@ function CredentialSetup() {
             <input
               type="password"
               style={inputStyle}
-              placeholder="sk-ant-sid01-…"
+              placeholder="sk-ant-sid02-…"
               value={claudeKey}
               onChange={(e) => setClaudeKey(e.target.value)}
             />

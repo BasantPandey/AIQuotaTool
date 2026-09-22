@@ -5,6 +5,13 @@
 ### Packaging
 - Manual GitHub Actions workflow to package/publish the VS Code extension (semver bump + Marketplace)
 
+## [0.8.1] - 2026-09-22
+
+### Set Up Accounts
+- Claude sessionKey placeholder in Set Up Accounts updated from the stale `sk-ant-sid01-…` example to
+  `sk-ant-sid02-…`, matching Anthropic's current cookie format. Save & Test never validated the prefix —
+  this only fixes the on-screen example text.
+
 ## [0.8.0] - 2026-09-21
 
 ### DeepSeek and Kimi API balance
