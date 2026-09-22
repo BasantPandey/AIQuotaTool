@@ -2,6 +2,19 @@
   "name": "@ai-quota-tool/chrome-ext",
   "version": "2.2.1",
   "private": true,
+  "license": "Apache-2.0",
+  "keywords": [
+    "quota",
+    "AI",
+    "Claude",
+    "Copilot",
+    "Codex",
+    "Grok",
+    "DeepSeek",
+    "Kimi",
+    "Chrome extension",
+    "monitoring"
+  ],
   "type": "module",
   "scripts": {
     "build": "vite build",
