@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok** - primarily as a **VS Code extension**.
+VS Code extension that shows your remaining AI quota for Claude, GitHub Copilot, OpenAI Codex, and Grok.
 
 ## Product surface (V1)
 
