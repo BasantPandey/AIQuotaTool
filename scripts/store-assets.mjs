@@ -149,13 +149,14 @@ const SAMPLE = `(() => {
   const now = Date.now(), H = 3600e3, F = now + 10 * H;
   return chrome.storage.local.set({
     privacyConsent: true,
-    enabledServices: ['claude', 'copilot', 'codex', 'grok', 'cursor'],
+    enabledServices: ['claude', 'copilot', 'codex', 'grok', 'gemini', 'cursor'],
     quotaStates: [
       { service: 'claude', sessionPct: 42, weeklyPct: 9, sessionResetsAt: now + 3*H - 60e3, weeklyResetsAt: now + 4*24*H - 60e3,
         subcategories: [{ name: 'Sonnet', usedPct: 71, label: '29% left' }, { name: 'Designs', usedPct: 20, label: '80% left' }], lastUpdated: F },
       { service: 'codex', sessionPct: 76, weeklyPct: 58, sessionResetsAt: now + 1*H + 44*60e3, weeklyResetsAt: now + 5*24*H - 60e3, lastUpdated: F },
       { service: 'copilot', honesty: 'seat_active_usage_unknown', lastUpdated: F },
       { service: 'grok', sessionPct: 88, weeklyPct: 64, sessionResetsAt: now + 48*60e3, weeklyResetsAt: now + 2*24*H + 4*H, lastUpdated: F },
+      { service: 'gemini', sessionPct: 81, weeklyPct: 67, sessionResetsAt: now + 3*H + 12*60e3, weeklyResetsAt: now + 6*24*H + 7*H, lastUpdated: F },
       { service: 'cursor', monthlyPct: 4, monthlyResetsAt: now + 12*24*H, lastUpdated: F },
     ],
   });

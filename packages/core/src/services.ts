@@ -38,6 +38,13 @@ export const SERVICES = [
     auth: 'session',
   },
   {
+    id: 'gemini',
+    label: 'Gemini',
+    color: '#131a33',
+    host: 'gemini.google.com',
+    auth: 'session',
+  },
+  {
     id: 'cursor',
     label: 'Cursor',
     color: '#14120b',

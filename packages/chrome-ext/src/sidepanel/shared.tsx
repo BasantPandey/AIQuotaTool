@@ -5,6 +5,7 @@ export const SERVICE_HINTS: Record<ServiceId, string> = {
   codex: 'Sign in at chatgpt.com in this browser. Your Codex quota shows here within a minute.',
   copilot: 'Connect GitHub to check your Copilot plan. GitHub does not share a remaining %.',
   grok: 'Sign in at grok.com in this browser. Your quota shows here within a minute.',
+  gemini: 'Sign in at gemini.google.com in this browser. Your quota shows here within a minute.',
   cursor: 'Sign in at cursor.com in this browser. Your monthly usage shows here within a minute.',
   deepseek: 'Add an API key from platform.deepseek.com to see your balance.',
   kimi: 'Add an API key from platform.kimi.ai to see your balance.',

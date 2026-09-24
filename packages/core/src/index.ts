@@ -15,4 +15,5 @@ export * from './kimi.js';
 export * from './api-key.js';
 export * from './balance.js';
 export * from './cursor.js';
+export * from './gemini.js';
 export * from './enabled.js';

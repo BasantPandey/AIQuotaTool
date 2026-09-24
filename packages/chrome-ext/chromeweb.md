@@ -14,7 +14,7 @@ AI Quota Tool - AI usage limits for Claude, Codex, Cursor
 ### Summary (manifest `description`, 132 characters max)
 
 ```
-See AI limits before they stop your work: Claude, Codex, Copilot, Cursor and Grok usage and reset times. Free, private, no account.
+See AI limits before they stop your work: Claude, Codex, Gemini, Cursor and Grok usage and reset times. Free, private, no account.
 ```
 
 ### Description
@@ -27,6 +27,7 @@ AI Quota Tool shows what is left of your AI plans in the Chrome side panel. See 
 WORKS WITH
 • Claude - session and weekly limits, plus model limits
 • Codex (ChatGPT) - session and weekly limits
+• Gemini - 5-hour and weekly limits
 • Cursor - monthly usage
 • Grok - session and weekly limits
 • GitHub Copilot - plan status
@@ -83,7 +84,7 @@ Generate with `node scripts/store-assets.mjs` after a build. Files are in `packa
 ### Single purpose description
 
 ```
-This item shows the user their remaining AI usage limits (Claude, Codex, Copilot, Cursor, Grok) and API balances (DeepSeek, Kimi) in one side panel. It does not do any other task.
+This item shows the user their remaining AI usage limits (Claude, Codex, Copilot, Gemini, Cursor, Grok) and API balances (DeepSeek, Kimi) in one side panel. It does not do any other task.
 ```
 
 ### Permission justifications
@@ -115,7 +116,7 @@ The side panel is the main user interface. It shows the quota dashboard and the 
 
 **Host permissions**
 ```
-The item reads the user's own usage from claude.ai, chatgpt.com, grok.com and cursor.com with the user's existing session. It uses api.github.com and github.com only for GitHub sign-in and the Copilot plan check. It uses api.deepseek.com and api.moonshot.ai only to read an API balance with a key that the user pastes. It reads data only for providers that the user turns on. It does not access any other site.
+The item reads the user's own usage from claude.ai, chatgpt.com, grok.com, gemini.google.com and cursor.com with the user's existing session. It uses api.github.com and github.com only for GitHub sign-in and the Copilot plan check. It uses api.deepseek.com and api.moonshot.ai only to read an API balance with a key that the user pastes. It reads data only for providers that the user turns on. It does not access any other site.
 ```
 
 **Remote code**
