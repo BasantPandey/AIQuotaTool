@@ -1,0 +1,217 @@
+<!doctype html>
+<!--
+  Chrome Web Store art. scripts/store-assets.mjs opens this page once per
+  asset (?asset=tile|marquee|shot1..shot5) and saves a screenshot at the exact
+  store size. Panel images come from the real side panel (panels/*.png).
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI Quota Tool store art</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; }
+      html, body { overflow: hidden; }
+      body {
+        font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+        color: #fff;
+        -webkit-font-smoothing: antialiased;
+      }
+      .canvas {
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(60% 80% at 0% 0%, rgba(99, 102, 241, 0.85), transparent 70%),
+          radial-gradient(55% 70% at 100% 100%, rgba(34, 211, 238, 0.55), transparent 70%),
+          linear-gradient(135deg, #2a1f8f 0%, #141a4a 55%, #0b1026 100%);
+      }
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+      }
+      .mark { display: block; filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.35)); }
+      .name { font-weight: 750; letter-spacing: -0.03em; line-height: 1; }
+      .kicker {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.12);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .headline { font-weight: 750; letter-spacing: -0.035em; line-height: 1.05; text-wrap: balance; }
+      .sub { color: rgba(255, 255, 255, 0.78); line-height: 1.45; text-wrap: pretty; }
+      .fade { mask-image: linear-gradient(#000 82%, transparent 99%); }
+      .panel {
+        display: block;
+        border-radius: 18px;
+        box-shadow: 0 30px 80px rgba(3, 6, 25, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      }
+      .bars { display: grid; gap: 10px; }
+      .bar-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 4px 10px; font-weight: 600; }
+      .bar-row .track { grid-column: 1 / -1; height: 9px; border-radius: 99px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+      .bar-row .fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #8ea2ff, #5fe1f3); }
+      .bar-row .fill.low { background: #ff6f61; }
+      .bullets { list-style: none; padding: 0; display: grid; gap: 14px; }
+      .bullets li { display: flex; gap: 12px; align-items: center; font-size: 20px; color: rgba(255, 255, 255, 0.9); }
+      .bullets li::before {
+        content: '';
+        width: 10px; height: 10px; border-radius: 99px; flex-shrink: 0;
+        background: linear-gradient(135deg, #8ea2ff, #5fe1f3);
+      }
+      .notif {
+        width: 360px;
+        padding: 16px 18px;
+        border-radius: 14px;
+        background: rgba(20, 24, 40, 0.92);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        display: flex; gap: 14px; align-items: flex-start;
+      }
+      .notif b { display: block; font-size: 16px; margin-bottom: 4px; }
+      .notif span { font-size: 14px; color: rgba(255, 255, 255, 0.72); }
+      .toolbar {
+        display: inline-flex; align-items: center; gap: 14px;
+        padding: 10px 16px; border-radius: 14px;
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+      }
+      .badge-icon { position: relative; }
+      .badge {
+        position: absolute; right: -10px; bottom: -6px;
+        padding: 1px 6px; border-radius: 6px;
+        background: #d73a49; font-size: 13px; font-weight: 700;
+      }
+      .dot-tb { width: 26px; height: 26px; border-radius: 8px; background: rgba(255, 255, 255, 0.18); }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <template id="mark">
+      <svg class="mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#6d7dff" />
+            <stop offset="1" stop-color="#22d3ee" />
+          </linearGradient>
+        </defs>
+        <rect width="64" height="64" rx="16" fill="#12152a" />
+        <rect x="13" y="17" width="38" height="7" rx="3.5" fill="url(#g)" />
+        <rect x="13" y="29" width="27" height="7" rx="3.5" fill="url(#g)" />
+        <rect x="13" y="41" width="14" height="7" rx="3.5" fill="#f2b33d" />
+      </svg>
+    </template>
+    <script>
+      const asset = new URLSearchParams(location.search).get('asset');
+      const mark = (size) =>
+        document.getElementById('mark').innerHTML.replace('<svg ', `<svg width="${size}" height="${size}" `);
+      const bars = (rows, size) => `
+        <div class="bars" style="font-size:${size}px">
+          ${rows
+            .map(
+              ([label, pct]) => `
+            <div class="bar-row"><span>${label}</span><span>${pct}% left</span>
+              <div class="track"><div class="fill ${pct < 10 ? 'low' : ''}" style="width:${pct}%"></div></div>
+            </div>`,
+            )
+            .join('')}
+        </div>`;
+
+      const shot = (kicker, headline, sub, right, extra = '', textWidth = 560) => `
+        <div class="canvas" style="width:1280px;height:800px">
+          <div class="grid"></div>
+          <div style="position:absolute;left:88px;top:0;bottom:0;width:${textWidth}px;display:flex;flex-direction:column;justify-content:center;gap:22px">
+            <div style="display:flex;align-items:center;gap:14px">${mark(44)}<span class="name" style="font-size:24px">AI Quota Tool</span></div>
+            <span class="kicker" style="align-self:flex-start">${kicker}</span>
+            <h1 class="headline" style="font-size:56px">${headline}</h1>
+            <p class="sub" style="font-size:21px">${sub}</p>
+            ${extra}
+          </div>
+          <div style="position:absolute;right:88px;top:0;bottom:0;display:flex;align-items:center;gap:28px">${right}</div>
+        </div>`;
+      const panel = (name, height = 700, fade = true) =>
+        `<img class="panel ${fade ? 'fade' : ''}" src="panels/${name}.png" style="height:${height}px" />`;
+
+      const assets = {
+        tile: () => `
+          <div class="canvas" style="width:440px;height:280px;padding:34px 36px;display:flex;flex-direction:column;justify-content:space-between">
+            <div class="grid"></div>
+            <div style="position:relative;display:flex;align-items:center;gap:16px">
+              ${mark(64)}
+              <div>
+                <div class="name" style="font-size:34px">AI Quota Tool</div>
+                <div class="sub" style="font-size:16px;margin-top:6px">Every AI limit, one glance</div>
+              </div>
+            </div>
+            <div style="position:relative">${bars([['Claude', 42], ['Codex', 76], ['Cursor', 4]], 15)}</div>
+          </div>`,
+        marquee: () => `
+          <div class="canvas" style="width:1400px;height:560px">
+            <div class="grid"></div>
+            <div style="position:absolute;left:100px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center;gap:24px">
+              <div style="display:flex;align-items:center;gap:20px">${mark(88)}<span class="name" style="font-size:60px">AI Quota Tool</span></div>
+              <h1 class="headline" style="font-size:44px">See every AI limit before it stops your work</h1>
+              <p class="sub" style="font-size:22px">Claude · Codex · Copilot · Cursor · Grok · DeepSeek · Kimi</p>
+            </div>
+            <img class="panel fade" src="panels/dashboard-dark.png" style="position:absolute;right:120px;top:60px;height:760px" />
+          </div>`,
+        shot1: () =>
+          shot(
+            'All your AI tools',
+            'Every AI limit in one glance',
+            'Session, weekly and monthly limits for Claude, Codex, Cursor, Grok and more. Live in the Chrome side panel.',
+            panel('dashboard-dark'),
+          ),
+        shot2: () =>
+          shot(
+            'Alerts',
+            'Know before you hit the wall',
+            'The toolbar badge shows your lowest limit. You get one alert when a limit runs low, and one when it resets.',
+            `<div style="display:flex;flex-direction:column;gap:22px;align-items:flex-end">
+               <div class="toolbar"><div class="dot-tb"></div><div class="dot-tb"></div>
+                 <div class="badge-icon">${mark(30)}<span class="badge">4</span></div></div>
+               <div class="notif">${mark(40)}<div><b>Cursor quota low</b><span>Only 4% remaining in the current window.</span></div></div>
+               <div class="notif">${mark(40)}<div><b>Claude session reset</b><span>Your session quota has refreshed.</span></div></div>
+             </div>`,
+          ),
+        shot3: () =>
+          shot(
+            'Your list',
+            'Show only the tools you use',
+            'Turn each provider on or off. A provider that is off is not checked and does not send alerts.',
+            panel('providers-dark'),
+          ),
+        shot4: () =>
+          shot(
+            'Light and dark',
+            'Made to fit your browser',
+            'The panel follows your system theme. Clear bars show what is left and when it resets.',
+            panel('dashboard-light', 600) + panel('dashboard-dark', 600),
+            '',
+            440,
+          ),
+        shot5: () =>
+          shot(
+            'Private by design',
+            'Free. Private. No account.',
+            'The extension uses the sessions you already have in this browser.',
+            panel('welcome-dark', 700, false),
+            `<ul class="bullets">
+               <li>Your data stays on this device</li>
+               <li>No server, no tracking, no sign-up</li>
+               <li>Open source on GitHub</li>
+             </ul>`,
+          ),
+      };
+
+      document.getElementById('root').innerHTML = assets[asset]();
+      Promise.all([...document.images].map((img) => img.decode().catch(() => {}))).then(() => {
+        document.body.dataset.ready = '1';
+      });
+    </script>
+  </body>
+</html>
