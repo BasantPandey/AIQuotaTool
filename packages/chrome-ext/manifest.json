@@ -41,6 +41,7 @@
     "https://api.github.com/*",
     "https://github.com/*",
     "https://grok.com/*",
+    "https://cursor.com/*",
     "https://api.deepseek.com/*",
     "https://api.moonshot.ai/*"
   ]

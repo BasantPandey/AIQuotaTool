@@ -5,6 +5,7 @@ function richness(state: QuotaState): number {
   let score = 0;
   if (state.sessionPct !== undefined) score += 1;
   if (state.weeklyPct !== undefined) score += 1;
+  if (state.monthlyPct !== undefined) score += 1;
   if (state.sessionResetsAt !== undefined) score += 1;
   if (state.weeklyResetsAt !== undefined) score += 1;
   if (state.subcategories !== undefined && state.subcategories.length > 0) score += 1;

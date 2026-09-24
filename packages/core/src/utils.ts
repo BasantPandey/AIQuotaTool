@@ -1,6 +1,6 @@
 /**
  * Returns a human-readable countdown string from a duration in milliseconds.
- * e.g. 6300000 → "1h 45m"
+ * e.g. 6300000 → "1h 45m", 3 days 22 hours → "3d 22h"
  */
 export function formatTimeRemaining(ms: number): string {
   if (ms <= 0) return 'now';
@@ -8,6 +8,12 @@ export function formatTimeRemaining(ms: number): string {
   const totalMinutes = Math.floor(ms / 60_000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
+
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24);
+    const restHours = hours % 24;
+    return restHours > 0 ? `${days}d ${restHours}h` : `${days}d`;
+  }
 
   if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
   if (hours > 0) return `${hours}h`;

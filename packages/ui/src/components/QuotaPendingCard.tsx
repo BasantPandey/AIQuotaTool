@@ -1,13 +1,14 @@
 import type React from 'react';
 import type { ServiceId } from '@ai-quota-tool/core';
 import { SERVICE_COLORS, SERVICE_LABELS } from '@ai-quota-tool/core';
-import { ClaudeLogo, CopilotLogo, CodexLogo, DeepSeekLogo, GrokLogo, KimiLogo } from './logos.js';
+import { ClaudeLogo, CopilotLogo, CodexLogo, CursorLogo, DeepSeekLogo, GrokLogo, KimiLogo } from './logos.js';
 
 const LOGOS: Record<ServiceId, React.ReactNode> = {
   claude: <ClaudeLogo size={20} />,
   copilot: <CopilotLogo size={20} />,
   codex: <CodexLogo size={20} />,
   grok: <GrokLogo size={20} />,
+  cursor: <CursorLogo size={20} />,
   deepseek: <DeepSeekLogo size={20} />,
   kimi: <KimiLogo size={20} />,
 };
@@ -18,6 +19,7 @@ const PENDING_HINTS: Record<ServiceId, string> = {
   copilot: 'Sign in to GitHub for seat status (remaining % often unavailable)',
   codex: 'Set up a ChatGPT session token, or open chatgpt.com while signed in',
   grok: 'Set up a grok.com sso cookie in Set Up Accounts',
+  cursor: 'Open cursor.com while signed in',
   deepseek: 'Paste an API key from platform.deepseek.com',
   kimi: 'Paste an API key from platform.kimi.ai',
 };

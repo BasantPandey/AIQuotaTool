@@ -72,6 +72,7 @@ describe('deriveConnections', () => {
       copilot: false,
       codex: false,
       grok: false,
+      cursor: false,
       deepseek: false,
       kimi: false,
     });
@@ -83,6 +84,7 @@ describe('deriveConnections', () => {
       copilot: false,
       codex: false,
       grok: false,
+      cursor: false,
       deepseek: false,
       kimi: false,
     });

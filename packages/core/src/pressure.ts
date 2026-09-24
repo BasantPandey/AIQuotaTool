@@ -1,7 +1,7 @@
 import type { QuotaState } from './types.js';
 
 /**
- * Lowest defined remaining % on a single state (session or weekly).
+ * Lowest defined remaining % on a single state (session, weekly or monthly).
  * Returns undefined when no remaining percentages exist (e.g. honesty-only Copilot).
  * Never invents 100 for missing fields.
  */
@@ -9,6 +9,7 @@ export function pressureRemaining(state: QuotaState): number | undefined {
   const vals: number[] = [];
   if (state.sessionPct != null) vals.push(state.sessionPct);
   if (state.weeklyPct != null) vals.push(state.weeklyPct);
+  if (state.monthlyPct != null) vals.push(state.monthlyPct);
   if (vals.length === 0) return undefined;
   return Math.min(...vals);
 }

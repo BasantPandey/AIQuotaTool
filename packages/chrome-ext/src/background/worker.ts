@@ -1,17 +1,27 @@
-import type { LowQuotaArmed, PanelMessage, QuotaState } from '@ai-quota-tool/core';
+import type { LowQuotaArmed, PanelMessage, QuotaState, ServiceId } from '@ai-quota-tool/core';
 import {
   decideLowQuotaAlerts,
+  DEFAULT_ENABLED_SERVICES,
   deriveBadge,
+  ENABLED_SERVICES_KEY,
+  filterEnabled,
   initialLowQuotaArmed,
   mergeQuotaStates,
+  resolveEnabledServices,
   upsertQuotaState,
 } from '@ai-quota-tool/core';
 import {
   notifyLowQuota,
   scheduleResetNotifications,
+  clearResetNotifications,
   handleAlarm,
 } from './notifications.js';
-import { clearServiceApiKey, saveServiceApiKey } from './api-keys.js';
+import {
+  API_KEYS_STORAGE_KEY,
+  clearServiceApiKey,
+  saveServiceApiKey,
+  type StoredApiKeys,
+} from './api-keys.js';
 import {
   connectGitHub,
   disconnectGitHub,
@@ -49,6 +59,23 @@ async function checkLowQuota(states: QuotaState[]): Promise<void> {
   await chrome.storage.local.set({ [LOW_QUOTA_ARMED_KEY]: decision.armed });
 }
 
+async function readEnabled(): Promise<ServiceId[]> {
+  const stored = await chrome.storage.local.get([ENABLED_SERVICES_KEY]);
+  return resolveEnabledServices(stored[ENABLED_SERVICES_KEY]);
+}
+
+/** Merge readings into storage, keeping only providers the user turned on. */
+async function storeMerged(
+  merge: (existing: QuotaState[]) => QuotaState[],
+  enabled: ServiceId[],
+): Promise<void> {
+  const stored = await chrome.storage.local.get(['quotaStates']);
+  const existing: QuotaState[] = (stored['quotaStates'] as QuotaState[] | undefined) ?? [];
+  const merged = filterEnabled(merge(existing), enabled);
+  await chrome.storage.local.set({ quotaStates: merged, lastPollAt: Date.now() });
+  await afterMerge(merged);
+}
+
 /** Side effects that follow every storage merge. */
 async function afterMerge(merged: QuotaState[]): Promise<void> {
   scheduleResetNotifications(merged);
@@ -74,7 +101,9 @@ async function recoverCopilotIfTokenDied(states: QuotaState[]): Promise<QuotaSta
 }
 
 async function pollAll(): Promise<void> {
-  const results = await Promise.allSettled(fetchers.map((f) => f.fetch()));
+  const enabled = await readEnabled();
+  const active = fetchers.filter((f) => enabled.includes(f.serviceId));
+  const results = await Promise.allSettled(active.map((f) => f.fetch()));
 
   let states: QuotaState[] = [];
   for (const result of results) {
@@ -85,27 +114,26 @@ async function pollAll(): Promise<void> {
     }
   }
 
-  if (states.length === 0) return;
   states = await recoverCopilotIfTokenDied(states);
 
   // Freshest-wins merge with content-script / prior SW readings; partial polls keep other services.
-  const stored = await chrome.storage.local.get(['quotaStates']);
-  const existing: QuotaState[] =
-    (stored['quotaStates'] as QuotaState[] | undefined) ?? [];
-  const merged = mergeQuotaStates(existing, states);
-
-  await chrome.storage.local.set({ quotaStates: merged, lastPollAt: Date.now() });
-  await afterMerge(merged);
+  await storeMerged((existing) => mergeQuotaStates(existing, states), enabled);
 }
 
 // Merge a single service's state (pushed by the content script) into storage.
 async function mergeSingleQuotaState(incoming: QuotaState): Promise<void> {
-  const result = await chrome.storage.local.get(['quotaStates']);
-  const existing: QuotaState[] = (result['quotaStates'] as QuotaState[] | undefined) ?? [];
-  const merged = upsertQuotaState(existing, incoming);
-  await chrome.storage.local.set({ quotaStates: merged, lastPollAt: Date.now() });
-  await afterMerge(merged);
+  await storeMerged((existing) => upsertQuotaState(existing, incoming), await readEnabled());
 }
+
+// The Providers screen writes the list; drop removed providers and poll new ones.
+chrome.storage.local.onChanged.addListener((changes) => {
+  const change = changes[ENABLED_SERVICES_KEY];
+  if (!change) return;
+  const before = resolveEnabledServices(change.oldValue);
+  const after = resolveEnabledServices(change.newValue);
+  clearResetNotifications(before.filter((id) => !after.includes(id)));
+  pollAll().catch(console.error);
+});
 
 function ensureAlarms(): void {
   chrome.alarms.create(POLL_ALARM, {
@@ -170,7 +198,22 @@ chrome.runtime.onMessage.addListener(
 // Top-level call runs on every SW activation (install, startup, and every alarm wake-up).
 ensureAlarms();
 
+/**
+ * Users from before the provider list keep every provider that has a saved
+ * API key. New users pick providers on the welcome screen.
+ */
+async function migrateEnabledServices(): Promise<void> {
+  const stored = await chrome.storage.local.get([ENABLED_SERVICES_KEY, API_KEYS_STORAGE_KEY]);
+  if (stored[ENABLED_SERVICES_KEY] !== undefined) return;
+  const keys = (stored[API_KEYS_STORAGE_KEY] as StoredApiKeys | undefined) ?? {};
+  const withKeys = Object.keys(keys) as ServiceId[];
+  await chrome.storage.local.set({
+    [ENABLED_SERVICES_KEY]: resolveEnabledServices([...DEFAULT_ENABLED_SERVICES, ...withKeys]),
+  });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
+  migrateEnabledServices().catch(console.error);
   ensureAlarms();
   // One-time cleanup of the removed V1 WS client's keepalive alarm.
   chrome.alarms.clear(LEGACY_WS_KEEPALIVE_ALARM);
