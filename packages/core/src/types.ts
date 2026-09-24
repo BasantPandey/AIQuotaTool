@@ -77,6 +77,10 @@ export interface QuotaState {
   sessionResetsAt?: number;
   /** Unix timestamp (ms) when the weekly window resets. Omit when weeklyPct is absent. */
   weeklyResetsAt?: number;
+  /** 0–100, percentage REMAINING in the current billing month. Omit if the service has no monthly quota. */
+  monthlyPct?: number;
+  /** Unix timestamp (ms) when the billing month resets. Omit when monthlyPct is absent. */
+  monthlyResetsAt?: number;
   /** Claude-only breakdown by sub-bucket */
   subcategories?: ClaudeSubcategory[];
   /**

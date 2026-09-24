@@ -38,6 +38,13 @@ export const SERVICES = [
     auth: 'session',
   },
   {
+    id: 'cursor',
+    label: 'Cursor',
+    color: '#14120b',
+    host: 'cursor.com',
+    auth: 'session',
+  },
+  {
     id: 'deepseek',
     label: 'DeepSeek',
     color: '#1b2a6b',

@@ -21,6 +21,9 @@ import {
 // https://<store-assigned-extension-id>.chromiumapp.org/ after that upload.
 export const GITHUB_OAUTH_CLIENT_ID = '';
 
+/** False until the OAuth App client id is set. The panel then hides the Connect button. */
+export const GITHUB_SIGN_IN_READY = GITHUB_OAUTH_CLIENT_ID !== '';
+
 export const GITHUB_TOKEN_STORAGE_KEY = 'githubToken';
 
 const TOKEN_ENDPOINT = 'https://github.com/login/oauth/access_token';

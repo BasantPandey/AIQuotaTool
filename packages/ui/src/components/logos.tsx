@@ -116,3 +116,20 @@ export function GrokLogo({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Simple original mark for Cursor (not an official brand asset). */
+export function CursorLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M12 2.5 20.5 7.3v9.4L12 21.5l-8.5-4.8V7.3L12 2.5Z" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M3.8 7.4 12 12l8.2-4.6M12 12v9.2" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M12 12 20.2 7.4 12 2.8Z" fill="#fff" />
+    </svg>
+  );
+}

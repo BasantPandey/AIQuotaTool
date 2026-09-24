@@ -3,6 +3,7 @@ import { SERVICE_LABELS } from '@ai-quota-tool/core';
 
 const ALARM_PREFIX_SESSION = 'quota-reset-session-';
 const ALARM_PREFIX_WEEKLY = 'quota-reset-weekly-';
+const ALARM_PREFIX_MONTHLY = 'quota-reset-monthly-';
 
 /** Fire low-quota alerts; stable per-service IDs make repeats update, not stack. */
 export function notifyLowQuota(alerts: LowQuotaAlert[]): void {
@@ -33,6 +34,18 @@ export function scheduleResetNotifications(states: QuotaState[]): void {
     if (state.weeklyResetsAt != null && state.weeklyResetsAt - Date.now() > 0) {
       chrome.alarms.create(weeklyAlarmName, { when: state.weeklyResetsAt });
     }
+    const monthlyAlarmName = `${ALARM_PREFIX_MONTHLY}${state.service}`;
+    if (state.monthlyResetsAt != null && state.monthlyResetsAt - Date.now() > 0) {
+      chrome.alarms.create(monthlyAlarmName, { when: state.monthlyResetsAt });
+    }
+  }
+}
+
+export function clearResetNotifications(services: ServiceId[]): void {
+  for (const service of services) {
+    for (const prefix of [ALARM_PREFIX_SESSION, ALARM_PREFIX_WEEKLY, ALARM_PREFIX_MONTHLY]) {
+      chrome.alarms.clear(`${prefix}${service}`);
+    }
   }
 }
 
@@ -52,6 +65,14 @@ export function handleAlarm(alarm: chrome.alarms.Alarm): void {
       iconUrl: 'icons/icon48.png',
       title: `${SERVICE_LABELS[service]} weekly quota reset`,
       message: 'Your weekly quota has refreshed - full capacity restored.',
+    });
+  } else if (alarm.name.startsWith(ALARM_PREFIX_MONTHLY)) {
+    const service = alarm.name.slice(ALARM_PREFIX_MONTHLY.length) as ServiceId;
+    chrome.notifications.create(`notif-monthly-${service}`, {
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: `${SERVICE_LABELS[service]} monthly quota reset`,
+      message: 'Your monthly quota has refreshed.',
     });
   }
 }

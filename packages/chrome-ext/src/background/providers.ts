@@ -4,6 +4,7 @@ import type { ServiceFetcher } from './fetchers/base.js';
 import { ClaudeFetcher } from './fetchers/claude.js';
 import { CodexFetcher } from './fetchers/codex.js';
 import { CopilotFetcher } from './fetchers/copilot.js';
+import { CursorFetcher } from './fetchers/cursor.js';
 import { DeepSeekFetcher } from './fetchers/deepseek.js';
 import { GrokFetcher } from './fetchers/grok.js';
 import { KimiFetcher } from './fetchers/kimi.js';
@@ -17,6 +18,7 @@ const FETCHER_FACTORIES = {
   copilot: () => new CopilotFetcher(),
   codex: () => new CodexFetcher(),
   grok: () => new GrokFetcher(),
+  cursor: () => new CursorFetcher(),
   deepseek: () => new DeepSeekFetcher(),
   kimi: () => new KimiFetcher(),
 } satisfies Record<ServiceId, () => ServiceFetcher>;

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Quota Tool - every AI limit in one glance</title>
+    <meta
+      name="description"
+      content="Free Chrome extension. See your Claude, Codex, Copilot, Cursor and Grok limits in one side panel. Private, no account, no server."
+    />
+    <meta property="og:title" content="AI Quota Tool" />
+    <meta property="og:description" content="Every AI limit in one glance. Free, private, no account." />
+    <meta property="og:image" content="img/marquee.png" />
+    <link rel="icon" href="img/icon128.png" />
+    <style>
+      :root {
+        --bg: #0b1026;
+        --text: #f3f5fb;
+        --muted: rgba(243, 245, 251, 0.72);
+        --line: rgba(255, 255, 255, 0.1);
+        --card: rgba(255, 255, 255, 0.05);
+        --accent: #7b9bff;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 17px/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; }
+      .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+      header.hero {
+        background:
+          radial-gradient(60% 80% at 0% 0%, rgba(99, 102, 241, 0.8), transparent 70%),
+          radial-gradient(50% 70% at 100% 100%, rgba(34, 211, 238, 0.45), transparent 70%),
+          linear-gradient(135deg, #2a1f8f 0%, #141a4a 55%, #0b1026 100%);
+        padding: 24px 0 80px;
+      }
+      nav { display: flex; align-items: center; gap: 12px; }
+      nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; flex: 1; text-decoration: none; }
+      nav a.link { color: var(--muted); text-decoration: none; font-size: 15px; }
+      nav a.link:hover { color: var(--text); }
+      .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; margin-top: 56px; }
+      h1 { font-size: clamp(40px, 6vw, 64px); line-height: 1.04; letter-spacing: -0.035em; margin: 0 0 18px; text-wrap: balance; }
+      .lead { font-size: 20px; color: var(--muted); margin: 0 0 28px; max-width: 34em; text-wrap: pretty; }
+      .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        height: 48px; padding: 0 22px; border-radius: 12px;
+        font-weight: 650; font-size: 16px; text-decoration: none;
+        border: 1px solid var(--line);
+      }
+      .btn-primary { background: #fff; color: #141a4a; border-color: transparent; }
+      .btn-primary:hover { background: #e9edff; }
+      .btn-ghost:hover { background: rgba(255, 255, 255, 0.08); }
+      .note { color: var(--muted); font-size: 14px; margin-top: 14px; }
+      .hero-shot { width: 100%; border-radius: 18px; box-shadow: 0 30px 80px rgba(3, 6, 25, 0.6); mask-image: linear-gradient(#000 80%, transparent 99%); }
+      section { padding: 88px 0 0; }
+      h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 12px; text-wrap: balance; }
+      .section-lead { color: var(--muted); margin: 0 0 36px; max-width: 40em; }
+      .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .feature { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+      .feature h3 { margin: 0 0 6px; font-size: 18px; }
+      .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+      .providers { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+      .chip { padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); font-size: 15px; }
+      .shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+      .shots img { width: 100%; border-radius: 14px; border: 1px solid var(--line); display: block; }
+      .steps { counter-reset: step; display: grid; gap: 14px; padding: 0; list-style: none; }
+      .steps li { counter-increment: step; display: flex; gap: 16px; align-items: baseline; }
+      .steps li::before {
+        content: counter(step);
+        flex-shrink: 0; width: 32px; height: 32px; border-radius: 99px;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--accent); color: #0b1026; font-weight: 700; font-size: 15px;
+      }
+      details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+      summary { cursor: pointer; font-weight: 600; }
+      details p { color: var(--muted); margin: 10px 0 0; }
+      footer { margin-top: 96px; padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+      footer .wrap { display: flex; gap: 20px; flex-wrap: wrap; }
+      footer .grow { flex: 1; }
+      @media (max-width: 820px) {
+        .hero-grid, .features, .shots { grid-template-columns: 1fr; }
+        .hero-grid { margin-top: 36px; }
+        nav a.link.optional { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <nav>
+          <a class="brand" href="./"><img src="img/icon128.png" width="32" height="32" alt="" />AI Quota Tool</a>
+          <a class="link optional" href="#features">Features</a>
+          <a class="link optional" href="#faq">FAQ</a>
+          <a class="link" href="privacy.html">Privacy</a>
+        </nav>
+        <div class="hero-grid">
+          <div>
+            <h1>Every AI limit in one glance</h1>
+            <p class="lead">
+              See your Claude, Codex, Copilot, Cursor and Grok limits in the Chrome side panel. Know what is
+              left and when it resets, before a limit stops your work.
+            </p>
+            <div class="cta">
+              <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/dkohaadncknbgmeefnlfffdjnnlmlglh">
+                Add to Chrome - it is free
+              </a>
+              <a class="btn btn-ghost" href="https://github.com/BasantPandey/AIQuotaTool">View source</a>
+            </div>
+            <p class="note">Free · Private · No account · Open source</p>
+          </div>
+          <img class="hero-shot" src="img/panel-dark.png" alt="AI Quota Tool side panel with usage bars for Claude, Copilot, Codex and Grok" />
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section id="features">
+        <h2>Built for people who live in AI tools</h2>
+        <p class="section-lead">One small panel replaces five usage pages.</p>
+        <div class="features">
+          <div class="feature">
+            <h3>All limits, one place</h3>
+            <p>Session, weekly and monthly limits, with the time left until each reset.</p>
+          </div>
+          <div class="feature">
+            <h3>Alerts that help</h3>
+            <p>The toolbar badge shows your lowest limit. You get one alert when a limit runs low.</p>
+          </div>
+          <div class="feature">
+            <h3>Your list, your way</h3>
+            <p>Turn each provider on or off. The panel shows only the tools that you use.</p>
+          </div>
+          <div class="feature">
+            <h3>Private by design</h3>
+            <p>No server, no account, no tracking. Your data stays on your device.</p>
+          </div>
+          <div class="feature">
+            <h3>Honest numbers</h3>
+            <p>If a provider does not share a number, the panel says so. It never shows a fake 100%.</p>
+          </div>
+          <div class="feature">
+            <h3>Light and dark</h3>
+            <p>The panel follows your system theme and fits the Chrome side panel.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Works with the tools you use</h2>
+        <div class="providers">
+          <span class="chip">Claude</span><span class="chip">Codex (ChatGPT)</span><span class="chip">GitHub Copilot</span>
+          <span class="chip">Cursor</span><span class="chip">Grok</span><span class="chip">DeepSeek API balance</span>
+          <span class="chip">Kimi API balance</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>See it in action</h2>
+        <div class="shots">
+          <img src="img/shot2.png" alt="Low quota alert and toolbar badge" loading="lazy" />
+          <img src="img/shot3.png" alt="Providers screen with on and off switches" loading="lazy" />
+          <img src="img/shot4.png" alt="Light and dark themes" loading="lazy" />
+          <img src="img/shot5.png" alt="Welcome screen and privacy promise" loading="lazy" />
+        </div>
+      </section>
+
+      <section>
+        <h2>Set up in one minute</h2>
+        <ol class="steps">
+          <li>Add AI Quota Tool to Chrome.</li>
+          <li>Click the toolbar icon to open the side panel.</li>
+          <li>Pick your tools. Sign in to each one in this browser, as usual.</li>
+          <li>Your limits show in the panel within a minute.</li>
+        </ol>
+      </section>
+
+      <section id="faq">
+        <h2>Questions</h2>
+        <details>
+          <summary>Is it really free?</summary>
+          <p>Yes. There is no paid plan, no ads and no account. The extension has no server, so it costs nothing to run.</p>
+        </details>
+        <details>
+          <summary>Does it read my chats?</summary>
+          <p>No. It reads only the usage numbers that each provider shows on its own usage page.</p>
+        </details>
+        <details>
+          <summary>Where is my data?</summary>
+          <p>On your device, in local extension storage. Nothing goes to a server of ours. See the <a href="privacy.html">privacy policy</a>.</p>
+        </details>
+        <details>
+          <summary>Why does Copilot show no percent?</summary>
+          <p>GitHub does not share a remaining percent for Copilot. The panel shows your plan status instead of a fake number.</p>
+        </details>
+        <details>
+          <summary>A provider shows "Not connected". What do I do?</summary>
+          <p>Open the provider website in the same Chrome profile and sign in. The panel updates within a minute.</p>
+        </details>
+        <details>
+          <summary>How do I report a problem?</summary>
+          <p>Open an issue on <a href="https://github.com/BasantPandey/AIQuotaTool/issues">GitHub</a>.</p>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span class="grow">AI Quota Tool · Apache-2.0</span>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://github.com/BasantPandey/AIQuotaTool">GitHub</a>
+        <a href="https://github.com/BasantPandey/AIQuotaTool/issues">Support</a>
+      </div>
+    </footer>
+  </body>
+</html>
