@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { ENABLED_SERVICES_KEY, SERVICES, SERVICE_LABELS, SERVICE_URLS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
+import { GITHUB_SIGN_IN_READY } from '../background/github-auth.js';
 import { SERVICE_HINTS, sendPanelMessage } from './shared.js';
 
 interface Props {
@@ -48,6 +49,13 @@ function Status({ tone, children }: { tone: 'ok' | 'warn' | 'idle'; children: Re
 export function CopilotConnectButton({ connected }: { connected: boolean }) {
   const { pending, error, run } = useAction();
   const type = connected ? 'github_disconnect' : 'github_connect';
+  if (!GITHUB_SIGN_IN_READY && !connected) {
+    return (
+      <button className="btn" disabled>
+        GitHub sign-in coming soon
+      </button>
+    );
+  }
   return (
     <>
       <button

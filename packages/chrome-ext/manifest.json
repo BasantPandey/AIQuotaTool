@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Quota Tool",
-  "version": "2.2.1",
-  "description": "Monitor your remaining AI quota for Claude, Copilot, Codex, and Grok, plus your DeepSeek and Kimi API balance, in one side panel.",
+  "name": "AI Quota Tool - AI usage limits for Claude, Codex, Cursor",
+  "version": "3.0.0",
+  "description": "See AI limits before they stop your work: Claude, Codex, Copilot, Cursor and Grok usage and reset times. Free, private, no account.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -12,7 +12,8 @@
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
-    }
+    },
+    "default_title": "AI Quota Tool"
   },
   "side_panel": {
     "default_path": "src/sidepanel/index.html"
@@ -23,8 +24,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://claude.ai/*", "https://chatgpt.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://claude.ai/*",
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -44,5 +50,6 @@
     "https://cursor.com/*",
     "https://api.deepseek.com/*",
     "https://api.moonshot.ai/*"
-  ]
+  ],
+  "short_name": "AI Quota Tool"
 }
