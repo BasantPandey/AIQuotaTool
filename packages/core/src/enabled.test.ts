@@ -4,7 +4,7 @@ import { DEFAULT_ENABLED_SERVICES, filterEnabled, resolveEnabledServices } from 
 describe('resolveEnabledServices', () => {
   it('uses the default list when nothing is stored', () => {
     expect(resolveEnabledServices(undefined)).toEqual(DEFAULT_ENABLED_SERVICES);
-    expect(DEFAULT_ENABLED_SERVICES).toEqual(['claude', 'copilot', 'codex', 'grok', 'cursor']);
+    expect(DEFAULT_ENABLED_SERVICES).toEqual(['claude', 'copilot', 'codex', 'grok', 'gemini', 'cursor']);
   });
 
   it('keeps catalog order and drops unknown or repeated ids', () => {

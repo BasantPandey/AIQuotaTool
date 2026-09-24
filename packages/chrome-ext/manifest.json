@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI Quota Tool - AI usage limits for Claude, Codex, Cursor",
-  "version": "3.0.0",
-  "description": "See AI limits before they stop your work: Claude, Codex, Copilot, Cursor and Grok usage and reset times. Free, private, no account.",
+  "version": "3.1.0",
+  "description": "See AI limits before they stop your work: Claude, Codex, Gemini, Cursor and Grok usage and reset times. Free, private, no account.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -26,7 +26,8 @@
     {
       "matches": [
         "https://claude.ai/*",
-        "https://chatgpt.com/*"
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*"
       ],
       "js": [
         "content.js"
@@ -47,6 +48,7 @@
     "https://api.github.com/*",
     "https://github.com/*",
     "https://grok.com/*",
+    "https://gemini.google.com/*",
     "https://cursor.com/*",
     "https://api.deepseek.com/*",
     "https://api.moonshot.ai/*"
