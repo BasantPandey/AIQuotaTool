@@ -30,10 +30,10 @@ function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown
   }
   if (/\b401\b|\b403\b|invalid or expired/i.test(msg)) {
     if (service === 'claude') {
-      return 'Session key invalid or expired — paste a fresh sessionKey cookie';
+      return 'Session key invalid or expired - paste a fresh sessionKey cookie';
     }
     if (service === 'grok') {
-      return 'sso cookie invalid or expired — paste a fresh sso cookie from grok.com';
+      return 'sso cookie invalid or expired - paste a fresh sso cookie from grok.com';
     }
   }
   return msg;
@@ -77,7 +77,7 @@ export class CredentialPanel {
 
     this.panel = vscode.window.createWebviewPanel(
       'aiQuotaTool.credentialSetup',
-      'AI Quota Tool — Set Up Accounts',
+      'AI Quota Tool - Set Up Accounts',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -159,7 +159,7 @@ export class CredentialPanel {
         this.send(
           'claude',
           'error',
-          'Session invalid or expired — paste a fresh sessionKey or Clear saved key',
+          'Session invalid or expired - paste a fresh sessionKey or Clear saved key',
         );
       }
     }
@@ -183,7 +183,7 @@ export class CredentialPanel {
         this.send(
           'grok',
           'error',
-          'sso cookie invalid or expired — paste a fresh cookie or Clear saved cookie',
+          'sso cookie invalid or expired - paste a fresh cookie or Clear saved cookie',
         );
       }
     }
@@ -194,7 +194,7 @@ export class CredentialPanel {
       });
       if (session) this.send('github', 'ok', `Connected as @${session.account.label}`);
     } catch {
-      // not signed in — stay in idle state
+      // not signed in - stay in idle state
     }
 
     if (creds.deepseekApiKey) {
@@ -237,7 +237,7 @@ export class CredentialPanel {
     // Keep multi-line paste (.0 on line 1, .1 on line 2) so Cookie can send chunks.
     const cleaned = token.trim();
     if (!cleaned || !normalizeCodexSessionToken(cleaned)) {
-      this.send('codex', 'error', 'Token is empty — paste session-token (.0 and .1 if split)');
+      this.send('codex', 'error', 'Token is empty - paste session-token (.0 and .1 if split)');
       return;
     }
     try {
@@ -350,9 +350,8 @@ export class CredentialPanel {
 
   private buildHtml(): string {
     const webview = this.panel!.webview;
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'credential-setup.js'),
-    );
+    const asset = (name: string) =>
+      webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', name));
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -361,16 +360,17 @@ export class CredentialPanel {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource};" />
+  <link rel="stylesheet" href="${asset('webview.css')}" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--vscode-editor-background); font-family: var(--vscode-font-family); }
     code { font-family: var(--vscode-editor-font-family); background: var(--vscode-textCodeBlock-background); padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
   </style>
-  <title>AI Quota Tool — Setup</title>
+  <title>AI Quota Tool - Setup</title>
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="${scriptUri}"></script>
+  <script type="module" src="${asset('credential-setup.js')}"></script>
 </body>
 </html>`;
   }

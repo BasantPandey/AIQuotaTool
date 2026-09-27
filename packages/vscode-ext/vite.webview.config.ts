@@ -13,7 +13,9 @@ export default defineConfig({
   ],
   build: {
     outDir: 'dist/webview',
-    emptyOutDir: false,
+    emptyOutDir: true,
+    // One stylesheet for both panels, at a fixed name the extension host links.
+    cssCodeSplit: false,
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'src/webview/index.html'),
@@ -22,7 +24,7 @@ export default defineConfig({
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: 'chunks/[name]-[hash].js',
-        assetFileNames: '[name][extname]',
+        assetFileNames: (asset) => (asset.names.some((n) => n.endsWith('.css')) ? 'webview.css' : '[name][extname]'),
       },
     },
   },

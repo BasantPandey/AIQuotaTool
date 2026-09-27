@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 
+const CONFIGURE_COMMAND = 'aiQuotaTool.configure';
+
 /** Hosts the shared React UI bundle inside a VS Code webview panel. */
 export class QuotaPanel {
   static readonly viewType = 'aiQuotaTool.dashboard';
@@ -8,7 +10,6 @@ export class QuotaPanel {
   private panel: vscode.WebviewPanel | null = null;
   private readonly extensionUri: vscode.Uri;
   private latestStates: QuotaState[] = [];
-  private latestDisconnected = false;
   private latestReauth: ServiceId[] = [];
 
   constructor(extensionUri: vscode.Uri) {
@@ -34,11 +35,10 @@ export class QuotaPanel {
 
     this.panel.webview.html = this.buildHtml();
 
-    // Webview signals readiness after React mounts — send current state immediately
+    // Webview signals readiness after React mounts. Send the current state at once.
     this.panel.webview.onDidReceiveMessage((msg: { type: string }) => {
-      if (msg.type === 'webview_ready') {
-        this.pushStates(this.latestStates, this.latestDisconnected, this.latestReauth);
-      }
+      if (msg.type === 'webview_ready') this.pushStates(this.latestStates, this.latestReauth);
+      if (msg.type === 'open_setup') void vscode.commands.executeCommand(CONFIGURE_COMMAND);
     });
 
     this.panel.onDidDispose(() => {
@@ -46,27 +46,16 @@ export class QuotaPanel {
     });
   }
 
-  pushStates(
-    states: QuotaState[],
-    disconnected = false,
-    reauthServices: ServiceId[] = [],
-  ): void {
+  pushStates(states: QuotaState[], reauthServices: ServiceId[] = []): void {
     this.latestStates = states;
-    this.latestDisconnected = disconnected;
     this.latestReauth = reauthServices;
-    this.panel?.webview.postMessage({
-      type: 'quota_update',
-      payload: states,
-      disconnected,
-      reauthServices,
-    });
+    this.panel?.webview.postMessage({ type: 'quota_update', payload: states, reauthServices });
   }
 
   private buildHtml(): string {
     const webview = this.panel!.webview;
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'index.js'),
-    );
+    const asset = (name: string) =>
+      webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', name));
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -74,12 +63,12 @@ export class QuotaPanel {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource};" />
-  <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #0d1117; font-family: system-ui, sans-serif; }</style>
+  <link rel="stylesheet" href="${asset('webview.css')}" />
   <title>AI Quota Tool</title>
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="${scriptUri}"></script>
+  <script type="module" src="${asset('index.js')}"></script>
 </body>
 </html>`;
   }

@@ -39,6 +39,6 @@ Do NOT add DOM types to `tsconfig.json` and do NOT use Node APIs in `src/webview
 
 ## Build
 1. esbuild `src/extension.ts` → `dist/extension.js` (Node CJS, external vscode)
-2. Vite webviews → `dist/webview/`
+2. Vite webviews → `dist/webview/`. Both panels link one stylesheet, `dist/webview/webview.css` (shared `@ai-quota-tool/ui` styles plus the VS Code theme map).
 
 Package: `pnpm --filter ai-quota-tool-vscode run package` → `.vsix` (gitignored).

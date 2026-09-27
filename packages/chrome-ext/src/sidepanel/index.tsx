@@ -8,12 +8,13 @@ import {
   deriveConnections,
   ENABLED_SERVICES_KEY,
   filterEnabled,
-  lowestPressureAmong,
   resolveEnabledServices,
   SERVICES,
   SERVICE_URLS,
 } from '@ai-quota-tool/core';
-import { levelColor, ProviderCard, ProviderLogo, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
+import { LowestLimit, ProviderCard, ProviderLogo, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
+import '@ai-quota-tool/ui/styles.css';
+import './styles.css';
 import { API_KEYS_STORAGE_KEY, type StoredApiKeys } from '../background/api-keys.js';
 import { GITHUB_TOKEN_STORAGE_KEY } from '../background/github-auth.js';
 import { CopilotConnectButton, ProvidersView } from './ProvidersView.js';
@@ -144,7 +145,6 @@ function Panel() {
   if (!consent) return <Welcome />;
 
   const states = filterEnabled(allStates, enabled);
-  const lowest = lowestPressureAmong(states);
   const visible = SERVICES.filter((service) => enabled.includes(service.id));
 
   return (
@@ -168,12 +168,6 @@ function Panel() {
               <BrandMark />
               <span className="brand-name">AI Quota</span>
             </div>
-            {lowest != null && (
-              <span className="summary" title="Lowest remaining quota across your providers">
-                <span className="dot" style={{ background: levelColor(lowest) }} />
-                Lowest <strong>{lowest}%</strong>
-              </span>
-            )}
             <button className="btn" onClick={() => setView('providers')}>
               Providers
             </button>
@@ -200,24 +194,27 @@ function Panel() {
         </div>
       ) : (
         <main className="content">
-          {visible.map((service) => {
-            const state = states.find((s) => s.service === service.id);
-            return (
-              <ProviderCard
-                key={service.id}
-                service={service.id}
-                {...(state != null ? { state } : {})}
-                hint={SERVICE_HINTS[service.id]}
-                action={
-                  <CardAction
-                    service={service}
-                    githubConnected={githubConnected}
-                    onProviders={() => setView('providers')}
-                  />
-                }
-              />
-            );
-          })}
+          <LowestLimit states={states} />
+          <div className="cards">
+            {visible.map((service) => {
+              const state = states.find((s) => s.service === service.id);
+              return (
+                <ProviderCard
+                  key={service.id}
+                  service={service.id}
+                  {...(state != null ? { state } : {})}
+                  hint={SERVICE_HINTS[service.id]}
+                  action={
+                    <CardAction
+                      service={service}
+                      githubConnected={githubConnected}
+                      onProviders={() => setView('providers')}
+                    />
+                  }
+                />
+              );
+            })}
+          </div>
         </main>
       )}
 

@@ -10,7 +10,9 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    }
+    },
+    "./styles.css": "./src/styles.css",
+    "./vscode.css": "./src/vscode.css"
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",

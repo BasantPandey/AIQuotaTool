@@ -1,5 +1,9 @@
 import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { ServiceId } from '@ai-quota-tool/core';
+import { ProviderLogo } from '@ai-quota-tool/ui';
+import '@ai-quota-tool/ui/styles.css';
+import '@ai-quota-tool/ui/vscode.css';
 
 declare const acquireVsCodeApi: () => { postMessage(msg: unknown): void };
 const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
@@ -14,8 +18,8 @@ interface CredStatus {
 
 const TAB_LABELS: Record<ServiceTab, string> = {
   claude: 'Claude',
-  codex: 'Codex / ChatGPT',
-  github: 'GitHub Copilot',
+  codex: 'Codex',
+  github: 'Copilot',
   grok: 'Grok',
   deepseek: 'DeepSeek',
   kimi: 'Kimi',
@@ -23,11 +27,14 @@ const TAB_LABELS: Record<ServiceTab, string> = {
 
 const TABS = Object.keys(TAB_LABELS) as ServiceTab[];
 
-function tabIcon(s: CredStatus): string {
-  if (s.status === 'ok') return '✓';
-  if (s.status === 'error') return '✗';
-  return '○';
-}
+const TAB_SERVICE: Record<ServiceTab, ServiceId> = {
+  claude: 'claude',
+  codex: 'codex',
+  github: 'copilot',
+  grok: 'grok',
+  deepseek: 'deepseek',
+  kimi: 'kimi',
+};
 
 function StatusBadge({ s }: { s: CredStatus }) {
   const color =
@@ -119,10 +126,10 @@ function CredentialSetup() {
   };
 
   return (
-    <div style={{ padding: 24, fontFamily: 'var(--vscode-font-family)', color: 'var(--vscode-foreground)', maxWidth: 520 }}>
-      <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>AI Quota Tool — Account Setup</h2>
+    <div style={{ padding: 24, fontFamily: 'var(--vscode-font-family)', color: 'var(--vscode-foreground)', maxWidth: 680 }}>
+      <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Set Up Accounts</h2>
       <p style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)', marginBottom: 12 }}>
-        Each service is <strong>optional</strong> — set up only what you use. Quota appears as soon as one account is connected.
+        Each service is <strong>optional</strong> - set up only what you use. Quota appears as soon as one account is connected.
       </p>
       <p
         style={{
@@ -131,50 +138,50 @@ function CredentialSetup() {
           marginBottom: 20,
           lineHeight: 1.5,
           padding: '10px 12px',
-          border: '1px solid var(--vscode-inputValidation-warningBorder, #b89500)',
-          borderRadius: 4,
-          background: 'var(--vscode-inputValidation-warningBackground, rgba(184,149,0,0.08))',
+          border: '1px solid var(--aq-border)',
+          borderRadius: 10,
+          background: 'var(--aq-surface)',
         }}
       >
         <strong>Privacy:</strong> Claude, Codex, and Grok use browser <em>session cookies</em> (account-level secrets).
         DeepSeek and Kimi use a pasted <em>API key</em> (balance only). All are stored only in this machine&apos;s VS
         Code <code>SecretStorage</code> (encrypted at rest by the host). They are never sent to us or any third-party
-        server — only to claude.ai / chatgpt.com / grok.com / GitHub / api.deepseek.com / api.moonshot.ai for quota
+        server - only to claude.ai / chatgpt.com / grok.com / GitHub / api.deepseek.com / api.moonshot.ai for quota
         reads. Clear a secret anytime with <strong>Clear saved key</strong> below. Do not share session keys or API
         keys.
       </p>
 
-      {/* Tab bar — shows ✓/○/✗ status on each tab */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--vscode-panel-border, #3c3c3c)', marginBottom: 24, gap: 0 }}>
+      <div
+        role="tablist"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, marginBottom: 24 }}
+      >
         {TABS.map((tab) => {
           const active = activeTab === tab;
           const s = statusOf[tab];
-          const iconColor =
-            s.status === 'ok'
-              ? 'var(--vscode-charts-green, #4ec9b0)'
-              : s.status === 'error'
-                ? 'var(--vscode-errorForeground, #f48771)'
-                : 'var(--vscode-descriptionForeground, #8b949e)';
           return (
             <button
               key={tab}
+              role="tab"
+              aria-selected={active}
               onClick={() => setActiveTab(tab)}
               style={{
-                background: 'transparent',
-                color: active ? 'var(--vscode-foreground)' : 'var(--vscode-tab-inactiveForeground, #8b949e)',
-                border: 'none',
-                borderBottom: active ? '2px solid var(--vscode-focusBorder, #0078d4)' : '2px solid transparent',
-                padding: '6px 14px',
-                cursor: 'pointer',
-                fontSize: 13,
-                marginBottom: -1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
+                padding: '7px 10px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                font: 'inherit',
+                fontSize: 13,
+                fontWeight: active ? 600 : 500,
+                color: 'var(--vscode-foreground)',
+                background: active ? 'var(--vscode-list-activeSelectionBackground, var(--aq-surface-raised))' : 'var(--aq-surface)',
+                border: `1px solid ${active ? 'var(--vscode-focusBorder)' : 'var(--aq-border)'}`,
               }}
             >
-              <span style={{ color: iconColor, fontSize: 11 }}>{tabIcon(s)}</span>
-              {TAB_LABELS[tab]}
+              <ProviderLogo service={TAB_SERVICE[tab]} size={20} />
+              <span style={{ flex: 1, textAlign: 'left' }}>{TAB_LABELS[tab]}</span>
+              <span className={s.status === 'ok' ? 'dot ok' : s.status === 'error' ? 'dot warn' : 'dot'} />
             </button>
           );
         })}
@@ -244,7 +251,7 @@ function CredentialSetup() {
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
             ChatGPT splits a large session into two cookies, <code>.0</code> and <code>.1</code>. Paste each one into
-            its own field below — do not merge them into a single value.
+            its own field below - do not merge them into a single value.
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.0 }}>
             <li>Open <strong>chatgpt.com</strong> and sign in</li>
@@ -253,7 +260,7 @@ function CredentialSetup() {
             </li>
             <li>
               Find <code>__Secure-next-auth.session-token.0</code>. Double-click its <strong>Value</strong> cell to
-              select the full text (it is long — do not copy the truncated <code>…</code> preview). Paste it into{' '}
+              select the full text (it is long - do not copy the truncated <code>…</code> preview). Paste it into{' '}
               <strong>Line 1</strong> below.
             </li>
             <li>
@@ -276,7 +283,7 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 16 }}>
             <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
-              Line 1 — <code>__Secure-next-auth.session-token.0</code> value
+              Line 1 - <code>__Secure-next-auth.session-token.0</code> value
             </label>
             <textarea
               style={{ ...inputStyle, minHeight: 56, resize: 'vertical' as const }}
@@ -288,7 +295,7 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={{ fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
-              Line 2 — <code>__Secure-next-auth.session-token.1</code> value (leave blank if you only see one cookie)
+              Line 2 - <code>__Secure-next-auth.session-token.1</code> value (leave blank if you only see one cookie)
             </label>
             <textarea
               style={{ ...inputStyle, minHeight: 56, resize: 'vertical' as const }}
@@ -337,7 +344,7 @@ function CredentialSetup() {
       {activeTab === 'github' && (
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 20 }}>
-            Sign in with your <strong>GitHub account</strong>. VS Code handles the OAuth flow — no token copying required.
+            Sign in with your <strong>GitHub account</strong>. VS Code handles the OAuth flow - no token copying required.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <button
@@ -423,7 +430,7 @@ function CredentialSetup() {
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
             Paste an API key from <strong>platform.deepseek.com</strong> to see your account balance. This is not a
-            session cookie — DeepSeek has no remaining-quota percent, only money left to spend.
+            session cookie - DeepSeek has no remaining-quota percent, only money left to spend.
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
             <li>Open <strong>platform.deepseek.com</strong> and sign in</li>
@@ -484,7 +491,7 @@ function CredentialSetup() {
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
             Paste an API key from <strong>platform.kimi.ai</strong> to see your account balance. This is not a
-            session cookie — Kimi has no remaining-quota percent, only money left to spend.
+            session cookie - Kimi has no remaining-quota percent, only money left to spend.
           </p>
           <ol style={{ paddingLeft: 18, fontSize: 13, lineHeight: 2.2 }}>
             <li>Open <strong>platform.kimi.ai</strong> and sign in</li>
@@ -546,7 +553,7 @@ function CredentialSetup() {
           style={secondaryBtnStyle}
           onClick={() => vscode?.postMessage({ type: 'close_panel' })}
         >
-          Done — open dashboard
+          Done - open dashboard
         </button>
         <span style={{ marginLeft: 14, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
           Connected services show quota immediately. Skipped services show as pending.
