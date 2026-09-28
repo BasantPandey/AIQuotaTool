@@ -1,6 +1,15 @@
 # Chrome Web Store listing
 
 Paste each block into its matching field in the developer dashboard.
+
+## Package to upload
+
+```bash
+pnpm turbo build
+pnpm --filter @ai-quota-tool/chrome-ext zip
+```
+
+Upload `packages/chrome-ext/ai-quota-tool-chrome-<version>.zip` on the **Package** tab. The version in `manifest.json` must be higher than the live version.
 Store item: https://chromewebstore.google.com/detail/dkohaadncknbgmeefnlfffdjnnlmlglh
 
 ## Store listing tab

@@ -125,7 +125,7 @@ Releases go to the Visual Studio Marketplace under publisher **BasantPandey** vi
 1. Open **Actions → Publish VS Code extension → Run workflow**
 2. Inputs:
    - **ref** - branch to ship (default `main`; use a branch name, not a raw SHA, for live runs)
-   - **bump** - `patch` (default), `minor`, or `major`
+   - **bump** - `patch` (default), `minor`, `major`, or `none`. Use `none` when a merged PR already set the version in `package.json`. Then the run tags and publishes that version, with no release PR.
    - **dry_run** - leave **checked** to package only (no bump, no Marketplace). Uncheck for a live release.
 3. Prefer a **dry run** first; download the `.vsix` artifact and confirm it installs.
 4. Live run: uncheck dry_run → workflow bumps `package.json`, commits to `release/vscode-vX.Y.Z`, tags `vscode-vX.Y.Z`, opens a release PR, packages, then runs `vsce publish`.

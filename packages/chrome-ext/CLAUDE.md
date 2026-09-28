@@ -48,3 +48,5 @@ Fetchers are registered in `src/background/providers.ts`, one factory per `Servi
 
 ## Build
 Vite → `dist/worker.js`, `dist/sidepanel.js`, `dist/content.js`, `dist/src/sidepanel/index.html`. Load `dist/` unpacked in Chrome; action click opens the side panel.
+
+Store upload: bump `version` in `manifest.json` and `package.json`, build, then run `pnpm --filter @ai-quota-tool/chrome-ext zip`. Upload `ai-quota-tool-chrome-<version>.zip` (gitignored).
