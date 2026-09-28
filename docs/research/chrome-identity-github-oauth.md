@@ -2,6 +2,8 @@
 
 Resolves issue #28 (part of #27). Scope: how a standalone MV3 Chrome extension authenticates with GitHub (Copilot seat check) via `chrome.identity`.
 
+> **Update 2026-09-28 (open question a, tested):** GitHub rejects the web-flow token exchange without `client_secret`, even with PKCE. It returns `incorrect_client_credentials`. The extension now uses the **device flow**, which needs no secret. `POST /login/device/code` and the token poll both work with the client id alone. See `packages/chrome-ext/src/background/github-auth.ts`.
+
 ## Summary verdict
 
 A standalone MV3 Chrome extension CAN authenticate a user with GitHub using `chrome.identity.launchWebAuthFlow` against a self-registered GitHub OAuth App: open `https://github.com/login/oauth/authorize` (with PKCE) in the auth webview, GitHub redirects to the extension's `https://<app-id>.chromiumapp.org/*` redirect URL, and the extension exchanges the returned `code` for a `gho_` access token. The `identity` permission is required but shows no install warning. The manifest `oauth2` section is Google-only and is NOT used for GitHub. OAuth App tokens do not expire on a schedule (only revoked: user action, 1 year unused, 10-token-per-scope limit, or leak detection), and there are no refresh tokens for OAuth Apps - re-auth is a silent re-run of the flow once the user has authorized. The hard limit is not auth but the API: GitHub's OFFICIAL Copilot seat endpoints are org-owner-only (`manage_billing:copilot` or `read:org`); there is no official endpoint for an individual user to check their own Copilot seat or quota. The commonly cited `GET /copilot_internal/user` is undocumented/community-reported and must be treated as unsupported.

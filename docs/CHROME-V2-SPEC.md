@@ -52,11 +52,11 @@ The V1 WebSocket push to VS Code is removed. The VS Code WS server stays but is 
 | ID | Requirement | Acceptance |
 | --- | --- | --- |
 | K1 | Browser sessions | Claude, Codex, and Grok connect when the user signs in on the service website. No session secrets are stored anywhere |
-| K2 | GitHub OAuth | Copilot connects via `chrome.identity.launchWebAuthFlow` with a self-registered GitHub OAuth App and PKCE. No client secret ships |
+| K2 | GitHub OAuth | Copilot connects with the GitHub OAuth device flow and a self-registered OAuth App. No client secret ships. (The web flow with PKCE was dropped: GitHub still requires the client secret for it) |
 | K3 | Token storage | The `gho_` token lives in `chrome.storage.local` only. Never synced. Disconnect deletes it |
 | K4 | Revocation | Disconnect copy points to github.com/settings/applications for full grant revocation |
-| K5 | Silent re-auth | A dead token triggers one silent re-auth per service worker activation. Never loop (GitHub allows 10 tokens per hour) |
-| K6 | Stable identity | The store assigns the extension ID on first upload (the manifest must not contain a `key` field). The OAuth callback `https://<store-id>.chromiumapp.org/` is registered after that upload |
+| K5 | Dead token | No silent re-auth. OAuth App tokens do not expire on a schedule. After a revoke, the card shows "Sign in needed" and the user connects again |
+| K6 | Stable identity | The store assigns the extension ID on first upload (the manifest must not contain a `key` field). The device flow uses no callback URL |
 
 ### 2.4 Badge and notifications
 
@@ -88,7 +88,7 @@ Approved disclosure copy lives in [PRIVACY.md](../PRIVACY.md) and in issue [#34]
 
 | ID | Requirement | Acceptance |
 | --- | --- | --- |
-| M1 | Minimal permissions | `storage`, `alarms`, `notifications`, `identity`, `sidePanel`. No `cookies` API |
+| M1 | Minimal permissions | `storage`, `alarms`, `notifications`, `sidePanel`. No `cookies` API, no `identity` |
 | M2 | Named hosts only | `claude.ai`, `chatgpt.com`, `grok.com`, `api.github.com`, `github.com` (token exchange only). Never `<all_urls>` |
 | M3 | Clean build | No remote code. Unobfuscated output |
 
@@ -139,7 +139,7 @@ Research: [docs/research/chrome-web-store-publishing.md](./research/chrome-web-s
 
 | # | Work | Type |
 | --- | --- | --- |
-| 1 | Upload the zip once to get the store-assigned extension ID. Then register the GitHub OAuth App (callback `https://<store-id>.chromiumapp.org/`) and set `GITHUB_OAUTH_CLIENT_ID` in `github-auth.ts`. Rebuild and re-upload the zip with the client id | Manual task (repo owner) |
+| 1 | ~~Register the GitHub OAuth App and set `GITHUB_OAUTH_CLIENT_ID`~~ Done: device flow, client id `Ov23liNRlhzedfjImsrQ` | Done |
 | 2 | Manual E2E in Chrome: load `dist/` unpacked, connect each service, verify panel, badge, notifications, disconnect, session expiry | Manual task |
 | 3 | Produce screenshots (1-5 at 1280x800 or 640x400) and the 440x280 promo tile | Manual task |
 | 4 | Register the Chrome Web Store developer account and complete the Privacy practices tab with the approved texts | Manual task |
@@ -157,7 +157,7 @@ Research: [docs/research/chrome-web-store-publishing.md](./research/chrome-web-s
 - `pressureRemaining` / `lowestPressureAmong` (never invent 100%)
 - `deriveBadge` + `BADGE_COLORS`
 - `decideLowQuotaAlerts` + `initialLowQuotaArmed`
-- `buildGitHubAuthorizeUrl` / `extractAuthorizationCode`
+- `nextDevicePollStep` (GitHub device flow)
 - `isConnectedReading` / `deriveConnections`
 
 All decision logic lives in `@ai-quota-tool/core` and is tested there. Chrome-facing code is thin glue. It is verified by manual E2E in Chrome.

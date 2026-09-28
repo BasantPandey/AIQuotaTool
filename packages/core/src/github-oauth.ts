@@ -1,49 +1,37 @@
 /**
- * Pure pieces of the GitHub OAuth web flow (PKCE) used by hosts that drive
- * chrome.identity.launchWebAuthFlow. No I/O here - hosts own the network.
+ * Pure step logic for the GitHub OAuth device flow. No I/O here - hosts own the network.
+ * The device flow needs no client secret, so a browser extension can use it safely.
  */
 
-const AUTHORIZE_ENDPOINT = 'https://github.com/login/oauth/authorize';
-
-export interface GitHubAuthorizeParams {
-  clientId: string;
-  redirectUri: string;
-  /** CSRF token the host generates and re-checks on the redirect. */
-  state: string;
-  /** Base64url(SHA-256(verifier)) - the host keeps the verifier. */
-  codeChallenge: string;
-  /** OAuth scopes, space-joined into the standard `scope` param. */
-  scopes?: string[];
+/** One answer from POST https://github.com/login/oauth/access_token while the host polls. */
+export interface DeviceTokenResponse {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+  /** New minimum poll interval in seconds, sent with slow_down. */
+  interval?: number;
 }
 
-export function buildGitHubAuthorizeUrl(params: GitHubAuthorizeParams): string {
-  const url = new URL(AUTHORIZE_ENDPOINT);
-  url.searchParams.set('client_id', params.clientId);
-  url.searchParams.set('redirect_uri', params.redirectUri);
-  url.searchParams.set('state', params.state);
-  url.searchParams.set('code_challenge', params.codeChallenge);
-  url.searchParams.set('code_challenge_method', 'S256');
-  if (params.scopes && params.scopes.length > 0) {
-    url.searchParams.set('scope', params.scopes.join(' '));
-  }
-  return url.toString();
-}
+export type DevicePollStep =
+  | { kind: 'wait'; intervalSec: number }
+  | { kind: 'done'; token: string }
+  | { kind: 'fail'; message: string };
 
-/**
- * Pull the authorization code out of the redirect URL, but only when the
- * state matches the one the host generated. Returns undefined on denial,
- * state mismatch, or a malformed URL.
- */
-export function extractAuthorizationCode(
-  redirectUrl: string,
-  expectedState: string,
-): string | undefined {
-  let url: URL;
-  try {
-    url = new URL(redirectUrl);
-  } catch {
-    return undefined;
+/** What the host does after one poll answer. */
+export function nextDevicePollStep(res: DeviceTokenResponse, intervalSec: number): DevicePollStep {
+  if (typeof res.access_token === 'string' && res.access_token !== '') {
+    return { kind: 'done', token: res.access_token };
   }
-  if (url.searchParams.get('state') !== expectedState) return undefined;
-  return url.searchParams.get('code') ?? undefined;
+  switch (res.error) {
+    case 'authorization_pending':
+      return { kind: 'wait', intervalSec };
+    case 'slow_down':
+      return { kind: 'wait', intervalSec: res.interval ?? intervalSec + 5 };
+    case 'expired_token':
+      return { kind: 'fail', message: 'The code expired. Connect again to get a new code.' };
+    case 'access_denied':
+      return { kind: 'fail', message: 'GitHub sign-in was cancelled.' };
+    default:
+      return { kind: 'fail', message: res.error_description ?? 'GitHub sign-in failed. Try again.' };
+  }
 }

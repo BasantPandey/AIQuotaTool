@@ -6,7 +6,7 @@ Chrome Manifest V3 extension. **V2: fully standalone, first-class product** - si
 | File | Role |
 |---|---|
 | `src/background/worker.ts` | Service worker - poll, freshest-wins storage merge, badge, low-quota/reset notifications, GitHub connect/disconnect messages |
-| `src/background/github-auth.ts` | GitHub OAuth (PKCE) via `chrome.identity.launchWebAuthFlow`; token in `chrome.storage.local` |
+| `src/background/github-auth.ts` | GitHub OAuth device flow (no client secret); the side panel runs it; token in `chrome.storage.local` |
 | `src/content/quota-bridge.ts` | Page-origin fetch for claude.ai / chatgpt.com |
 | `src/sidepanel/index.tsx` | Side panel app - welcome screen with provider picker, `LowestLimit` card, dashboard of `ProviderCard`s |
 | `src/sidepanel/ProvidersView.tsx` | Providers screen - on/off switch per provider, Copilot connect, API keys, session status |
@@ -33,18 +33,18 @@ Chrome Manifest V3 extension. **V2: fully standalone, first-class product** - si
 Fetchers are registered in `src/background/providers.ts`, one factory per `ServiceId` from `@ai-quota-tool/core`.
 
 ## GitHub OAuth
-- Self-registered GitHub OAuth App + PKCE; **client id placeholder in `github-auth.ts` must be filled before store release**
-- The store forbids the manifest `key` field and assigns the extension ID on first upload. Register the callback `https://<store-assigned-id>.chromiumapp.org/` after that upload
-- Token exchange at `github.com/login/oauth/access_token` (public client, no secret)
-- `identity` permission shows no install warning; manifest `oauth2` section is Google-only, unused
+- GitHub OAuth App `Ov23liNRlhzedfjImsrQ` with **device flow** turned on. The web flow needs a client secret, so the extension does not use it
+- The side panel asks `github.com/login/device/code` for a code, shows it, and polls `login/oauth/access_token`. Pure step logic: `nextDevicePollStep` in core
+- The worker polls quota when the token appears in storage. No silent re-auth: OAuth App tokens do not expire on a schedule; after a revoke the card shows "Sign in needed"
+- No `identity` permission and no callback URL
 
 ## Permissions
-- `storage`, `alarms`, `notifications`, `identity`, `sidePanel` - no `cookies` API
+- `storage`, `alarms`, `notifications`, `sidePanel` - no `cookies` API, no `identity`
 - Hosts: claude.ai, chatgpt.com, api.github.com, github.com (token exchange only), grok.com, gemini.google.com, cursor.com, api.deepseek.com, api.moonshot.ai - named hosts only, never `<all_urls>`
 
 ## Key patterns
 - Panel: `useSuspenseQuery` + `storage.onChanged` invalidation (push freshness, no `refetchInterval`)
-- All decision logic is pure in `@ai-quota-tool/core` (`deriveBadge`, `decideLowQuotaAlerts`, `buildGitHubAuthorizeUrl` / `extractAuthorizationCode`, `deriveConnections`); Chrome APIs stay thin glue, verified by manual E2E
+- All decision logic is pure in `@ai-quota-tool/core` (`deriveBadge`, `decideLowQuotaAlerts`, `nextDevicePollStep`, `deriveConnections`); Chrome APIs stay thin glue, verified by manual E2E
 
 ## Build
 Vite → `dist/worker.js`, `dist/sidepanel.js`, `dist/content.js`, `dist/src/sidepanel/index.html`. Load `dist/` unpacked in Chrome; action click opens the side panel.

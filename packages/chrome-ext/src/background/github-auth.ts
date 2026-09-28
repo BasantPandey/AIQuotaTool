@@ -1,127 +1,90 @@
-import {
-  buildGitHubAuthorizeUrl,
-  extractAuthorizationCode,
-} from '@ai-quota-tool/core';
+import { type DeviceTokenResponse, nextDevicePollStep } from '@ai-quota-tool/core';
 
 /**
- * GitHub OAuth (PKCE) for the Copilot seat check, driven by
- * chrome.identity.launchWebAuthFlow from the service worker.
- *
- * The extension is a public client: no client_secret ships in the bundle.
- * PKCE carries the exchange (see docs/research/chrome-identity-github-oauth.md).
- *
- * Known platform risk (research, community-reported): Chrome may suspend the
- * service worker during a long interactive flow. If that happens the user
- * simply retries Connect - no state is corrupted.
+ * GitHub sign-in for the Copilot seat check, with the OAuth device flow.
+ * The device flow needs no client secret, so nothing secret ships in the bundle.
+ * The side panel runs the flow: it shows the code and polls while the user approves on GitHub.
+ * OAuth App tokens do not expire on a schedule. After a revoke, the user connects again.
  */
 
-// TODO(store): register the GitHub OAuth App and paste its client id here.
-// The Chrome Web Store assigns the extension ID on first upload (the manifest
-// must NOT contain a "key" field). Register the callback URL as
-// https://<store-assigned-extension-id>.chromiumapp.org/ after that upload.
-export const GITHUB_OAUTH_CLIENT_ID = '';
-
-/** False until the OAuth App client id is set. The panel then hides the Connect button. */
-export const GITHUB_SIGN_IN_READY = GITHUB_OAUTH_CLIENT_ID !== '';
+/** Public id of the "AI Quota Tool" GitHub OAuth App. Device flow is on in its settings. */
+export const GITHUB_OAUTH_CLIENT_ID = 'Ov23liNRlhzedfjImsrQ';
 
 export const GITHUB_TOKEN_STORAGE_KEY = 'githubToken';
 
+const DEVICE_CODE_ENDPOINT = 'https://github.com/login/device/code';
 const TOKEN_ENDPOINT = 'https://github.com/login/oauth/access_token';
-const SCOPES = ['read:user'];
+const SCOPE = 'read:user';
 
-function base64Url(bytes: ArrayBuffer | Uint8Array): string {
-  const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  let binary = '';
-  for (const b of arr) binary += String.fromCharCode(b);
-  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+export interface DeviceCode {
+  deviceCode: string;
+  /** The code the user types on GitHub, for example "9FC0-4591". */
+  userCode: string;
+  verificationUri: string;
+  intervalSec: number;
+  expiresAt: number;
 }
 
-async function generatePkce(): Promise<{ verifier: string; challenge: string }> {
-  const verifier = base64Url(crypto.getRandomValues(new Uint8Array(32)));
-  const digest = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(verifier),
-  );
-  return { verifier, challenge: base64Url(digest) };
-}
-
-/**
- * Run the GitHub authorization flow and store the resulting token in
- * chrome.storage.local. Interactive runs show the consent UI; non-interactive
- * runs only succeed when the user has already authorized the app (GitHub then
- * auto-completes the flow) - that is the silent re-auth path.
- * Throws with a user-readable message on cancel/failure.
- */
-async function runGitHubAuthFlow(interactive: boolean): Promise<void> {
-  if (!GITHUB_OAUTH_CLIENT_ID) {
-    throw new Error('GitHub sign-in is not configured in this build yet.');
-  }
-
-  const redirectUri = chrome.identity.getRedirectURL();
-  const state = crypto.randomUUID();
-  const { verifier, challenge } = await generatePkce();
-
-  const url = buildGitHubAuthorizeUrl({
-    clientId: GITHUB_OAUTH_CLIENT_ID,
-    redirectUri,
-    state,
-    codeChallenge: challenge,
-    scopes: SCOPES,
-  });
-
-  const redirect = await chrome.identity.launchWebAuthFlow({
-    url,
-    interactive,
-  });
-  if (!redirect) throw new Error('GitHub sign-in was cancelled.');
-
-  const code = extractAuthorizationCode(redirect, state);
-  if (!code) throw new Error('GitHub sign-in did not complete.');
-
-  const res = await fetch(TOKEN_ENDPOINT, {
+async function postJson(url: string, body: Record<string, string>): Promise<unknown> {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      client_id: GITHUB_OAUTH_CLIENT_ID,
-      code,
-      redirect_uri: redirectUri,
-      code_verifier: verifier,
-    }),
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
-  const data = (await res.json()) as {
-    access_token?: string;
+  return res.json();
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener('abort', () => (clearTimeout(timer), resolve()), { once: true });
+  });
+}
+
+/** Step 1: ask GitHub for a code that the user types on github.com/login/device. */
+export async function requestDeviceCode(): Promise<DeviceCode> {
+  const data = (await postJson(DEVICE_CODE_ENDPOINT, { client_id: GITHUB_OAUTH_CLIENT_ID, scope: SCOPE })) as {
+    device_code?: string;
+    user_code?: string;
+    verification_uri?: string;
+    interval?: number;
+    expires_in?: number;
     error_description?: string;
   };
-  if (!data.access_token) {
-    throw new Error(data.error_description ?? 'GitHub token exchange failed.');
+  if (!data.device_code || !data.user_code || !data.verification_uri) {
+    throw new Error(data.error_description ?? 'GitHub did not return a sign-in code. Try again.');
   }
-
-  await chrome.storage.local.set({
-    [GITHUB_TOKEN_STORAGE_KEY]: data.access_token,
-  });
-}
-
-/** Interactive connect, driven by the side panel's Connect button. */
-export async function connectGitHub(): Promise<void> {
-  await runGitHubAuthFlow(true);
+  return {
+    deviceCode: data.device_code,
+    userCode: data.user_code,
+    verificationUri: data.verification_uri,
+    intervalSec: data.interval ?? 5,
+    expiresAt: Date.now() + (data.expires_in ?? 900) * 1000,
+  };
 }
 
 /**
- * Silent re-auth after a stored token stops working (401). Only attempted
- * when a token existed before; resolves true when a fresh token was stored.
- * Never loop this: GitHub rate-limits token creation (10/hour per user/app).
+ * Step 2: poll until the user approves on GitHub, then store the token.
+ * Resolves true when a token is stored, false when the signal aborts. Throws on denial or expiry.
  */
-export async function trySilentGitHubReauth(): Promise<boolean> {
-  const stored = await chrome.storage.local.get([GITHUB_TOKEN_STORAGE_KEY]);
-  if (!stored[GITHUB_TOKEN_STORAGE_KEY]) return false;
-  try {
-    await runGitHubAuthFlow(false);
-    return true;
-  } catch {
-    return false;
+export async function waitForDeviceToken(code: DeviceCode, signal: AbortSignal): Promise<boolean> {
+  let intervalSec = code.intervalSec;
+  for (;;) {
+    await sleep(intervalSec * 1000, signal);
+    if (signal.aborted) return false;
+    if (Date.now() > code.expiresAt) throw new Error('The code expired. Connect again to get a new code.');
+    const res = (await postJson(TOKEN_ENDPOINT, {
+      client_id: GITHUB_OAUTH_CLIENT_ID,
+      device_code: code.deviceCode,
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+    })) as DeviceTokenResponse;
+    const step = nextDevicePollStep(res, intervalSec);
+    if (step.kind === 'fail') throw new Error(step.message);
+    if (step.kind === 'done') {
+      await chrome.storage.local.set({ [GITHUB_TOKEN_STORAGE_KEY]: step.token });
+      return true;
+    }
+    intervalSec = step.intervalSec;
   }
 }
 
