@@ -4,6 +4,8 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # The publish workflow starts CI on its release branch. A PR opened by GITHUB_TOKEN does not start it.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
