@@ -35,7 +35,8 @@ WORKS WITH
 
 FEATURES
 • One panel for all your AI tools
-• Clear bars with "% left" and "resets in"
+• Your lowest limit on top, with the time it resets
+• Clear gauges with "% left" and "resets in"
 • Toolbar badge with your lowest limit
 • One alert when a limit runs low, and one when it resets
 • Turn each provider on or off - see only the tools you use

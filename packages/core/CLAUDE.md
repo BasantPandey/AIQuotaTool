@@ -15,7 +15,7 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 - **Low-quota alerts:** `decideLowQuotaAlerts`, `initialLowQuotaArmed`, `LOW_QUOTA_THRESHOLD` (once per drop; re-arm on recovery)
 - **GitHub OAuth (PKCE):** `buildGitHubAuthorizeUrl`, `extractAuthorizationCode` (state-checked code extraction)
 - **Onboarding:** `isConnectedReading`, `deriveConnections`
-- `formatTimeRemaining(ms)`, `calcPct(used, limit)`, `pctToColor(pct)`
+- `formatTimeRemaining(ms)`, `calcPct(used, limit)`
 
 ## Rules
 - No DOM, no React, no Node builtins — importable in browser, service worker, and Node

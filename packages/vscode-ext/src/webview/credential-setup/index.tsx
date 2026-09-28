@@ -101,28 +101,12 @@ function CredentialSetup() {
     background: 'var(--vscode-input-background)',
     color: 'var(--vscode-input-foreground)',
     border: '1px solid var(--vscode-input-border, #3c3c3c)',
-    borderRadius: 3,
-    padding: '5px 8px',
+    borderRadius: 8,
+    padding: '7px 10px',
     fontSize: 13,
     marginTop: 8,
     outline: 'none',
     fontFamily: 'var(--vscode-editor-font-family)',
-  };
-
-  const btnStyle: React.CSSProperties = {
-    background: 'var(--vscode-button-background)',
-    color: 'var(--vscode-button-foreground)',
-    border: 'none',
-    borderRadius: 3,
-    padding: '5px 12px',
-    cursor: 'pointer',
-    fontSize: 13,
-  };
-
-  const secondaryBtnStyle: React.CSSProperties = {
-    ...btnStyle,
-    background: 'var(--vscode-button-secondaryBackground)',
-    color: 'var(--vscode-button-secondaryForeground)',
   };
 
   return (
@@ -201,7 +185,7 @@ function CredentialSetup() {
           </ol>
           <div style={{ marginTop: 14 }}>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => vscode?.postMessage({ type: 'open_external', url: 'https://claude.ai' })}
             >
               Open claude.ai
@@ -219,7 +203,7 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
-              style={{ ...btnStyle, opacity: claudeKey.trim() ? 1 : 0.5 }}
+              className="btn btn-primary"
               disabled={!claudeKey.trim()}
               onClick={() => {
                 setClaudeStatus({ status: 'testing', detail: undefined });
@@ -229,7 +213,7 @@ function CredentialSetup() {
               Save &amp; Test
             </button>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => {
                 setClaudeKey('');
                 setClaudeStatus({ status: 'idle', detail: undefined });
@@ -275,7 +259,7 @@ function CredentialSetup() {
           </p>
           <div style={{ marginTop: 10 }}>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => vscode?.postMessage({ type: 'open_external', url: 'https://chatgpt.com' })}
             >
               Open chatgpt.com
@@ -307,7 +291,7 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
-              style={{ ...btnStyle, opacity: codexLine1.trim() ? 1 : 0.5 }}
+              className="btn btn-primary"
               disabled={!codexLine1.trim()}
               onClick={() => {
                 setCodexStatus({ status: 'testing', detail: undefined });
@@ -320,7 +304,7 @@ function CredentialSetup() {
               Save &amp; Test
             </button>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => {
                 setCodexLine1('');
                 setCodexLine2('');
@@ -348,7 +332,7 @@ function CredentialSetup() {
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <button
-              style={btnStyle}
+              className="btn btn-primary"
               onClick={() => {
                 setGithubStatus({ status: 'testing', detail: undefined });
                 vscode?.postMessage({ type: 'github_signin' });
@@ -380,7 +364,7 @@ function CredentialSetup() {
           </ol>
           <div style={{ marginTop: 14 }}>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => vscode?.postMessage({ type: 'open_external', url: 'https://grok.com' })}
             >
               Open grok.com
@@ -398,7 +382,7 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
-              style={{ ...btnStyle, opacity: grokSso.trim() ? 1 : 0.5 }}
+              className="btn btn-primary"
               disabled={!grokSso.trim()}
               onClick={() => {
                 setGrokStatus({ status: 'testing', detail: undefined });
@@ -408,7 +392,7 @@ function CredentialSetup() {
               Save &amp; Test
             </button>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => {
                 setGrokSso('');
                 setGrokStatus({ status: 'idle', detail: undefined });
@@ -439,7 +423,7 @@ function CredentialSetup() {
           </ol>
           <div style={{ marginTop: 14 }}>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() =>
                 vscode?.postMessage({ type: 'open_external', url: 'https://platform.deepseek.com' })
               }
@@ -459,7 +443,7 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
-              style={{ ...btnStyle, opacity: deepseekKey.trim() ? 1 : 0.5 }}
+              className="btn btn-primary"
               disabled={!deepseekKey.trim()}
               onClick={() => {
                 setDeepseekStatus({ status: 'testing', detail: undefined });
@@ -469,7 +453,7 @@ function CredentialSetup() {
               Save &amp; Test
             </button>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => {
                 setDeepseekKey('');
                 setDeepseekStatus({ status: 'idle', detail: undefined });
@@ -500,7 +484,7 @@ function CredentialSetup() {
           </ol>
           <div style={{ marginTop: 14 }}>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() =>
                 vscode?.postMessage({ type: 'open_external', url: 'https://platform.kimi.ai' })
               }
@@ -520,7 +504,7 @@ function CredentialSetup() {
           </div>
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <button
-              style={{ ...btnStyle, opacity: kimiKey.trim() ? 1 : 0.5 }}
+              className="btn btn-primary"
               disabled={!kimiKey.trim()}
               onClick={() => {
                 setKimiStatus({ status: 'testing', detail: undefined });
@@ -530,7 +514,7 @@ function CredentialSetup() {
               Save &amp; Test
             </button>
             <button
-              style={secondaryBtnStyle}
+              className="btn"
               onClick={() => {
                 setKimiKey('');
                 setKimiStatus({ status: 'idle', detail: undefined });
@@ -550,7 +534,7 @@ function CredentialSetup() {
       {/* Done button */}
       <div style={{ marginTop: 32, paddingTop: 16, borderTop: '1px solid var(--vscode-panel-border, #3c3c3c)' }}>
         <button
-          style={secondaryBtnStyle}
+          className="btn"
           onClick={() => vscode?.postMessage({ type: 'close_panel' })}
         >
           Done - open dashboard

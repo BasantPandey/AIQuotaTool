@@ -8,9 +8,9 @@ Chrome Manifest V3 extension. **V2: fully standalone, first-class product** - si
 | `src/background/worker.ts` | Service worker - poll, freshest-wins storage merge, badge, low-quota/reset notifications, GitHub connect/disconnect messages |
 | `src/background/github-auth.ts` | GitHub OAuth (PKCE) via `chrome.identity.launchWebAuthFlow`; token in `chrome.storage.local` |
 | `src/content/quota-bridge.ts` | Page-origin fetch for claude.ai / chatgpt.com |
-| `src/sidepanel/index.tsx` | Side panel app - welcome screen with provider picker, dashboard of `ProviderCard`s, header summary |
+| `src/sidepanel/index.tsx` | Side panel app - welcome screen with provider picker, `LowestLimit` card, dashboard of `ProviderCard`s |
 | `src/sidepanel/ProvidersView.tsx` | Providers screen - on/off switch per provider, Copilot connect, API keys, session status |
-| `src/sidepanel/styles.css` | Design tokens (`--aq-*`) for dark and light (`prefers-color-scheme`) |
+| `src/sidepanel/styles.css` | Panel shell only (top bar, welcome, providers rows). Tokens, cards and buttons come from `@ai-quota-tool/ui/styles.css` |
 | `store/art.html` + `scripts/store-assets.mjs` | Store icon, tile, marquee and screenshots from the real panel |
 
 ## Data flow

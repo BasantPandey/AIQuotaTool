@@ -29,11 +29,3 @@ export function calcPct(used: number, limit: number): number {
   const remaining = limit - used;
   return Math.max(0, Math.min(100, Math.round((remaining / limit) * 100)));
 }
-
-/**
- * Returns a CSS hsl color string interpolated from red (0%) to green (100%).
- */
-export function pctToColor(pct: number): string {
-  const hue = Math.round((pct / 100) * 120); // 0=red, 120=green
-  return `hsl(${hue}, 70%, 45%)`;
-}

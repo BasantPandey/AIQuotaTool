@@ -1,0 +1,131 @@
+<!doctype html>
+<!--
+  Hosts the real built webview bundles (dist/webview) like the extension host does.
+  Query: ?page=dashboard|setup&theme=dark|light. Used by scripts/vscode-assets.mjs.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../../dist/webview/webview.css" />
+    <style id="setup-reset"></style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Default Dark Modern and Light Modern theme colors.
+      const THEMES = {
+        dark: {
+          'font-family': '"Segoe WPC", "Segoe UI", sans-serif',
+          'font-size': '13px',
+          'editor-font-family': 'Consolas, "Courier New", monospace',
+          'editor-background': '#1f1f1f',
+          'sideBar-background': '#181818',
+          'foreground': '#cccccc',
+          'descriptionForeground': '#9d9d9d',
+          'disabledForeground': '#cccccc80',
+          'widget-border': '#313131',
+          'panel-border': '#2b2b2b',
+          'input-background': '#313131',
+          'input-foreground': '#cccccc',
+          'input-border': '#3c3c3c',
+          'button-background': '#0078d4',
+          'button-foreground': '#ffffff',
+          'button-hoverBackground': '#026ec1',
+          'button-secondaryBackground': '#313131',
+          'button-secondaryForeground': '#cccccc',
+          'button-secondaryHoverBackground': '#3c3c3c',
+          'focusBorder': '#0078d4',
+          'list-activeSelectionBackground': '#04395e',
+          'charts-green': '#89d185',
+          'charts-yellow': '#cca700',
+          'charts-red': '#f14c4c',
+          'charts-blue': '#3794ff',
+          'textLink-foreground': '#4daafc',
+          'errorForeground': '#f85149',
+          'textCodeBlock-background': '#2b2b2b',
+        },
+        light: {
+          'font-family': '"Segoe WPC", "Segoe UI", sans-serif',
+          'font-size': '13px',
+          'editor-font-family': 'Consolas, "Courier New", monospace',
+          'editor-background': '#ffffff',
+          'sideBar-background': '#f8f8f8',
+          'foreground': '#3b3b3b',
+          'descriptionForeground': '#3b3b3b',
+          'disabledForeground': '#61616180',
+          'widget-border': '#e5e5e5',
+          'panel-border': '#e5e5e5',
+          'input-background': '#ffffff',
+          'input-foreground': '#3b3b3b',
+          'input-border': '#cecece',
+          'button-background': '#005fb8',
+          'button-foreground': '#ffffff',
+          'button-hoverBackground': '#0258a8',
+          'button-secondaryBackground': '#e5e5e5',
+          'button-secondaryForeground': '#3b3b3b',
+          'button-secondaryHoverBackground': '#cccccc',
+          'focusBorder': '#005fb8',
+          'list-activeSelectionBackground': '#e8e8e8',
+          'charts-green': '#388a34',
+          'charts-yellow': '#bf8803',
+          'charts-red': '#e51400',
+          'charts-blue': '#1a85ff',
+          'textLink-foreground': '#005fb8',
+          'errorForeground': '#e51400',
+          'textCodeBlock-background': '#f2f2f2',
+        },
+      };
+
+      const params = new URLSearchParams(location.search);
+      const page = params.get('page') ?? 'dashboard';
+      const theme = params.get('theme') ?? 'dark';
+      for (const [name, value] of Object.entries(THEMES[theme])) {
+        document.documentElement.style.setProperty(`--vscode-${name}`, value);
+      }
+      document.body.classList.add(`vscode-${theme}`);
+      if (page === 'setup') {
+        // Same reset the Set Up Accounts host page uses.
+        document.getElementById('setup-reset').textContent = `
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { background: var(--vscode-editor-background); font-family: var(--vscode-font-family); }
+          code { font-family: var(--vscode-editor-font-family); background: var(--vscode-textCodeBlock-background); padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }`;
+      }
+
+      const now = Date.now();
+      const H = 3600e3;
+      const STATES = [
+        { service: 'claude', sessionPct: 42, weeklyPct: 9, sessionResetsAt: now + 3 * H - 60e3, weeklyResetsAt: now + 4 * 24 * H - 60e3, lastUpdated: now },
+        { service: 'copilot', honesty: 'seat_active_usage_unknown', lastUpdated: now },
+        { service: 'codex', sessionPct: 76, weeklyPct: 58, sessionResetsAt: now + 1 * H + 44 * 60e3, weeklyResetsAt: now + 5 * 24 * H - 60e3, lastUpdated: now },
+        { service: 'grok', sessionPct: 88, weeklyPct: 64, sessionResetsAt: now + 48 * 60e3, weeklyResetsAt: now + 2 * 24 * H + 4 * H, lastUpdated: now },
+        { service: 'deepseek', balance: { available: true, infos: [{ currency: 'USD', total: '18.40', granted: '0.00', toppedUp: '18.40' }] }, lastUpdated: now },
+        { service: 'kimi', balance: { available: true, infos: [{ currency: 'CNY', total: '42.10', granted: '15.00', toppedUp: '27.10' }] }, lastUpdated: now },
+      ];
+      const SETUP = [
+        ['claude', 'ok', 'Connected'],
+        ['codex', 'ok', 'Connected'],
+        ['github', 'ok', 'Connected as @octocat'],
+        ['grok', 'ok', 'Connected'],
+        ['deepseek', 'ok', 'Connected'],
+      ];
+
+      window.acquireVsCodeApi = () => ({
+        postMessage(msg) {
+          if (msg.type === 'webview_ready') {
+            window.postMessage({ type: 'quota_update', payload: STATES, reauthServices: [] }, '*');
+          }
+          if (msg.type === 'credential_setup_ready') {
+            for (const [service, status, detail] of SETUP) {
+              window.postMessage({ type: 'credential_status', service, status, detail }, '*');
+            }
+          }
+        },
+      });
+
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.src = `../../dist/webview/${page === 'setup' ? 'credential-setup' : 'index'}.js`;
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>

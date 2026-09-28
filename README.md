@@ -1,6 +1,10 @@
 # AI Quota Tool
 
-VS Code extension that shows your remaining AI quota for Claude, GitHub Copilot, OpenAI Codex, and Grok.
+VS Code extension that shows your remaining AI quota for Claude, GitHub Copilot, OpenAI Codex, and Grok, plus your DeepSeek and Kimi API balance.
+
+![AI Quota dashboard beside the code editor in VS Code](packages/vscode-ext/docs/dashboard-dark.png)
+
+The Chrome extension and the VS Code extension share one design from `packages/ui`: segmented gauges, a "Lowest remaining" card, and cards that follow the host theme.
 
 ## Product surface (V1)
 
@@ -24,7 +28,7 @@ VS Code Extension
   - Optional: receive Chrome WS push on 127.0.0.1:54321 (not required for V1)
 ```
 
-**Credentials:** VS Code **stores** Claude, ChatGPT, and Grok session cookies in SecretStorage - never claim product-wide “no credentials stored.” Validate on save (Save & Test), replace, clear via **Set Up Accounts**. Expired sessions drop the ring and show re-auth; secrets are not auto-deleted. See `packages/vscode-ext/README.md`.
+**Credentials:** VS Code **stores** Claude, ChatGPT, and Grok session cookies in SecretStorage - never claim product-wide “no credentials stored.” Validate on save (Save & Test), replace, clear via **Set Up Accounts**. Expired sessions remove the old reading and show **Session expired**; secrets are not auto-deleted. See `packages/vscode-ext/README.md`.
 
 **Copilot:** Seat/plan can be detected; remaining usage % is often unavailable from GitHub. The UI shows honest status instead of inventing 100% remaining.
 
@@ -77,6 +81,7 @@ Load `packages/chrome-ext/dist/` as unpacked in `chrome://extensions` if you wan
 
 ```bash
 # Preview shared UI components with mock data (localhost:5173)
+# Query: ?host=chrome|vscode&theme=dark|light&width=380
 pnpm --filter @ai-quota-tool/ui dev
 
 # Typecheck / test / build
@@ -87,8 +92,9 @@ pnpm turbo build
 # Watch mode for Chrome package (optional)
 pnpm --filter @ai-quota-tool/chrome-ext dev
 
-# Regenerate icons
-node scripts/generate-icons.mjs
+# Icons, Chrome Web Store art and VS Code Marketplace screenshots (build first)
+node scripts/store-assets.mjs
+node scripts/vscode-assets.mjs
 ```
 
 CI (GitHub Actions) runs install, type-check, test, and build on push/PR.
@@ -100,7 +106,7 @@ CI (GitHub Actions) runs install, type-check, test, and build on push/PR.
 ```
 packages/
   core/        Shared types, pure merge/mappers/honesty, utils (+ vitest)
-  ui/          Shared React 19 components — no data fetching
+  ui/          Shared React 19 components and styles - no data fetching
   vscode-ext/  VS Code extension (V1 product surface)
   chrome-ext/  Optional Chrome MV3 package (not a V1 gate)
 docs/
