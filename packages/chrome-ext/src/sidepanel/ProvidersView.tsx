@@ -1,9 +1,9 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { ENABLED_SERVICES_KEY, SERVICES, SERVICE_LABELS, SERVICE_URLS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
-import { GITHUB_SIGN_IN_READY } from '../background/github-auth.js';
+import { type DeviceCode, requestDeviceCode, waitForDeviceToken } from '../background/github-auth.js';
 import { SERVICE_HINTS, sendPanelMessage } from './shared.js';
 
 interface Props {
@@ -46,26 +46,86 @@ function Status({ tone, children }: { tone: 'ok' | 'warn' | 'idle'; children: Re
   );
 }
 
+/** GitHub device flow: show a code, the user approves on GitHub, the panel stores the token. */
 export function CopilotConnectButton({ connected }: { connected: boolean }) {
   const { pending, error, run } = useAction();
-  const type = connected ? 'github_disconnect' : 'github_connect';
-  if (!GITHUB_SIGN_IN_READY && !connected) {
+  const [code, setCode] = useState<DeviceCode | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [flowError, setFlowError] = useState<string | undefined>();
+
+  // Poll while the code shows. Closing the panel or Cancel stops the poll.
+  useEffect(() => {
+    if (code == null) return;
+    const abort = new AbortController();
+    waitForDeviceToken(code, abort.signal)
+      .then((stored) => {
+        if (stored) setCode(null);
+      })
+      .catch((err: unknown) => {
+        if (abort.signal.aborted) return;
+        setCode(null);
+        setFlowError(err instanceof Error ? err.message : 'GitHub sign-in failed. Try again.');
+      });
+    return () => abort.abort();
+  }, [code]);
+
+  async function start() {
+    setFlowError(undefined);
+    setCopied(false);
+    setStarting(true);
+    try {
+      setCode(await requestDeviceCode());
+    } catch (err) {
+      setFlowError(err instanceof Error ? err.message : 'GitHub sign-in failed. Try again.');
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  function copyAndOpen(device: DeviceCode) {
+    navigator.clipboard.writeText(device.userCode).then(() => setCopied(true), () => setCopied(false));
+    window.open(device.verificationUri, '_blank', 'noreferrer');
+  }
+
+  if (connected) {
     return (
-      <button className="btn" disabled>
-        GitHub sign-in coming soon
-      </button>
+      <>
+        <button className="btn btn-ghost" disabled={pending} onClick={() => void run(() => sendPanelMessage({ type: 'github_disconnect' }))}>
+          {pending ? 'Working…' : 'Disconnect'}
+        </button>
+        {error && <div className="error">{error}</div>}
+      </>
     );
   }
+
+  if (code != null) {
+    return (
+      <div className="device" role="status">
+        <div className="device-label">Enter this code on GitHub</div>
+        <div className="device-code num">{code.userCode}</div>
+        <div className="device-actions">
+          <button className="btn btn-primary" onClick={() => copyAndOpen(code)}>
+            {copied ? 'Code copied - open GitHub again' : 'Copy code and open GitHub'}
+          </button>
+          <button className="btn btn-ghost" onClick={() => setCode(null)}>
+            Cancel
+          </button>
+        </div>
+        <div className="device-wait">
+          <span className="dot warn" />
+          Waiting for you to approve on GitHub
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <button
-        className={connected ? 'btn btn-ghost' : 'btn btn-primary'}
-        disabled={pending}
-        onClick={() => void run(() => sendPanelMessage({ type }))}
-      >
-        {pending ? 'Working…' : connected ? 'Disconnect' : 'Connect GitHub'}
+      <button className="btn btn-primary" disabled={starting} onClick={() => void start()}>
+        {starting ? 'Working…' : 'Connect GitHub'}
       </button>
-      {error && <div className="error">{error}</div>}
+      {flowError && <div className="error">{flowError}</div>}
     </>
   );
 }

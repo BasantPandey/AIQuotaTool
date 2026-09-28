@@ -1,64 +1,45 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildGitHubAuthorizeUrl,
-  extractAuthorizationCode,
-} from './github-oauth.js';
+import { nextDevicePollStep } from './github-oauth.js';
 
-const BASE = {
-  clientId: 'Iv1.testclient',
-  redirectUri: 'https://abcdefghijklmnop.chromiumapp.org/',
-  state: 'state-123',
-  codeChallenge: 'challenge-abc',
-};
-
-describe('buildGitHubAuthorizeUrl', () => {
-  it('builds the GitHub web-flow URL with PKCE S256', () => {
-    const url = new URL(buildGitHubAuthorizeUrl(BASE));
-    expect(url.origin + url.pathname).toBe(
-      'https://github.com/login/oauth/authorize',
-    );
-    expect(url.searchParams.get('client_id')).toBe('Iv1.testclient');
-    expect(url.searchParams.get('redirect_uri')).toBe(
-      'https://abcdefghijklmnop.chromiumapp.org/',
-    );
-    expect(url.searchParams.get('state')).toBe('state-123');
-    expect(url.searchParams.get('code_challenge')).toBe('challenge-abc');
-    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+describe('nextDevicePollStep', () => {
+  it('finishes with the token', () => {
+    expect(nextDevicePollStep({ access_token: 'gho_abc' }, 5)).toEqual({ kind: 'done', token: 'gho_abc' });
   });
 
-  it('includes scopes space-joined when given', () => {
-    const url = new URL(
-      buildGitHubAuthorizeUrl({ ...BASE, scopes: ['read:user', 'read:org'] }),
-    );
-    expect(url.searchParams.get('scope')).toBe('read:user read:org');
+  it('keeps the interval while the user has not approved yet', () => {
+    expect(nextDevicePollStep({ error: 'authorization_pending' }, 5)).toEqual({ kind: 'wait', intervalSec: 5 });
   });
 
-  it('omits the scope param when no scopes are requested', () => {
-    const url = new URL(buildGitHubAuthorizeUrl(BASE));
-    expect(url.searchParams.has('scope')).toBe(false);
-  });
-});
-
-describe('extractAuthorizationCode', () => {
-  it('returns the code when the state matches', () => {
-    const redirect =
-      'https://abcdefghijklmnop.chromiumapp.org/?code=abc123&state=state-123';
-    expect(extractAuthorizationCode(redirect, 'state-123')).toBe('abc123');
+  it('uses the new interval from slow_down', () => {
+    expect(nextDevicePollStep({ error: 'slow_down', interval: 10 }, 5)).toEqual({ kind: 'wait', intervalSec: 10 });
   });
 
-  it('rejects the code when the state does not match (CSRF guard)', () => {
-    const redirect =
-      'https://abcdefghijklmnop.chromiumapp.org/?code=abc123&state=evil';
-    expect(extractAuthorizationCode(redirect, 'state-123')).toBeUndefined();
+  it('adds 5 seconds when slow_down has no interval', () => {
+    expect(nextDevicePollStep({ error: 'slow_down' }, 5)).toEqual({ kind: 'wait', intervalSec: 10 });
   });
 
-  it('returns undefined when the user denied access', () => {
-    const redirect =
-      'https://abcdefghijklmnop.chromiumapp.org/?error=access_denied&state=state-123';
-    expect(extractAuthorizationCode(redirect, 'state-123')).toBeUndefined();
+  it('fails when the code expires', () => {
+    expect(nextDevicePollStep({ error: 'expired_token' }, 5)).toEqual({
+      kind: 'fail',
+      message: 'The code expired. Connect again to get a new code.',
+    });
   });
 
-  it('returns undefined for a malformed URL', () => {
-    expect(extractAuthorizationCode('not a url', 'state-123')).toBeUndefined();
+  it('fails when the user denies access', () => {
+    expect(nextDevicePollStep({ error: 'access_denied' }, 5)).toEqual({
+      kind: 'fail',
+      message: 'GitHub sign-in was cancelled.',
+    });
+  });
+
+  it('fails with the GitHub text for an unknown error', () => {
+    expect(nextDevicePollStep({ error: 'device_flow_disabled', error_description: 'Device flow is off' }, 5)).toEqual({
+      kind: 'fail',
+      message: 'Device flow is off',
+    });
+  });
+
+  it('never treats an empty token as success', () => {
+    expect(nextDevicePollStep({ access_token: '' }, 5).kind).toBe('fail');
   });
 });

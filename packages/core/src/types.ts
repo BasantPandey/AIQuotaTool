@@ -121,7 +121,6 @@ export type WsMessage =
 
 /** Messages the Chrome side panel sends to the service worker. */
 export type PanelMessage =
-  | { type: 'github_connect' }
   | { type: 'github_disconnect' }
   | { type: 'api_key_connect'; service: ServiceId; apiKey: string }
   | { type: 'api_key_disconnect'; service: ServiceId }

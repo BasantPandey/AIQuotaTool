@@ -114,11 +114,6 @@ The item saves quota readings, the list of providers that the user turns on, the
 The item sends one notification when a quota drops low, and one when a quota resets.
 ```
 
-**identity**
-```
-The item uses the Identity API to run GitHub sign-in (OAuth with PKCE) when the user connects Copilot. Sign-in is needed to check the Copilot plan status.
-```
-
 **sidePanel**
 ```
 The side panel is the main user interface. It shows the quota dashboard and the provider settings.
@@ -164,4 +159,4 @@ https://basantpandey.github.io/AIQuotaTool/privacy.html
 ## Account tasks (owner only)
 
 - Contact email on the Settings tab must be verified.
-- GitHub OAuth App: register it at https://github.com/settings/applications/new with callback `https://dkohaadncknbgmeefnlfffdjnnlmlglh.chromiumapp.org/`. Paste the client id into `GITHUB_OAUTH_CLIENT_ID` in `src/background/github-auth.ts`. Until then, the panel shows "GitHub sign-in coming soon".
+- GitHub OAuth App: done. Client id `Ov23liNRlhzedfjImsrQ` is in `src/background/github-auth.ts`. Keep **Enable Device Flow** turned on in the app settings. The extension never uses the client secret.

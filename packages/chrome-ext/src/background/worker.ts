@@ -22,11 +22,7 @@ import {
   saveServiceApiKey,
   type StoredApiKeys,
 } from './api-keys.js';
-import {
-  connectGitHub,
-  disconnectGitHub,
-  trySilentGitHubReauth,
-} from './github-auth.js';
+import { disconnectGitHub, GITHUB_TOKEN_STORAGE_KEY } from './github-auth.js';
 import { createFetchers } from './providers.js';
 
 const POLL_ALARM = 'quota-poll';
@@ -36,11 +32,6 @@ const LOW_QUOTA_ARMED_KEY = 'lowQuotaArmed';
 const LEGACY_WS_KEEPALIVE_ALARM = 'ws-keepalive';
 
 const fetchers = createFetchers();
-const copilotFetcher = fetchers.find((fetcher) => fetcher.serviceId === 'copilot');
-
-// Guard against re-auth loops: GitHub rate-limits token creation (10/hour).
-// The flag resets on each service worker activation.
-let silentReauthAttempted = false;
 
 function updateBadge(states: QuotaState[]): void {
   const badge = deriveBadge(states);
@@ -83,29 +74,12 @@ async function afterMerge(merged: QuotaState[]): Promise<void> {
   await checkLowQuota(merged);
 }
 
-/**
- * A 401 from the Copilot seat check with a stored token means the token died.
- * Try one silent re-auth (the user already authorized the app, so GitHub
- * auto-completes), then re-fetch Copilot so the panel recovers without a
- * manual reconnect.
- */
-async function recoverCopilotIfTokenDied(states: QuotaState[]): Promise<QuotaState[]> {
-  if (silentReauthAttempted) return states;
-  const copilot = states.find((s) => s.service === 'copilot');
-  if (copilot?.honesty !== 'auth_unavailable') return states;
-  silentReauthAttempted = true;
-  if (!(await trySilentGitHubReauth())) return states;
-  if (!copilotFetcher) return states;
-  const fresh = await copilotFetcher.fetch();
-  return states.map((s) => (s.service === 'copilot' ? fresh : s));
-}
-
 async function pollAll(): Promise<void> {
   const enabled = await readEnabled();
   const active = fetchers.filter((f) => enabled.includes(f.serviceId));
   const results = await Promise.allSettled(active.map((f) => f.fetch()));
 
-  let states: QuotaState[] = [];
+  const states: QuotaState[] = [];
   for (const result of results) {
     if (result.status === 'fulfilled') {
       states.push(result.value);
@@ -113,8 +87,6 @@ async function pollAll(): Promise<void> {
       console.error('[ai-quota-tool] Fetch failed:', result.reason);
     }
   }
-
-  states = await recoverCopilotIfTokenDied(states);
 
   // Freshest-wins merge with content-script / prior SW readings; partial polls keep other services.
   await storeMerged((existing) => mergeQuotaStates(existing, states), enabled);
@@ -124,6 +96,11 @@ async function pollAll(): Promise<void> {
 async function mergeSingleQuotaState(incoming: QuotaState): Promise<void> {
   await storeMerged((existing) => upsertQuotaState(existing, incoming), await readEnabled());
 }
+
+// The side panel stores the GitHub token after device flow sign-in. Read Copilot at once.
+chrome.storage.local.onChanged.addListener((changes) => {
+  if (changes[GITHUB_TOKEN_STORAGE_KEY]?.newValue) pollAll().catch(console.error);
+});
 
 // The Providers screen writes the list; drop removed providers and poll new ones.
 chrome.storage.local.onChanged.addListener((changes) => {
@@ -147,7 +124,7 @@ chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
   .catch((err: unknown) => console.error('[ai-quota-tool] sidePanel setup:', err));
 
-// Content scripts push quota data; the side panel drives GitHub connect/disconnect.
+// Content scripts push quota data; the side panel drives GitHub disconnect.
 chrome.runtime.onMessage.addListener(
   (
     msg: PanelMessage,
@@ -158,9 +135,8 @@ chrome.runtime.onMessage.addListener(
       mergeSingleQuotaState(msg.payload).catch(console.error);
       return;
     }
-    if (msg.type === 'github_connect' || msg.type === 'github_disconnect') {
-      const action = msg.type === 'github_connect' ? connectGitHub : disconnectGitHub;
-      action()
+    if (msg.type === 'github_disconnect') {
+      disconnectGitHub()
         .then(async () => {
           await pollAll();
           sendResponse({ ok: true });

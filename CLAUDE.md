@@ -13,7 +13,7 @@ A pnpm + Turborepo monorepo. **V1 product surface is the VS Code extension** (se
 | `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot/grok honesty, session-auth policy) — no DOM, no Node, no React |
 | `packages/ui` | `@ai-quota-tool/ui` | Shared React 19 components and the shared look (`styles.css`, `vscode.css`) - pure display, no data fetching |
 | `packages/vscode-ext` | `ai-quota-tool-vscode` | **V1 product:** poller, credentials, optional WS server, webview, status bar |
-| `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | **V2 standalone product:** side panel dashboard, GitHub OAuth (PKCE), badge + notifications (spec: issue #38) |
+| `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | **V2 standalone product:** side panel dashboard, GitHub OAuth (device flow), badge + notifications (spec: issue #38) |
 
 Build order enforced by Turbo: `core` → `ui` → `chrome-ext` / `vscode-ext` (parallel).
 
@@ -64,7 +64,7 @@ VS Code → Chrome:  { type: "pong" }
 3. Content scripts on claude.ai / chatgpt.com push `content_quota` → same merge path
 4. After each merge: `deriveBadge` → action badge; `decideLowQuotaAlerts` (persisted latch) + reset alarms → `chrome.notifications`
 5. Side panel: `useSuspenseQuery` + `storage.onChanged` invalidation (push freshness, no panel polling)
-6. Copilot connect/disconnect: panel message → worker → GitHub OAuth (PKCE) via `chrome.identity`; token in `chrome.storage.local`
+6. Copilot connect: the side panel runs the GitHub OAuth device flow (no client secret) and stores the token in `chrome.storage.local`; the worker polls when the token appears. Disconnect: panel message → worker
 
 ## VS Code extension data flow
 ```
@@ -92,7 +92,7 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 - `pressureRemaining` / `lowestPressureAmong` (badge/status pressure; no inventing 100%)
 - `deriveBadge` (badge text/color; amber < 10%, red < 5%)
 - `decideLowQuotaAlerts` (alert once per drop; re-arm on recovery)
-- `buildGitHubAuthorizeUrl` / `extractAuthorizationCode` (PKCE web-flow pieces)
+- `nextDevicePollStep` (GitHub device flow poll step)
 - `isConnectedReading` / `deriveConnections` (onboarding connection flags)
 
 ## VS Code extension: two tsconfigs — critical
