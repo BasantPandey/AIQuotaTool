@@ -18,7 +18,7 @@ on:
         default: main
         type: string
       bump:
-        description: Semver bump when not dry-run
+        description: Semver bump when not dry-run. Use none when a PR already set the version.
         required: true
         default: patch
         type: choice
@@ -26,6 +26,7 @@ on:
           - patch
           - minor
           - major
+          - none
       dry_run:
         description: Package only (no version bump, no Marketplace publish). Uncheck for a live release.
         required: true
@@ -79,7 +80,7 @@ jobs:
 
       # Boolean workflow inputs are strings in expressions — compare to 'true'/'false'.
       - name: Bump version, tag, and open release PR
-        if: ${{ inputs.dry_run == false || inputs.dry_run == 'false' }}
+        if: ${{ (inputs.dry_run == false || inputs.dry_run == 'false') && inputs.bump != 'none' }}
         id: bump
         working-directory: packages/vscode-ext
         env:
@@ -104,6 +105,16 @@ jobs:
             --title "Release VS Code extension ${VERSION}" \
             --body "Version bump from the publish workflow. Tag vscode-v${VERSION} points at this commit. Merge after CI passes."
           echo "Bumped VS Code extension to ${VERSION}, pushed tag vscode-v${VERSION}, and opened a release PR"
+
+      - name: Tag the current version
+        if: ${{ (inputs.dry_run == false || inputs.dry_run == 'false') && inputs.bump == 'none' }}
+        working-directory: packages/vscode-ext
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          # The push fails if the tag exists. That stops a second publish of one version.
+          git tag "vscode-v${VERSION}"
+          git push origin "vscode-v${VERSION}"
 
       - name: Resolve package version
         id: version
@@ -163,8 +174,10 @@ jobs:
               echo ""
               echo "Live publish: version bumped, tagged \`vscode-v${{ steps.version.outputs.version }}\`, and sent to Marketplace."
               echo ""
-              echo "Merge the release PR \`release/vscode-v${{ steps.version.outputs.version }}\` to put the new version on \`${{ inputs.ref }}\`."
-              echo ""
+              if [ "${{ inputs.bump }}" != "none" ]; then
+                echo "Merge the release PR \`release/vscode-v${{ steps.version.outputs.version }}\` to put the new version on \`${{ inputs.ref }}\`."
+                echo ""
+              fi
               echo "Manage listing: https://marketplace.visualstudio.com/manage/publishers/basantpandey"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
