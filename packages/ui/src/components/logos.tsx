@@ -133,3 +133,18 @@ export function CursorLogo({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Simple original four-point mark for Gemini (not an official brand asset). */
+export function GeminiLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="aq-gemini" x1="4" y1="20" x2="20" y2="4" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#4f8dfd" />
+          <stop offset="1" stopColor="#c58af9" />
+        </linearGradient>
+      </defs>
+      <path d="M12 2c.6 5.3 4.7 9.4 10 10-5.3.6-9.4 4.7-10 10-.6-5.3-4.7-9.4-10-10 5.3-.6 9.4-4.7 10-10Z" fill="url(#aq-gemini)" />
+    </svg>
+  );
+}

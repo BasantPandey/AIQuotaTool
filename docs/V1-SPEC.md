@@ -15,7 +15,7 @@ AI Quota Tool’s **V1 product surface is the VS Code extension** (`ai-quota-too
 | Component | Role |
 | --- | --- |
 | **QuotaPoller** | Standalone Node fetch of Claude / Copilot / Codex using SecretStorage + GitHub OAuth |
-| **Webview dashboard** | Shared UI cards for remaining rings and honest non-percentage states |
+| **Webview dashboard** | Shared UI cards with segmented remaining gauges, a lowest-remaining card, and honest non-percentage states |
 | **Status bar** | Min of defined session/weekly remaining; setup / re-auth cues |
 | **Set Up Accounts** | Save & Test, replace, clear; privacy disclosure |
 

@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext): void {
     } else {
       statusBar.update(states);
     }
-    panel.pushStates(states, states.length === 0 && reauth.length === 0, reauth);
+    panel.pushStates(states, reauth);
   };
 
   // Show setup prompt if no credentials are saved yet

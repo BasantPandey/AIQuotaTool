@@ -1,0 +1,240 @@
+<!doctype html>
+<!--
+  A VS Code window around the real dashboard webview, for Marketplace screenshots.
+  Query: ?shot=split|full|setup&theme=dark|light. Rendered at 1280x800 by scripts/vscode-assets.mjs.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      :root {
+        --title: #181818; --activity: #181818; --side: #181818; --editor: #1f1f1f; --tabs: #181818;
+        --tab-active: #1f1f1f; --tab-top: #0078d4; --line: #2b2b2b; --fg: #cccccc; --dim: #9d9d9d;
+        --icon: #868686; --icon-active: #d7d7d7; --select: #37373d; --gutter: #6e7681; --cur-line: #282828;
+        --status: #181818; --status-fg: #cccccc; --warn-bg: #7a6400; --warn-fg: #ffffff; --search: #2a2a2a;
+        --k: #569cd6; --c: #c586c0; --s: #ce9178; --f: #dcdcaa; --t: #4ec9b0; --v: #9cdcfe; --n: #b5cea8; --p: #d4d4d4;
+      }
+      :root[data-theme='light'] {
+        --title: #f8f8f8; --activity: #f8f8f8; --side: #f8f8f8; --editor: #ffffff; --tabs: #f8f8f8;
+        --tab-active: #ffffff; --tab-top: #005fb8; --line: #e5e5e5; --fg: #3b3b3b; --dim: #6f6f6f;
+        --icon: #8a8a8a; --icon-active: #1f1f1f; --select: #e4e6f1; --gutter: #6e7681; --cur-line: #f5f5f5;
+        --status: #f8f8f8; --status-fg: #3b3b3b; --warn-bg: #725102; --warn-fg: #ffffff; --search: #ffffff;
+        --k: #0000ff; --c: #af00db; --s: #a31515; --f: #795e26; --t: #267f99; --v: #001080; --n: #098658; --p: #3b3b3b;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; }
+      body { font: 13px/1.4 'Segoe WPC', 'Segoe UI', sans-serif; color: var(--fg); background: var(--editor); display: flex; flex-direction: column; }
+      svg { display: block; }
+      .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+
+      .titlebar { height: 35px; flex-shrink: 0; display: flex; align-items: center; background: var(--title); border-bottom: 1px solid var(--line); font-size: 13px; }
+      .menu { display: flex; gap: 2px; padding-left: 10px; flex: 1; }
+      .menu span { padding: 3px 7px; color: var(--fg); }
+      .command { width: 400px; height: 24px; border: 1px solid var(--line); border-radius: 6px; background: var(--search); display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--dim); }
+      .winctl { flex: 1; display: flex; justify-content: flex-end; }
+      .winctl span { width: 46px; height: 35px; display: grid; place-items: center; color: var(--fg); }
+
+      .main { flex: 1; display: flex; min-height: 0; }
+      .activity { width: 48px; flex-shrink: 0; background: var(--activity); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding-top: 4px; gap: 0; }
+      .activity span { width: 48px; height: 48px; display: grid; place-items: center; color: var(--icon); position: relative; }
+      .activity span.on { color: var(--icon-active); }
+      .activity span.on::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--tab-top); }
+      .activity .icon { width: 24px; height: 24px; stroke-width: 1.2; }
+      .activity .grow { flex: 1; }
+
+      .side { width: 236px; flex-shrink: 0; background: var(--side); border-right: 1px solid var(--line); font-size: 13px; }
+      .side-head { height: 35px; display: flex; align-items: center; padding: 0 20px; font-size: 11px; letter-spacing: 0.04em; color: var(--dim); }
+      .tree div { height: 22px; display: flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--fg); }
+      .tree .sel { background: var(--select); outline: 1px solid var(--tab-top); outline-offset: -1px; }
+      .tree .root { font-weight: 700; font-size: 11px; letter-spacing: 0.03em; }
+      .chev { width: 16px; color: var(--fg); font-size: 15px; line-height: 1; text-align: center; opacity: 0.8; }
+      .chev.open { transform: rotate(90deg); }
+      .ts { font: 700 9px/1 'Segoe UI', sans-serif; color: #3178c6; width: 16px; text-align: center; }
+      .json { font: 700 10px/1 'Segoe UI', sans-serif; color: #cbcb41; width: 16px; text-align: center; }
+      .md { font: 700 9px/1 'Segoe UI', sans-serif; color: #519aba; width: 16px; text-align: center; }
+
+      .groups { flex: 1; display: flex; min-width: 0; }
+      .group { display: flex; flex-direction: column; min-width: 0; background: var(--editor); }
+      .group + .group { border-left: 1px solid var(--line); }
+      .tabs { height: 35px; flex-shrink: 0; display: flex; background: var(--tabs); border-bottom: 1px solid var(--line); }
+      .tab { display: flex; align-items: center; gap: 6px; padding: 0 12px 0 10px; border-right: 1px solid var(--line); color: var(--dim); font-size: 13px; white-space: nowrap; }
+      .tab.on { background: var(--tab-active); color: var(--fg); box-shadow: inset 0 1px 0 var(--tab-top); margin-bottom: -1px; }
+      .tab .x { opacity: 0.8; margin-left: 4px; }
+      .preview { width: 16px; height: 16px; color: var(--dim); }
+      .crumbs { height: 22px; display: flex; align-items: center; gap: 4px; padding: 0 12px; font-size: 12px; color: var(--dim); }
+      iframe { flex: 1; border: 0; width: 100%; background: var(--editor); }
+
+      .code { flex: 1; font: 14px/19px Consolas, 'Courier New', monospace; padding-top: 2px; white-space: pre; overflow: hidden; }
+      .code div { display: flex; }
+      .code .cur { background: var(--cur-line); }
+      .code i { font-style: normal; width: 52px; flex-shrink: 0; text-align: right; padding-right: 22px; color: var(--gutter); }
+      .k { color: var(--k); } .c { color: var(--c); } .s { color: var(--s); } .f { color: var(--f); }
+      .t { color: var(--t); } .v { color: var(--v); } .n { color: var(--n); } .p { color: var(--p); }
+
+      .status { height: 22px; flex-shrink: 0; display: flex; align-items: stretch; background: var(--status); border-top: 1px solid var(--line); color: var(--status-fg); font-size: 12px; }
+      .status span { display: flex; align-items: center; gap: 4px; padding: 0 7px; white-space: nowrap; }
+      .status .remote { background: var(--tab-top); color: #fff; padding: 0 10px; }
+      .status .grow { flex: 1; }
+      .status .quota { background: var(--warn-bg); color: var(--warn-fg); }
+      .status .icon { width: 14px; height: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="titlebar">
+      <div class="menu"><span>File</span><span>Edit</span><span>Selection</span><span>View</span><span>Go</span><span>Run</span><span>Terminal</span><span>Help</span></div>
+      <div class="command">
+        <svg class="icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
+        AIQuotaTool
+      </div>
+      <div class="winctl">
+        <span><svg class="icon" viewBox="0 0 16 16"><path d="M3 8h10" /></svg></span>
+        <span><svg class="icon" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" /></svg></span>
+        <span><svg class="icon" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg></span>
+      </div>
+    </div>
+
+    <div class="main">
+      <nav class="activity">
+        <span id="act-files"><svg class="icon" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v11h2M14 3l5 5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5M14 3v5h5" /></svg></span>
+        <span><svg class="icon" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5.5 5.5" /></svg></span>
+        <span><svg class="icon" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2" /><circle cx="6" cy="19" r="2" /><circle cx="18" cy="8" r="2" /><path d="M6 7v10M18 10c0 4-5 4-11 7" /></svg></span>
+        <span><svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /><path d="M4 19h2" /></svg></span>
+        <span><svg class="icon" viewBox="0 0 24 24"><rect x="3.5" y="12.5" width="8" height="8" /><rect x="12.5" y="12.5" width="8" height="8" /><rect x="3.5" y="3.5" width="8" height="8" /><rect x="14" y="2" width="8" height="8" transform="rotate(10 18 6)" /></svg></span>
+        <div class="grow"></div>
+        <span><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5" /></svg></span>
+        <span><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" /></svg></span>
+      </nav>
+
+      <aside class="side" id="side">
+        <div class="side-head">EXPLORER</div>
+        <div class="tree">
+          <div class="root" style="padding-left: 4px"><span class="chev open">›</span>AIQUOTATOOL</div>
+          <div style="padding-left: 12px"><span class="chev">›</span>docs</div>
+          <div style="padding-left: 12px"><span class="chev open">›</span>packages</div>
+          <div style="padding-left: 20px"><span class="chev">›</span>chrome-ext</div>
+          <div style="padding-left: 20px"><span class="chev">›</span>core</div>
+          <div style="padding-left: 20px"><span class="chev">›</span>ui</div>
+          <div style="padding-left: 20px"><span class="chev open">›</span>vscode-ext</div>
+          <div style="padding-left: 28px"><span class="chev open">›</span>src</div>
+          <div style="padding-left: 36px"><span class="chev">›</span>webview</div>
+          <div style="padding-left: 52px"><span class="ts">TS</span>credentials.ts</div>
+          <div style="padding-left: 52px"><span class="ts">TS</span>extension.ts</div>
+          <div style="padding-left: 52px"><span class="ts">TS</span>quota-panel.ts</div>
+          <div class="sel" style="padding-left: 52px"><span class="ts">TS</span>quota-poller.ts</div>
+          <div style="padding-left: 52px"><span class="ts">TS</span>status-bar.ts</div>
+          <div style="padding-left: 36px"><span class="json">{}</span>package.json</div>
+          <div style="padding-left: 36px"><span class="md">M↓</span>README.md</div>
+          <div style="padding-left: 12px"><span class="json">{}</span>package.json</div>
+          <div style="padding-left: 12px"><span class="md">M↓</span>README.md</div>
+        </div>
+      </aside>
+
+      <div class="groups">
+        <section class="group" id="code-group" style="flex: 1">
+          <div class="tabs">
+            <div class="tab on"><span class="ts">TS</span>quota-poller.ts<span class="x">×</span></div>
+            <div class="tab"><span class="ts">TS</span>status-bar.ts</div>
+          </div>
+          <div class="crumbs">packages › vscode-ext › src › <span class="ts">TS</span> quota-poller.ts › <span style="color: var(--c)">⬡</span> QuotaPoller › runPoll</div>
+          <div class="code" id="code"></div>
+        </section>
+        <section class="group" id="view-group" style="width: 548px; flex-shrink: 0">
+          <div class="tabs" id="view-tabs"></div>
+          <iframe id="view" title="AI Quota Tool"></iframe>
+        </section>
+      </div>
+    </div>
+
+    <footer class="status">
+      <span class="remote"><svg class="icon" viewBox="0 0 16 16"><path d="M2 6l3-3 3 3M14 10l-3 3-3-3M5 3v6M11 13V7" /></svg></span>
+      <span><svg class="icon" viewBox="0 0 16 16"><circle cx="4.5" cy="3.5" r="1.5" /><circle cx="4.5" cy="12.5" r="1.5" /><circle cx="11.5" cy="5.5" r="1.5" /><path d="M4.5 5v6M11.5 7c0 3-4 2.5-7 4" /></svg>main</span>
+      <span>⊗ 0&nbsp;&nbsp;⚠ 0</span>
+      <span class="grow"></span>
+      <span class="quota" id="quota"><svg class="icon" viewBox="0 0 16 16"><path d="M1 8h3l2-5 3 10 2-5h4" /></svg></span>
+      <span class="editor-only">Ln 104, Col 21</span>
+      <span class="editor-only">Spaces: 2</span>
+      <span class="editor-only">UTF-8</span>
+      <span class="editor-only">CRLF</span>
+      <span class="editor-only">{ } TypeScript</span>
+      <span><svg class="icon" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3zM6.5 14h3" /></svg></span>
+    </footer>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const shot = params.get('shot') ?? 'split';
+      const theme = params.get('theme') ?? 'dark';
+      if (theme === 'light') document.documentElement.dataset.theme = 'light';
+
+      // Same text the status bar item builds from the sample readings.
+      document.getElementById('quota').append(
+        'Claude 9% | Copilot · | Codex 58% | Grok 64% | DeepSeek 18.40 USD | Kimi 42.10 CNY',
+      );
+
+      const CODE = [
+        '<span class="k">private</span> <span class="k">async</span> <span class="f">runPoll</span>(): <span class="t">Promise</span>&lt;<span class="k">void</span>&gt; {',
+        '  <span class="k">const</span> [<span class="v">creds</span>, <span class="v">githubToken</span>] = <span class="c">await</span> <span class="t">Promise</span>.<span class="f">all</span>([',
+        '    <span class="f">getCredentials</span>(),',
+        '    <span class="f">getGithubToken</span>(),',
+        '  ]);',
+        '',
+        '  <span class="k">const</span> <span class="v">jobs</span>: <span class="t">Array</span>&lt;{ <span class="v">service</span>: <span class="t">ServiceId</span>; <span class="v">promise</span>: <span class="t">Promise</span>&lt;<span class="t">QuotaState</span>&gt; }&gt; = [',
+        '    {',
+        '      <span class="v">service</span>: <span class="s">\'claude\'</span>,',
+        '      <span class="v">promise</span>: <span class="v">creds</span>.<span class="v">claudeSessionKey</span>',
+        '        ? <span class="f">fetchClaudeUsage</span>(<span class="v">creds</span>.<span class="v">claudeSessionKey</span>)',
+        '        : <span class="t">Promise</span>.<span class="f">reject</span>(<span class="s">\'no credential\'</span>),',
+        '    },',
+        '    {',
+        '      <span class="v">service</span>: <span class="s">\'copilot\'</span>,',
+        '      <span class="v">promise</span>: <span class="v">githubToken</span> ? <span class="f">fetchCopilotSeat</span>(<span class="v">githubToken</span>) : <span class="t">Promise</span>.<span class="f">reject</span>(<span class="s">\'no credential\'</span>),',
+        '    },',
+        '    {',
+        '      <span class="v">service</span>: <span class="s">\'codex\'</span>,',
+        '      <span class="v">promise</span>: <span class="v">creds</span>.<span class="v">codexSessionToken</span>',
+        '        ? <span class="f">fetchCodexUsage</span>(<span class="v">creds</span>.<span class="v">codexSessionToken</span>)',
+        '        : <span class="t">Promise</span>.<span class="f">reject</span>(<span class="s">\'no credential\'</span>),',
+        '    },',
+        '  ];',
+        '',
+        '  <span class="k">const</span> <span class="v">results</span> = <span class="c">await</span> <span class="t">Promise</span>.<span class="f">allSettled</span>(<span class="v">jobs</span>.<span class="f">map</span>((<span class="v">j</span>) =&gt; <span class="v">j</span>.<span class="v">promise</span>));',
+        '  <span class="c">for</span> (<span class="k">const</span> [<span class="v">i</span>, <span class="v">r</span>] <span class="k">of</span> <span class="v">results</span>.<span class="f">entries</span>()) {',
+        '    <span class="c">if</span> (<span class="v">r</span>.<span class="v">status</span> === <span class="s">\'fulfilled\'</span>) <span class="k">this</span>.<span class="f">merge</span>(<span class="v">r</span>.<span class="v">value</span>);',
+        '  }',
+        '  <span class="k">this</span>.<span class="f">emit</span>();',
+        '}',
+        '',
+        '',
+        '',
+        '',
+      ];
+      document.getElementById('code').innerHTML = CODE.map(
+        (line, i) => `<div class="${i === 9 ? 'cur' : ''}"><i>${i + 95}</i><span class="p">${line || ' '}</span></div>`,
+      ).join('');
+
+      const previewIcon =
+        '<svg class="preview icon" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1" /><path d="M2.5 6h11" /></svg>';
+      const tabs = {
+        split: [['AI Quota Tool', true]],
+        full: [['AI Quota Tool', true], ['AI Quota Tool - Set Up Accounts', false]],
+        setup: [['AI Quota Tool', false], ['AI Quota Tool - Set Up Accounts', true]],
+      }[shot];
+      document.getElementById('view-tabs').innerHTML = tabs
+        .map(([label, on]) => `<div class="tab ${on ? 'on' : ''}">${previewIcon}${label}${on ? '<span class="x">×</span>' : ''}</div>`)
+        .join('');
+
+      if (shot !== 'split') {
+        document.getElementById('side').remove();
+        document.getElementById('code-group').remove();
+        document.getElementById('view-group').style.cssText = 'flex: 1';
+        // VS Code hides the text editor items while a webview tab is active.
+        for (const item of document.querySelectorAll('.editor-only')) item.remove();
+      } else {
+        document.getElementById('act-files').classList.add('on');
+      }
+
+      const view = document.getElementById('view');
+      view.addEventListener('load', () => setTimeout(() => (document.body.dataset.ready = '1'), 900));
+      view.src = `webview.html?page=${shot === 'setup' ? 'setup' : 'dashboard'}&theme=${theme}`;
+    </script>
+  </body>
+</html>

@@ -111,7 +111,14 @@ AIQuotaTool/
 - `mapClaudeUsage`, `mapCodexUsage`
 - `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`
 - `grokUsageUnknown`, `grokNotConnected`, `grokBrowserSessionRequired`, `mapGrokWeeklyUsage`
-- `calcPct`, `formatTimeRemaining`, `pctToColor`
+- `calcPct`, `formatTimeRemaining`
+
+### Shared UI (`packages/ui`)
+Chrome and VS Code show the same design. The design lives in one package.
+- `styles.css` holds the tokens (`--aq-*`) and the classes for cards, gauges and buttons.
+- `vscode.css` maps the tokens to the active VS Code theme. The dashboard then follows dark, light and high contrast themes.
+- `LowestLimit` shows the quota window with the least left. `ProviderCard` shows one provider.
+- The gauge has 20 cells. It turns amber below 10% and red below 5%, the same as the badge and the status bar.
 
 ---
 

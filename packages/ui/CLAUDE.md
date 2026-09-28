@@ -1,23 +1,29 @@
 # packages/ui
 
-Shared React 19 component library. Used by both `chrome-ext` (side panel) and `vscode-ext` (webview panel).
+Shared React 19 components and one shared look. Used by `chrome-ext` (side panel) and `vscode-ext` (webview panels).
 
 ## Components
-- `QuotaDashboard` — root component; receives `QuotaState[]` and renders one `QuotaCard` per service. Also exports `QuotaLoadingFallback` and `QuotaErrorFallback` for use in `<Suspense>` and `<ErrorBoundary>`.
-- `QuotaCard` — single service card with two `ProgressRing`s (session + weekly) and optional `SubcategoryRow`s
-- `ProgressRing` — SVG circular arc showing % remaining; color auto-derived via `pctToColor`
-- `ServiceHeader` — service name + icon + "updated X ago" freshness label
-- `SubcategoryRow` — thin bar for Claude sub-buckets (Sonnet / Designs / Daily Routines)
+- `LowestLimit` - hero card. Shows the one quota window with the least left, across all providers.
+- `ProviderCard` - one provider: logo, status pill, quota windows, sub-buckets, balance, or a connect hint and a host action.
+- `UsageBar` - one quota window: label, reset time, mono percent, segmented gauge.
+- `Meter` - segmented gauge (20 cells). Any quota left lights at least one cell.
+- `ProviderLogo` - brand mark on a brand-color tile.
+- `QuotaLoadingFallback` / `QuotaErrorFallback` - for `<Suspense>` and `<ErrorBoundary>`.
+- `level(pct)` - `ok` / `low` (< 10%) / `critical` (< 5%). Same thresholds as the badge.
+
+## Styles
+- `@ai-quota-tool/ui/styles.css` - tokens (`--aq-*`), cards, gauge, hero, buttons. Light and dark follow the OS.
+- `@ai-quota-tool/ui/vscode.css` - maps `--aq-*` to the active VS Code theme (`--vscode-*`), fonts included. Import it after `styles.css`.
+- Components use class names from `styles.css`. A host restyles by setting `--aq-*` variables.
 
 ## Rules
-- **No data fetching** — pure display only. All async logic lives in the consuming package.
-- **No router** — no routing needed; both Chrome side panel and VS Code webview are single-view
-- **No state management** — components are props-driven; TanStack Query lives in the consumer
-- React Compiler is enabled — do not add `useMemo` or `useCallback`
-- Wrap consumers in `<Suspense fallback={<QuotaLoadingFallback />}>` and `<ErrorBoundary FallbackComponent={QuotaErrorFallback}>`
+- **No data fetching** - pure display only. All async logic lives in the consuming package.
+- **No router** and **no state management** - components are props-driven.
+- React Compiler is enabled - do not add `useMemo` or `useCallback`.
 
 ## Dev preview
 ```bash
 pnpm --filter @ai-quota-tool/ui dev
 ```
 Opens a Vite dev server with mock data at `localhost:5173`.
+Query options: `?host=chrome|vscode&theme=dark|light&width=380`.

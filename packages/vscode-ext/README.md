@@ -1,20 +1,26 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus your **DeepSeek** and **Kimi** API balance - live in VS Code (v0.8.0).
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus your **DeepSeek** and **Kimi** API balance - live in VS Code.
 
-![Status bar showing Claude 72% | Copilot 91% | Codex 8% | Grok 55%](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/statusbar.png)
+![AI Quota dashboard beside the code editor. The status bar shows Claude 9% in amber.](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-dark.png)
 
 ---
 
 ## Features
 
-- **Status bar item** — remaining quota at a glance for Claude, Copilot, Codex, and Grok (lower of session/weekly %); amber when any service drops below 10%
-- **Dashboard panel** — full quota breakdown with session and weekly progress rings (or honest Copilot / Grok status without fake %)
-- **Grok** — paste grok.com `sso` cookie in Set Up Accounts; short-window rate-limits plus SuperGrok weekly pool when available
-- **DeepSeek and Kimi** — paste an API key in Set Up Accounts to see account balance (money left, not a percent)
-- **Standalone (V1 product)** — fetches quota directly from VS Code using your session credentials; **no Chrome extension required**
-- **Optional Chrome push** — if you also run the legacy Chrome package, it may merge readings over local WebSocket (freshest-wins); not required
-- **Automatic refresh** — polls every 60 seconds in the background
+- **Status bar item** - remaining quota at a glance for each service (the lower of session and weekly %). The item turns amber when any service drops below 10%.
+- **Lowest remaining** - the dashboard opens with the one limit that has the least left, and when it resets.
+- **Dashboard panel** - one card per service with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
+- **Fits your theme** - the dashboard uses the colors and fonts of your VS Code theme: dark, light and high contrast. In a wide tab the cards show as a grid.
+- **Grok** - paste a grok.com `sso` cookie in Set Up Accounts. You see short-window rate limits, plus the SuperGrok weekly pool when available.
+- **DeepSeek and Kimi** - paste an API key in Set Up Accounts to see the account balance (money left, not a percent).
+- **Standalone** - fetches quota directly from VS Code with your session credentials. **No Chrome extension required.**
+- **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
+- **Automatic refresh** - polls every 60 seconds in the background.
+
+![Dashboard in a wide editor tab, with cards for six services]({RAW}/dashboard-wide.png)
+
+![Dashboard in the Light Modern theme]({RAW}/dashboard-light.png)
 
 ---
 
@@ -25,14 +31,16 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 3. Run **"AI Quota Tool: Set Up Accounts"**
 4. Paste session credentials for the services you use (each is optional)
 
+![Set Up Accounts, with a tab for each service](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/setup-accounts.png)
+
 ### How to get each credential
 
-**Claude session key** (claude.ai usage bars — **not** an Anthropic Console API key)
+**Claude session key** (claude.ai usage bars - **not** an Anthropic Console API key)
 1. Open [claude.ai](https://claude.ai) in Chrome and sign in
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
 3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
 
-**GitHub Copilot** — click **Sign in with GitHub** in the setup panel. VS Code handles the OAuth flow — no token copying required. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
+**GitHub Copilot** - click **Sign in with GitHub** in the setup panel. VS Code handles the OAuth flow. You do not copy a token. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
 
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in
@@ -86,9 +94,9 @@ Kimi API keys, in SecretStorage for standalone mode. Do not claim “no credenti
 
 - Session cookies and API keys are account-level secrets. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
-- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, or GitHub APIs) for quota reads — no telemetry backend.
+- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, or GitHub APIs) for quota reads - no telemetry backend.
 - Lifecycle: **Save & Test** validates before persist; replace by saving again; **Clear saved key** removes the secret.
-- Invalid or expired sessions drop the quota ring and show a **session expired** status-bar cue; the secret is **not** auto-deleted. Open **Set Up Accounts** to replace or clear. Stale “full quota” is never invented.
+- Invalid or expired sessions remove the old reading and show **Session expired** on the card and in the status bar. The secret is **not** auto-deleted. Open **Set Up Accounts** to replace or clear. Stale “full quota” is never invented.
 - Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.
 
 ---
@@ -134,3 +142,14 @@ pnpm --filter ai-quota-tool-vscode run package
 ### Spec
 
 Pipeline product requirements: [Spec: VS Code Marketplace publish pipeline](https://github.com/BasantPandey/AIQuotaTool/issues/18)
+
+### Screenshots
+
+The images in `docs/` come from the real dashboard build. Make them again after a design change:
+
+```bash
+pnpm turbo build
+node scripts/vscode-assets.mjs
+```
+
+The script also makes the extension icon (`icons/icon128.png`) from the brand mark.

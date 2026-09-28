@@ -11,7 +11,7 @@ A pnpm + Turborepo monorepo. **V1 product surface is the VS Code extension** (se
 | Package | npm name | Purpose |
 |---|---|---|
 | `packages/core` | `@ai-quota-tool/core` | Shared types + pure utilities (merge, mappers, copilot/grok honesty, session-auth policy) — no DOM, no Node, no React |
-| `packages/ui` | `@ai-quota-tool/ui` | Shared React 19 components — pure display, no data fetching |
+| `packages/ui` | `@ai-quota-tool/ui` | Shared React 19 components and the shared look (`styles.css`, `vscode.css`) - pure display, no data fetching |
 | `packages/vscode-ext` | `ai-quota-tool-vscode` | **V1 product:** poller, credentials, optional WS server, webview, status bar |
 | `packages/chrome-ext` | `@ai-quota-tool/chrome-ext` | **V2 standalone product:** side panel dashboard, GitHub OAuth (PKCE), badge + notifications (spec: issue #38) |
 
@@ -29,14 +29,15 @@ pnpm turbo lint                           # lint (if package scripts exist)
 pnpm turbo clean                          # remove all dist/ folders
 
 # Per-package (use --filter to scope)
-pnpm --filter @ai-quota-tool/ui dev       # Vite dev server with mock data at localhost:5173
+pnpm --filter @ai-quota-tool/ui dev       # Vite dev server with mock data (?host=chrome|vscode&theme=dark|light)
 pnpm --filter @ai-quota-tool/chrome-ext build   # Vite → dist/ (load as unpacked extension)
 pnpm --filter @ai-quota-tool/chrome-ext dev     # Vite watch mode for Chrome
 pnpm --filter ai-quota-tool-vscode build  # esbuild host + vite webview → dist/
 pnpm --filter ai-quota-tool-vscode run package  # vsce → .vsix
 
 # Utilities
-node scripts/generate-icons.mjs           # regenerate PNG icons
+node scripts/store-assets.mjs             # Chrome icons + Web Store art (build chrome-ext first)
+node scripts/vscode-assets.mjs            # VS Code icon + Marketplace screenshots (build vscode-ext first)
 ```
 
 **Local VS Code testing:** Build/package vscode-ext, install `.vsix`, run **Set Up Accounts**.

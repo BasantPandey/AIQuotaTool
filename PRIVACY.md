@@ -2,13 +2,13 @@
 
 Last updated: 24 September 2026
 
-AI Quota Tool is a Chrome extension. It shows your remaining AI quota for Claude, Codex, Copilot, Grok, and Cursor, and your DeepSeek and Kimi API balance, in one side panel.
+AI Quota Tool is a Chrome extension. It shows your remaining AI quota for Claude, Codex, Copilot, Grok, Gemini, and Cursor, and your DeepSeek and Kimi API balance, in one side panel.
 
 ## What the extension reads
 
 The extension reads data only for the providers that you turn on.
 
-- It reads your own quota from claude.ai, chatgpt.com, grok.com, and cursor.com. It uses your own logged-in browser session.
+- It reads your own quota from claude.ai, chatgpt.com, grok.com, gemini.google.com, and cursor.com. It uses your own logged-in browser session.
 - It reads your GitHub Copilot seat status from api.github.com. It uses an OAuth token that you approve.
 - It reads your DeepSeek API balance from api.deepseek.com. It uses an API key that you paste.
 - It reads your Kimi API balance from api.moonshot.ai. It uses an API key that you paste.
@@ -33,7 +33,7 @@ All data stays on your device in local extension storage. Nothing is synced.
 ## How to revoke access
 
 - Any provider: turn it off in the Providers screen. The extension stops all requests to that provider.
-- Claude, Codex, Grok, and Cursor: sign out on the service website.
+- Claude, Codex, Grok, Gemini, and Cursor: sign out on the service website.
 - Copilot: disconnect in the extension. To revoke the GitHub grant fully, visit https://github.com/settings/applications.
 - DeepSeek: remove the key in the extension. To revoke the key everywhere, delete it at https://platform.deepseek.com.
 - Kimi: remove the key in the extension. To revoke the key everywhere, delete it at https://platform.kimi.ai.

@@ -7,6 +7,7 @@ import {
   CopilotLogo,
   CursorLogo,
   DeepSeekLogo,
+  GeminiLogo,
   GrokLogo,
   KimiLogo,
 } from './logos.js';
@@ -16,6 +17,7 @@ const MARKS: Record<ServiceId, (props: { size?: number }) => React.ReactNode> = 
   copilot: CopilotLogo,
   codex: CodexLogo,
   grok: GrokLogo,
+  gemini: GeminiLogo,
   cursor: CursorLogo,
   deepseek: DeepSeekLogo,
   kimi: KimiLogo,

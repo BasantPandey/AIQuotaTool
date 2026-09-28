@@ -1,0 +1,39 @@
+/* VS Code webview: use the colors and fonts of the active theme.
+   VS Code sets the --vscode-* variables on <html> and a theme class on <body>. */
+:root {
+  --aq-font: var(--vscode-font-family);
+  --aq-font-num: var(--vscode-editor-font-family, ui-monospace, Consolas, monospace);
+  --aq-bg: var(--vscode-editor-background);
+  --aq-surface: var(--vscode-sideBar-background, var(--vscode-editorWidget-background));
+  --aq-surface-raised: var(--vscode-input-background);
+  --aq-border: var(--vscode-widget-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.2)));
+  --aq-text: var(--vscode-foreground);
+  --aq-muted: var(--vscode-descriptionForeground);
+  --aq-faint: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
+  --aq-track: color-mix(in srgb, var(--vscode-foreground) 10%, transparent);
+  --aq-accent: var(--vscode-button-background);
+  --aq-on-accent: var(--vscode-button-foreground);
+  --aq-good: var(--vscode-charts-green);
+  --aq-low: var(--vscode-charts-yellow);
+  --aq-critical: var(--vscode-charts-red);
+  --aq-focus: var(--vscode-focusBorder);
+}
+
+body { font-size: var(--vscode-font-size, 13px); }
+.card a:not(.btn) { color: var(--vscode-textLink-foreground); }
+.btn:not(.btn-primary) {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+.btn:not(.btn-primary):hover { background: var(--vscode-button-secondaryHoverBackground); }
+.btn-primary:hover { background: var(--vscode-button-hoverBackground); }
+
+/* The OS color scheme can differ from the VS Code theme. Follow the theme. */
+body.vscode-dark { color-scheme: dark; --aq-grad-a: #6d7dff; --aq-grad-b: #22d3ee; }
+body.vscode-light { color-scheme: light; --aq-grad-a: #4c5cf0; --aq-grad-b: #0891b2; }
+body.vscode-high-contrast {
+  --aq-grad-a: var(--vscode-charts-blue);
+  --aq-grad-b: var(--vscode-charts-blue);
+  --aq-border: var(--vscode-contrastBorder);
+  --aq-track: color-mix(in srgb, var(--vscode-foreground) 30%, transparent);
+}

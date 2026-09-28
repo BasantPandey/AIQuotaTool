@@ -20,7 +20,7 @@ export class QuotaStatusBar {
     if (states.length === 0) {
       this.item.text = '$(pulse) AI Quota';
       this.item.command = this.openPanelCommand;
-      this.item.color = undefined;
+      this.item.backgroundColor = undefined;
       return;
     }
 
@@ -42,7 +42,7 @@ export class QuotaStatusBar {
     const lowest = lowestPressureAmong(states);
     const emptyBalance = states.some((s) => s.honesty === 'balance_empty');
     // No percentage pressure (empty or honesty-only) is not treated as 100% remaining.
-    this.item.color =
+    this.item.backgroundColor =
       emptyBalance || (lowest != null && lowest < 10)
         ? new vscode.ThemeColor('statusBarItem.warningBackground')
         : undefined;
@@ -52,7 +52,7 @@ export class QuotaStatusBar {
     this.item.text = '$(key) AI Quota: Set up accounts';
     this.item.command = this.configureCommand;
     this.item.tooltip = 'Click to configure your AI service accounts';
-    this.item.color = undefined;
+    this.item.backgroundColor = undefined;
   }
 
   /** Empty dual-mode state — prefer setup over Chrome-only "not connected". */
@@ -74,7 +74,7 @@ export class QuotaStatusBar {
         : `$(key) AI Quota: sessions expired`;
     this.item.command = this.configureCommand;
     this.item.tooltip = `${labels}: session invalid or expired. Open Set Up Accounts to replace or clear the saved cookie.`;
-    this.item.color = new vscode.ThemeColor('statusBarItem.warningBackground');
+    this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
   dispose(): void {
