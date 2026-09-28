@@ -118,7 +118,7 @@ Releases go to the Visual Studio Marketplace under publisher **BasantPandey** vi
 2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**
    - Name: `VSCE_PAT`
    - Value: the PAT (never commit it)
-3. Confirm branch protection allows `github-actions[bot]` to push version commits/tags to `main`, or use a token with contents write if protection blocks `GITHUB_TOKEN`.
+3. Keep **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests** turned on. The workflow opens a release PR, because `main` is protected.
 
 ### Run a release
 
@@ -128,8 +128,9 @@ Releases go to the Visual Studio Marketplace under publisher **BasantPandey** vi
    - **bump** - `patch` (default), `minor`, or `major`
    - **dry_run** - leave **checked** to package only (no bump, no Marketplace). Uncheck for a live release.
 3. Prefer a **dry run** first; download the `.vsix` artifact and confirm it installs.
-4. Live run: uncheck dry_run → workflow bumps `package.json`, commits, tags `vscode-vX.Y.Z`, packages, then `vsce publish`.
-5. Verify the listing: [Marketplace manage (BasantPandey)](https://marketplace.visualstudio.com/manage/publishers/basantpandey)
+4. Live run: uncheck dry_run → workflow bumps `package.json`, commits to `release/vscode-vX.Y.Z`, tags `vscode-vX.Y.Z`, opens a release PR, packages, then runs `vsce publish`.
+5. Merge the release PR after CI passes. This puts the new version on `main`.
+6. Verify the listing: [Marketplace manage (BasantPandey)](https://marketplace.visualstudio.com/manage/publishers/basantpandey)
 
 ### Local package (no publish)
 
