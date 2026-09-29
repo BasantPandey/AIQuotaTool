@@ -2,7 +2,7 @@
   "name": "ai-quota-tool-vscode",
   "displayName": "AI Quota Tool",
   "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus DeepSeek and Kimi balance, in VS Code.",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "publisher": "BasantPandey",
   "license": "Apache-2.0",
   "repository": {
