@@ -5,6 +5,7 @@ import { QuotaPanel } from './quota-panel.js';
 import { QuotaStatusBar } from './status-bar.js';
 import { CredentialManager } from './credentials.js';
 import { KeyStore } from './key-store.js';
+import { CopilotAuth } from './copilot-auth.js';
 import { QuotaPoller } from './quota-poller.js';
 import { PanelController } from './panel-controller.js';
 
@@ -14,11 +15,12 @@ const CONFIGURE_COMMAND = 'aiQuotaTool.configure';
 export function activate(context: vscode.ExtensionContext): void {
   const credentials = new CredentialManager(context.secrets);
   const keys = new KeyStore(context.globalState, context.secrets);
+  const copilot = new CopilotAuth(context.globalState);
   const poller = new QuotaPoller();
   const wsServer = new QuotaWsServer();
   const panel = new QuotaPanel(context.extensionUri);
   const statusBar = new QuotaStatusBar(OPEN_PANEL_COMMAND, CONFIGURE_COMMAND);
-  const controller = new PanelController(panel, credentials, keys, poller);
+  const controller = new PanelController(panel, credentials, copilot, keys, poller);
   panel.onMessage((msg) => controller.handle(msg));
 
   const applyStates = (states: QuotaState[]): void => {
@@ -33,16 +35,15 @@ export function activate(context: vscode.ExtensionContext): void {
   };
 
   poller.onUpdate(applyStates);
-  // Move 0.9.x API keys to named Keys before the first poll reads the Key list.
-  void keys
-    .moveLegacy()
+  // Move 0.9.x API keys to named Keys before the first poll reads the Key list. Delete the old GitHub token.
+  void Promise.all([keys.moveLegacy(), credentials.deleteLegacyGithubToken()])
     .catch((e: unknown) => console.error('[ai-quota-tool] key move:', e instanceof Error ? e.message : e))
     .then(async () => {
-      if (!(await credentials.hasAny()) && keys.list().length === 0) statusBar.showSetupPrompt();
+      if (!(await credentials.hasAny()) && !copilot.isSignedIn() && keys.list().length === 0) statusBar.showSetupPrompt();
       // Standalone polling — fetches quota directly from Node.js (no Chrome needed).
       poller.start({
         credentials: () => credentials.get(),
-        githubToken: () => credentials.getGithubToken(),
+        githubToken: () => copilot.token(),
         keys: () => keys.withSecrets(),
       });
     });

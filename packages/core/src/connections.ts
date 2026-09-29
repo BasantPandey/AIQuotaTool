@@ -22,6 +22,7 @@ export function isConnectedReading(state: QuotaState): boolean {
     state.monthlyPct != null ||
     (state.balance != null && state.balance.infos.length > 0) ||
     state.spend != null ||
+    state.creditsUsed != null ||
     state.honesty === 'usage_unknown' ||
     state.honesty === 'seat_active_usage_unknown' ||
     state.honesty === 'no_plan' ||

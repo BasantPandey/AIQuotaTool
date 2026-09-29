@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import {
   applyKeyBudgets,
-  type DeviceCode,
   defaultKeyName,
   isValidBudget,
   keyCardType,
@@ -10,12 +9,11 @@ import {
   isUniqueKeyName,
   KEY_SERVICES,
   normalizeApiKey,
-  pollDeviceToken,
-  requestDeviceCode,
   SERVICE_IDS,
   SERVICE_LABELS,
   type ServiceId,
 } from '@ai-quota-tool/core';
+import type { CopilotAuth } from './copilot-auth.js';
 import type { CredentialManager } from './credentials.js';
 import type { KeyStore } from './key-store.js';
 import type { QuotaPanel } from './quota-panel.js';
@@ -38,24 +36,6 @@ import type {
 const ACCOUNT_SERVICES: readonly AccountService[] = SERVICE_IDS.filter(
   (id): id is AccountService => id === 'claude' || id === 'copilot' || id === 'codex' || id === 'grok',
 );
-
-async function postJson(url: string, body: Record<string, string>): Promise<unknown> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
-}
-
-function abortableSleep(signal: AbortSignal): (ms: number) => Promise<boolean> {
-  return (ms) =>
-    new Promise((resolve) => {
-      if (signal.aborted) return resolve(false);
-      const timer = setTimeout(() => resolve(!signal.aborted), ms);
-      signal.addEventListener('abort', () => (clearTimeout(timer), resolve(false)), { once: true });
-    });
-}
 
 function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -90,15 +70,13 @@ function grokSsoValue(cookie: string): string {
 
 /** Handles panel actions, and builds the snapshot that the panel shows. */
 export class PanelController {
-  /** Running GitHub device flow. Cancel, a new sign-in, or a sign-out aborts it. */
-  private githubAbort: AbortController | null = null;
-  private githubCode: DeviceCode | null = null;
   /** Status text from the last sign-in in this window, for example "Connected as Jane". */
   private details = new Map<AccountService, string>();
 
   constructor(
     private readonly panel: QuotaPanel,
     private readonly credentials: CredentialManager,
+    private readonly copilot: CopilotAuth,
     private readonly keys: KeyStore,
     private readonly poller: QuotaPoller,
   ) {}
@@ -121,16 +99,6 @@ export class PanelController {
       case 'github_sign_in':
         await this.githubSignIn();
         break;
-      case 'github_open':
-        if (this.githubCode) {
-          await vscode.env.clipboard.writeText(this.githubCode.userCode);
-          await vscode.env.openExternal(vscode.Uri.parse(this.githubCode.verificationUri));
-        }
-        break;
-      case 'github_cancel':
-        this.githubAbort?.abort();
-        this.form({ target: 'copilot', status: 'idle' });
-        break;
       case 'key_add':
         await this.addKey(msg.service, msg.name, msg.value, msg.adminConfirmed);
         break;
@@ -147,7 +115,7 @@ export class PanelController {
   }
 
   private async snapshot(): Promise<PanelSnapshot> {
-    const [creds, githubToken] = await Promise.all([this.credentials.get(), this.credentials.getGithubToken()]);
+    const [creds, githubToken] = await Promise.all([this.credentials.get(), this.copilot.token()]);
     const secrets: Record<AccountService, string | undefined> = {
       claude: creds.claudeSessionKey,
       copilot: githubToken,
@@ -155,8 +123,11 @@ export class PanelController {
       grok: creds.grokSsoCookie,
     };
     const reauth = this.poller.getReauthNeeded();
+    // Copilot is connected but the VS Code GitHub session is gone: the user signs in again.
+    const ended = (service: AccountService) =>
+      reauth.includes(service) || (service === 'copilot' && this.copilot.isSignedIn() && !githubToken);
     const accounts = ACCOUNT_SERVICES.map((service): AccountRow => {
-      const status = !secrets[service] ? 'none' : reauth.includes(service) ? 'ended' : 'connected';
+      const status = ended(service) ? 'ended' : !secrets[service] ? 'none' : 'connected';
       const detail = status === 'connected' ? this.details.get(service) : undefined;
       return { service, status, ...(detail != null ? { detail } : {}) };
     });
@@ -203,43 +174,26 @@ export class PanelController {
     if (service === 'claude') await this.credentials.clearClaudeKey();
     else if (service === 'codex') await this.credentials.clearCodexToken();
     else if (service === 'grok') await this.credentials.clearGrokSso();
-    else {
-      this.githubAbort?.abort();
-      await this.credentials.clearGithubToken();
-    }
+    else await this.copilot.signOut();
     this.details.delete(service);
     this.form({ target: service, status: 'idle' });
     this.poller.dropConnection(service);
     await this.refresh();
   }
 
-  /** GitHub device flow: show the code in the webview, poll until the user approves, store the token. */
+  /** One VS Code consent dialog for the built-in GitHub sign-in. No device code. */
   private async githubSignIn(): Promise<void> {
-    this.githubAbort?.abort();
-    const abort = new AbortController();
-    this.githubAbort = abort;
     this.form({ target: 'copilot', status: 'testing' });
     try {
-      const code = await requestDeviceCode(postJson);
-      this.githubCode = code;
-      this.panel.post({ type: 'github_device', userCode: code.userCode });
-      const token = await pollDeviceToken(code, { post: postJson, sleep: abortableSleep(abort.signal), now: Date.now });
-      if (token == null) return;
-      await this.credentials.setGithubToken(token);
-      this.form({ target: 'copilot', status: 'ok' });
-      await this.refresh();
-      await this.poller.pollNow();
-    } catch (e) {
-      if (!abort.signal.aborted) {
-        this.form({ target: 'copilot', status: 'error', detail: errorText(e) || 'GitHub sign-in failed. Try again.' });
-      }
-    } finally {
-      if (this.githubAbort === abort) {
-        this.githubAbort = null;
-        this.githubCode = null;
-        this.panel.post({ type: 'github_device', userCode: null });
-      }
+      await this.copilot.signIn();
+    } catch {
+      this.form({ target: 'copilot', status: 'error', detail: 'GitHub sign-in did not finish. Click Sign in with GitHub to try again.' });
+      return;
     }
+    this.form({ target: 'copilot', status: 'ok' });
+    this.poller.pollCopilotSoon();
+    await this.refresh();
+    await this.poller.pollNow();
   }
 
   private async addKey(service: ServiceId, rawName: string, rawValue: string, adminConfirmed: boolean): Promise<void> {

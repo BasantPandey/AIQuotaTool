@@ -33,16 +33,13 @@ export interface FormStatus {
 export type HostMessage =
   | { type: 'snapshot'; snapshot: PanelSnapshot }
   | { type: 'show_tab'; tab: PanelTab }
-  | { type: 'form_status'; form: FormStatus }
-  | { type: 'github_device'; userCode: string | null };
+  | { type: 'form_status'; form: FormStatus };
 
 export type WebviewMessage =
   | { type: 'ready' }
   | { type: 'account_save'; service: AccountService; value: string }
   | { type: 'account_sign_out'; service: AccountService }
   | { type: 'github_sign_in' }
-  | { type: 'github_open' }
-  | { type: 'github_cancel' }
   /** `adminConfirmed`: the user ticked "This is an Admin key" (needed for an Admin key provider). */
   | { type: 'key_add'; service: ServiceId; name: string; value: string; adminConfirmed: boolean }
   /** A null budget clears it. */

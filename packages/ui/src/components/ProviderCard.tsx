@@ -56,7 +56,7 @@ export function ProviderCard({ service, state, hint, pendingText, action }: Prop
     : [
         { label: 'Session', pct: state.sessionPct, resetsAt: state.sessionResetsAt },
         { label: 'Weekly', pct: state.weeklyPct, resetsAt: state.weeklyResetsAt },
-        { label: 'Monthly', pct: state.monthlyPct, resetsAt: state.monthlyResetsAt },
+        { label: state.monthlyLabel ?? 'Monthly', pct: state.monthlyPct, resetsAt: state.monthlyResetsAt },
       ].filter((bar): bar is { label: string; pct: number; resetsAt: number | undefined } => bar.pct != null);
   const infos = state?.balance?.infos ?? [];
   const info =
@@ -103,6 +103,12 @@ export function ProviderCard({ service, state, hint, pendingText, action }: Prop
             </div>
           </div>
         ))}
+
+      {!needsAction && state?.creditsUsed != null && (
+        <p className="card-note">
+          <span className="num">{state.creditsUsed.toLocaleString('en-US')}</span> AI credits used. This pool has no limit.
+        </p>
+      )}
 
       {info != null && <p className="card-note">{info}</p>}
 

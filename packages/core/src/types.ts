@@ -13,8 +13,9 @@ export {
 
 export type ClaudeSubcategoryName = 'Sonnet' | 'Designs' | 'Daily Routines';
 
+/** One sub-bucket of a plan, for example the Claude "Sonnet" limit or the Copilot "Chat" quota. */
 export interface ClaudeSubcategory {
-  name: ClaudeSubcategoryName;
+  name: ClaudeSubcategoryName | (string & {});
   /** 0–100, percentage USED */
   usedPct: number;
   /** Human-readable label, e.g. "97% left" */
@@ -109,6 +110,10 @@ export interface QuotaState {
   monthlyPct?: number;
   /** Unix timestamp (ms) when the billing month resets. Omit when monthlyPct is absent. */
   monthlyResetsAt?: number;
+  /** Name of the monthly bar when it is one named quota, for example "Premium requests". Default: "Monthly". */
+  monthlyLabel?: string;
+  /** AI credits used from a pool with no limit (Copilot). A count, never a percent. */
+  creditsUsed?: number;
   /** Claude-only breakdown by sub-bucket */
   subcategories?: ClaudeSubcategory[];
   /**

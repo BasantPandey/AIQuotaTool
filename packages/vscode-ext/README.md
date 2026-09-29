@@ -48,7 +48,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
 3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
 
-**GitHub Copilot** - click **Sign in with GitHub** on the Accounts tab. The panel shows a short code. Click **Copy code and open GitHub**, paste the code, and approve. You do not copy a token. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
+**GitHub Copilot** - click **Sign in with GitHub** on the Accounts tab. VS Code shows one dialog to use your VS Code GitHub account. You do not copy a code or a token. The card shows the percent left and the reset time for each limited quota (premium requests, or chat and completions on the Free plan). A quota with no limit shows the AI credits used. If GitHub does not give these numbers, the card shows your seat status instead of inventing 100%. Copilot updates every 5 minutes.
 
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in
@@ -98,7 +98,7 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 
 ## Privacy and security
 
-**This extension stores** the Claude `sessionKey`, the ChatGPT session token, the Grok `sso` cookie, each API key that you add, and the GitHub sign-in token. It keeps them in VS Code SecretStorage. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
+**This extension stores** the Claude `sessionKey`, the ChatGPT session token, the Grok `sso` cookie, and each API key that you add. Copilot uses the VS Code GitHub sign-in, and VS Code keeps that token. It keeps them in VS Code SecretStorage. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
 
 - Session cookies and API keys are account-level secrets. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.

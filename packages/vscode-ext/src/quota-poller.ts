@@ -3,10 +3,11 @@ import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { connectionIdOf, connectionKindOf, sessionAuthFailureAction, upsertQuotaState } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
 import type { KeyWithSecret } from './key-store.js';
-import { fetchClaudeUsage, fetchCodexUsage, fetchCopilotSeat, fetchGrokUsage, fetchKeyReading } from './session-fetch.js';
+import { fetchClaudeUsage, fetchCodexUsage, fetchCopilotUsage, fetchGrokUsage, fetchKeyReading } from './session-fetch.js';
 
 export interface PollSources {
   credentials: () => Promise<Credentials>;
+  /** The VS Code GitHub session token, when the user connected Copilot. */
   githubToken: () => Promise<string | undefined>;
   keys: () => Promise<KeyWithSecret[]>;
 }
@@ -21,6 +22,8 @@ interface Job {
 }
 
 const POLL_INTERVAL_MS = 60_000;
+/** GitHub does not document copilot_internal/user. Poll it no more often than every 5 minutes. */
+const COPILOT_INTERVAL_MS = 5 * 60_000;
 
 function accountJob(service: ServiceId, secret: string | undefined, fetch: (secret: string) => Promise<QuotaState>): Job[] {
   return secret ? [{ id: service, service, promise: fetch(secret) }] : [];
@@ -38,6 +41,8 @@ export class QuotaPoller {
   private pollPromise: Promise<void> | null = null;
   /** If pollNow is requested while a poll is in-flight, run one more after it finishes. */
   private pendingPoll = false;
+  /** The next Copilot poll runs at or after this time (ms). */
+  private copilotDueAt = 0;
 
   onUpdate(listener: UpdateListener): () => void {
     this.listeners.add(listener);
@@ -58,6 +63,11 @@ export class QuotaPoller {
     void this.pollNow();
     if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => void this.pollNow(), POLL_INTERVAL_MS);
+  }
+
+  /** Poll Copilot in the next poll, for example after a sign-in. */
+  pollCopilotSoon(): void {
+    this.copilotDueAt = 0;
   }
 
   stop(): void {
@@ -97,15 +107,17 @@ export class QuotaPoller {
     const sources = this.sources;
     if (!sources) return;
 
+    const copilotDue = Date.now() >= this.copilotDueAt;
     const [creds, githubToken, keys] = await Promise.all([
       sources.credentials(),
-      sources.githubToken(),
+      copilotDue ? sources.githubToken() : Promise.resolve(undefined),
       sources.keys(),
     ]);
+    if (githubToken) this.copilotDueAt = Date.now() + COPILOT_INTERVAL_MS;
 
     const jobs: Job[] = [
       ...accountJob('claude', creds.claudeSessionKey, fetchClaudeUsage),
-      ...accountJob('copilot', githubToken, fetchCopilotSeat),
+      ...accountJob('copilot', githubToken, fetchCopilotUsage),
       ...accountJob('codex', creds.codexSessionToken, fetchCodexUsage),
       ...accountJob('grok', creds.grokSsoCookie, fetchGrokUsage),
       ...keys.map(({ key, secret }): Job => ({

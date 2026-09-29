@@ -4,8 +4,8 @@ const KEY_CLAUDE_COOKIE = 'aiQuotaTool.claudeSessionKey';
 const KEY_CODEX_COOKIE = 'aiQuotaTool.codexSessionToken';
 /** grok.com `sso` session cookie (JWT). Also sent as sso-rw for host parity. */
 const KEY_GROK_SSO = 'aiQuotaTool.grokSsoCookie';
-/** GitHub OAuth token from the device flow (Copilot seat check). */
-const KEY_GITHUB_TOKEN = 'aiQuotaTool.githubToken';
+/** GitHub token from the 0.9.x device flow. Copilot now uses the VS Code GitHub sign-in. */
+const KEY_GITHUB_TOKEN_LEGACY = 'aiQuotaTool.githubToken';
 // Accidentally stored Anthropic API keys in 0.5.x — not used for claude.ai usage.
 const KEY_CLAUDE_API_LEGACY = 'aiQuotaTool.claudeApiKey';
 
@@ -34,20 +34,12 @@ export class CredentialManager {
 
   async hasAny(): Promise<boolean> {
     const creds = await this.get();
-    if (creds.claudeSessionKey || creds.codexSessionToken || creds.grokSsoCookie) return true;
-    return !!(await this.getGithubToken());
+    return !!(creds.claudeSessionKey || creds.codexSessionToken || creds.grokSsoCookie);
   }
 
-  getGithubToken(): Promise<string | undefined> {
-    return Promise.resolve(this.secrets.get(KEY_GITHUB_TOKEN));
-  }
-
-  async setGithubToken(token: string): Promise<void> {
-    await this.secrets.store(KEY_GITHUB_TOKEN, token);
-  }
-
-  async clearGithubToken(): Promise<void> {
-    await this.secrets.delete(KEY_GITHUB_TOKEN);
+  /** Delete the 0.9.x device-flow token. Safe to run on each start. */
+  async deleteLegacyGithubToken(): Promise<void> {
+    await this.secrets.delete(KEY_GITHUB_TOKEN_LEGACY);
   }
 
   async setClaudeKey(key: string): Promise<void> {

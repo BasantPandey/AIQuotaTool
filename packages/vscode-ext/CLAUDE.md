@@ -10,7 +10,8 @@ VS Code extension. **V1 product surface** - first-class standalone quota monitor
 | `src/session-fetch.ts` | Shared Claude/Codex/Copilot/Grok HTTP + core pure mappers (poller + Save & Test) |
 | `src/credentials.ts` | SecretStorage Account secrets: Claude sessionKey / Codex token / Grok sso / GitHub token |
 | `src/key-store.ts` | Named Keys: list in `globalState` (`aiQuotaTool.keys`, no secrets), value in SecretStorage (`aiQuotaTool.key.<id>`). Moves 0.9.x DeepSeek and Kimi secrets on start. Tested with vitest |
-| `src/panel-controller.ts` | Panel actions (sign in, sign out, add and remove Keys) and the snapshot that the panel shows. Runs the GitHub device flow from `@ai-quota-tool/core` |
+| `src/panel-controller.ts` | Panel actions (sign in, sign out, add and remove Keys) and the snapshot that the panel shows. Copilot sign-in goes through `copilot-auth.ts` |
+| `src/copilot-auth.ts` | Copilot uses the VS Code built-in GitHub session (`vscode.authentication.getSession("github", ["read:user"])`). Our device-flow token fails on `copilot_internal/user`. Keeps only a flag in `globalState`. The 0.9.x token is deleted on start |
 | `src/ws-server.ts` | WebSocket server `127.0.0.1:54321` — optional Chrome sink |
 | `src/quota-panel.ts` | The one WebviewPanel: Usage, Accounts, and Keys tabs. `open(tab)` shows a tab |
 | `src/status-bar.ts` | Status bar: min(session, weekly); setup / re-auth prompts |

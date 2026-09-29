@@ -25,8 +25,6 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
     queryClient.setQueryData(['tab'], msg.tab);
   } else if (msg.type === 'form_status') {
     queryClient.setQueryData(['form', msg.form.target], msg.form);
-  } else if (msg.type === 'github_device') {
-    queryClient.setQueryData(['github-code'], msg.userCode);
   }
 });
 
@@ -48,8 +46,4 @@ export function useForm(target: string): [FormStatus, (form: FormStatus) => void
     initialData: IDLE(target),
   });
   return [data, (form) => queryClient.setQueryData(['form', target], form)];
-}
-
-export function useGithubCode(): string | null {
-  return useQuery<string | null>({ queryKey: ['github-code'], queryFn: () => null, initialData: null }).data;
 }

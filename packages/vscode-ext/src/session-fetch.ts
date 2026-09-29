@@ -5,6 +5,8 @@
 import {
   apiKeyInvalid,
   combineGrokQuotaState,
+  copilotAuthUnavailable,
+  mapCopilotUser,
   deepseekApiKeyInvalid,
   deepseekBalanceUnreadable,
   extractGrokWeeklyUsage,
@@ -230,6 +232,22 @@ export async function fetchCodexUsage(sessionToken: string): Promise<QuotaState>
   if (!res.ok) throw new Error(`Codex usage API: ${res.status}`);
   const data = JSON.parse(text) as WhamUsageResponse;
   return mapCodexUsage(data);
+}
+
+/**
+ * Copilot quota from `copilot_internal/user` (the source that VS Code itself uses).
+ * An unknown shape or a 404 falls back to the seat check. It never invents 100%.
+ */
+export async function fetchCopilotUsage(token: string): Promise<QuotaState> {
+  const res = await fetch('https://api.github.com/copilot_internal/user', {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 401) return copilotAuthUnavailable();
+  if (res.ok) {
+    const state = mapCopilotUser(await res.json().catch(() => null));
+    if (state != null) return state;
+  }
+  return fetchCopilotSeat(token);
 }
 
 /** Copilot seat status → honest QuotaState (never invents remaining %). */

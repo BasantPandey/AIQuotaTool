@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { SERVICE_LABELS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
 import type { AccountRow, AccountService, FormStatus } from './protocol.js';
-import { send, useForm, useGithubCode } from './store.js';
+import { send, useForm } from './store.js';
 
 type PasteService = Exclude<AccountService, 'copilot'>;
 
 const METHOD: Record<AccountService, string> = {
   claude: 'Paste the claude.ai session cookie',
-  copilot: 'GitHub sign-in with a device code',
+  copilot: 'VS Code GitHub sign-in',
   codex: 'Paste the chatgpt.com session cookie',
   grok: 'Paste the grok.com session cookie',
 };
@@ -137,32 +137,8 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
   );
 }
 
-function GithubDevice({ code }: { code: string }) {
-  return (
-    <div className="row-form">
-      <div className="device" role="status">
-        <div className="device-label">Type this code on GitHub</div>
-        <div className="device-code num">{code}</div>
-        <div className="device-actions">
-          <button className="btn btn-primary" onClick={() => send({ type: 'github_open' })}>
-            Copy code and open GitHub
-          </button>
-          <button className="btn btn-ghost" onClick={() => send({ type: 'github_cancel' })}>
-            Cancel
-          </button>
-        </div>
-        <div className="device-wait">
-          <span className="dot warn" />
-          Waiting for you to approve on GitHub
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; onOpen: (open: boolean) => void }) {
   const [form, setForm] = useForm(row.service);
-  const githubCode = useGithubCode();
   const label = SERVICE_LABELS[row.service];
 
   let action;
@@ -182,7 +158,7 @@ function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; on
           send({ type: 'github_sign_in' });
         }}
       >
-        Sign in with GitHub
+        {row.status === 'ended' ? 'Sign in again' : 'Sign in with GitHub'}
       </button>
     );
   } else if (!open) {
@@ -207,8 +183,7 @@ function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; on
       {row.service !== 'copilot' && open && row.status !== 'connected' && (
         <PasteForm service={row.service} onClose={() => onOpen(false)} />
       )}
-      {row.service === 'copilot' && githubCode != null && <GithubDevice code={githubCode} />}
-      {row.service === 'copilot' && githubCode == null && form.status === 'error' && (
+      {row.service === 'copilot' && form.status === 'error' && (
         <div className="row-form">
           <FormNote form={form} />
         </div>
