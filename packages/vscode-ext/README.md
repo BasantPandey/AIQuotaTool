@@ -40,7 +40,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
 3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
 
-**GitHub Copilot** - click **Sign in with GitHub** in the setup panel. VS Code handles the OAuth flow. You do not copy a token. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
+**GitHub Copilot** - click **Sign in with GitHub** in the setup panel. The panel shows a short code. Click **Copy code and open GitHub**, paste the code, and approve. You do not copy a token. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
 
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in
@@ -89,7 +89,7 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 ## Privacy and security
 
 **This extension stores** Claude `sessionKey`, ChatGPT session tokens, and Grok `sso` cookies, plus DeepSeek and
-Kimi API keys, in SecretStorage for standalone mode. Do not claim “no credentials stored.” See
+Kimi API keys and the GitHub sign-in token, in SecretStorage for standalone mode. Do not claim “no credentials stored.” See
 [`docs/GROK-SPEC.md`](../../docs/GROK-SPEC.md).
 
 - Session cookies and API keys are account-level secrets. Treat them like passwords.

@@ -34,7 +34,7 @@ Fetchers are registered in `src/background/providers.ts`, one factory per `Servi
 
 ## GitHub OAuth
 - GitHub OAuth App `Ov23liNRlhzedfjImsrQ` with **device flow** turned on. The web flow needs a client secret, so the extension does not use it
-- The side panel asks `github.com/login/device/code` for a code, shows it, and polls `login/oauth/access_token`. Pure step logic: `nextDevicePollStep` in core
+- The side panel asks `github.com/login/device/code` for a code, shows it, and polls `login/oauth/access_token`. Shared flow in core (`requestDeviceCode`, `pollDeviceToken`), also used by VS Code
 - The worker polls quota when the token appears in storage. No silent re-auth: OAuth App tokens do not expire on a schedule; after a revoke the card shows "Sign in needed"
 - No `identity` permission and no callback URL
 
