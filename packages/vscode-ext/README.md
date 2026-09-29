@@ -2,6 +2,8 @@
 
 Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus your **DeepSeek** and **Kimi** API balance - live in VS Code.
 
+**Privacy:** the extension stores the session cookies and API keys that you paste in VS Code SecretStorage on this machine. It sends each one only to its own service. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
+
 ![AI Quota dashboard beside the code editor. The status bar shows Claude 9% in amber.](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-dark.png)
 
 ---
@@ -18,9 +20,9 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 - **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
 - **Automatic refresh** - polls every 60 seconds in the background.
 
-![Dashboard in a wide editor tab, with cards for six services]({RAW}/dashboard-wide.png)
+![Dashboard in a wide editor tab, with cards for six services](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-wide.png)
 
-![Dashboard in the Light Modern theme]({RAW}/dashboard-light.png)
+![Dashboard in the Light Modern theme](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-light.png)
 
 ---
 
@@ -88,9 +90,7 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 
 ## Privacy and security
 
-**This extension stores** Claude `sessionKey`, ChatGPT session tokens, and Grok `sso` cookies, plus DeepSeek and
-Kimi API keys and the GitHub sign-in token, in SecretStorage for standalone mode. Do not claim “no credentials stored.” See
-[`docs/GROK-SPEC.md`](../../docs/GROK-SPEC.md).
+**This extension stores** the Claude `sessionKey`, the ChatGPT session token, the Grok `sso` cookie, the DeepSeek and Kimi API keys, and the GitHub sign-in token. It keeps them in VS Code SecretStorage. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
 
 - Session cookies and API keys are account-level secrets. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.

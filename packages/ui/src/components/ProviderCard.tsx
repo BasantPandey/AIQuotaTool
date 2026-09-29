@@ -92,7 +92,7 @@ export function ProviderCard({ service, state, hint, action }: Props) {
       {!needsAction &&
         infos.map((row) => (
           <div key={row.currency} className="balance">
-            <div className={state?.honesty === 'balance_empty' ? 'balance-total num empty' : 'balance-total num'}>
+            <div className={state?.honesty === 'balance_empty' ? 'balance-total num zero' : 'balance-total num'}>
               {formatAccountBalance(row.total, row.currency)}
             </div>
             <div className="balance-sub">

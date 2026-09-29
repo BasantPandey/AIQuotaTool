@@ -155,7 +155,7 @@ html, body {
 /* Balance providers show money, not a percent. */
 .balance { margin-top: 12px; }
 .balance-total { font-size: 22px; font-weight: 600; }
-.balance-total.empty { color: var(--aq-critical); }
+.balance-total.zero { color: var(--aq-critical); }
 .balance-sub { font-size: 11px; color: var(--aq-muted); margin-top: 2px; }
 
 /* The tightest limit across all providers. */
