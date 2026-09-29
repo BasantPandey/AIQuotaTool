@@ -152,9 +152,18 @@ jobs:
         working-directory: packages/vscode-ext
         run: |
           set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          # Fail early with a clear message when the identity is not a publisher member.
+          npx vsce verify-pat --azure-credential BasantPandey
           # Publish the exact VSIX that the artifact step uploaded.
-          npx vsce publish --packagePath "ai-quota-tool-vscode-${{ steps.version.outputs.version }}.vsix" --skip-duplicate --azure-credential
-          echo "Published BasantPandey.ai-quota-tool-vscode@${{ steps.version.outputs.version }} to Visual Studio Marketplace"
+          OUT="$(npx vsce publish --packagePath "ai-quota-tool-vscode-${VERSION}.vsix" --skip-duplicate --azure-credential 2>&1)"
+          echo "${OUT}"
+          if grep -q "already published" <<<"${OUT}"; then
+            echo "::warning::Version ${VERSION} is already on the Marketplace. This run published nothing."
+            echo "Marketplace already had ${VERSION}. This run published nothing." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Published BasantPandey.ai-quota-tool-vscode@${VERSION} to Visual Studio Marketplace"
+          fi
 
       - name: Summary
         run: |
