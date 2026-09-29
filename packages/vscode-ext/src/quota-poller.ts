@@ -1,12 +1,6 @@
 // Node.js poller — credentials from SecretStorage; remaining math in core pure mappers.
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
-import {
-  deepseekApiKeyRequired,
-  grokBrowserSessionRequired,
-  kimiApiKeyRequired,
-  sessionAuthFailureAction,
-  upsertQuotaState,
-} from '@ai-quota-tool/core';
+import { sessionAuthFailureAction, upsertQuotaState } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
 import {
   fetchClaudeUsage,
@@ -22,6 +16,8 @@ type GetCredentials = () => Promise<Credentials>;
 type UpdateListener = (states: QuotaState[]) => void;
 
 const POLL_INTERVAL_MS = 60_000;
+
+const asKey = (state: QuotaState): QuotaState => ({ ...state, kind: 'key' });
 
 // ──── Poller ────────────────────────────────────────────────────────────────
 
@@ -125,14 +121,14 @@ export class QuotaPoller {
       {
         service: 'deepseek',
         promise: creds.deepseekApiKey
-          ? fetchDeepSeekBalance(creds.deepseekApiKey)
-          : Promise.resolve(deepseekApiKeyRequired()),
+          ? fetchDeepSeekBalance(creds.deepseekApiKey).then(asKey)
+          : Promise.reject('no credential'),
       },
       {
         service: 'kimi',
         promise: creds.kimiApiKey
-          ? fetchKimiBalance(creds.kimiApiKey)
-          : Promise.resolve(kimiApiKeyRequired()),
+          ? fetchKimiBalance(creds.kimiApiKey).then(asKey)
+          : Promise.reject('no credential'),
       },
     ];
 
@@ -163,12 +159,6 @@ export class QuotaPoller {
           }
         }
       }
-    }
-
-    // No Grok secret yet (and no fresher Chrome push): honest setup cue, not fake %.
-    if (!creds.grokSsoCookie && !this.latestStates.some((s) => s.service === 'grok')) {
-      this.upsert(grokBrowserSessionRequired());
-      changed = true;
     }
 
     if (changed) {

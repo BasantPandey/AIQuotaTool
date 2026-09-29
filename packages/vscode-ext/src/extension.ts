@@ -5,7 +5,7 @@ import { QuotaPanel } from './quota-panel.js';
 import { QuotaStatusBar } from './status-bar.js';
 import { CredentialManager } from './credentials.js';
 import { QuotaPoller } from './quota-poller.js';
-import { CredentialPanel } from './credential-panel.js';
+import { PanelController } from './panel-controller.js';
 
 const OPEN_PANEL_COMMAND = 'aiQuotaTool.openPanel';
 const CONFIGURE_COMMAND = 'aiQuotaTool.configure';
@@ -16,7 +16,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const wsServer = new QuotaWsServer();
   const panel = new QuotaPanel(context.extensionUri);
   const statusBar = new QuotaStatusBar(OPEN_PANEL_COMMAND, CONFIGURE_COMMAND);
-  const credPanel = new CredentialPanel(context.extensionUri, credentials);
+  const controller = new PanelController(panel, credentials, poller);
+  panel.onMessage((msg) => controller.handle(msg));
 
   const applyStates = (states: QuotaState[]): void => {
     const reauth = poller.getReauthNeeded();
@@ -25,7 +26,7 @@ export function activate(context: vscode.ExtensionContext): void {
     } else {
       statusBar.update(states);
     }
-    panel.pushStates(states, reauth);
+    if (panel.isOpen) void controller.refresh();
   };
 
   // Show setup prompt if no credentials are saved yet
@@ -42,41 +43,20 @@ export function activate(context: vscode.ExtensionContext): void {
   poller.start(() => credentials.get(), () => credentials.getGithubToken());
   poller.onUpdate(applyStates);
 
-  // After Save & Test (or Done), clear re-auth flag and re-poll.
-  credPanel.setOnSaved((service) => {
-    if (service === 'claude' || service === 'codex' || service === 'grok') {
-      poller.clearReauth(service);
-    }
-    void poller.pollNow();
-  });
-  // After clear, drop that service's reading (do not leave stale healthy rings).
-  credPanel.setOnCleared((service) => {
-    poller.dropService(service);
-    applyStates(poller.getLatestStates());
-  });
-
   // Chrome extension push — merges into polled state (both sources coexist).
   wsServer.start();
   wsServer.onStateChange((states: QuotaState[]) => {
     for (const s of states) poller.merge(s);
   });
-  wsServer.onDisconnect(() => {
-    const current = poller.getLatestStates();
-    if (current.length === 0) {
-      // Prefer session-expired re-auth over generic setup when secrets failed auth.
-      applyStates(current);
-    }
-  });
 
   const openCmd = vscode.commands.registerCommand(OPEN_PANEL_COMMAND, async () => {
-    panel.open();
+    panel.open('usage');
     // Kick a poll when opening so data is fresh after setup / long idle.
     await poller.pollNow();
-    applyStates(poller.getLatestStates());
   });
 
-  const configureCmd = vscode.commands.registerCommand(CONFIGURE_COMMAND, async () => {
-    await credPanel.open();
+  const configureCmd = vscode.commands.registerCommand(CONFIGURE_COMMAND, () => {
+    panel.open('accounts');
   });
 
   context.subscriptions.push(

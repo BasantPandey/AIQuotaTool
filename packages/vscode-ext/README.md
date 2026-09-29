@@ -11,16 +11,17 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 ## Features
 
 - **Status bar item** - remaining quota at a glance for each service (the lower of session and weekly %). The item turns amber when any service drops below 10%.
-- **Lowest remaining** - the dashboard opens with the one limit that has the least left, and when it resets.
-- **Dashboard panel** - one card per service with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
-- **Fits your theme** - the dashboard uses the colors and fonts of your VS Code theme: dark, light and high contrast. In a wide tab the cards show as a grid.
-- **Grok** - paste a grok.com `sso` cookie in Set Up Accounts. You see short-window rate limits, plus the SuperGrok weekly pool when available.
-- **DeepSeek and Kimi** - paste an API key in Set Up Accounts to see the account balance (money left, not a percent).
+- **One panel, three tabs** - **Usage** shows your Accounts and Keys. **Accounts** lets you sign in to each plan. **Keys** lets you add API keys.
+- **Lowest remaining** - the Usage tab starts with the one limit that has the least left, and when it resets.
+- **Account cards** - one card for each signed-in Account, with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
+- **Fits your theme** - the panel uses the colors and fonts of your VS Code theme: dark, light and high contrast. In a wide tab the cards show as a grid.
+- **Grok** - paste a grok.com `sso` cookie on the Accounts tab. You see short-window rate limits, plus the SuperGrok weekly pool when available.
+- **DeepSeek and Kimi Keys** - add an API key on the Keys tab to see the account balance (money left, not a percent).
 - **Standalone** - fetches quota directly from VS Code with your session credentials. **No Chrome extension required.**
 - **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
 - **Automatic refresh** - polls every 60 seconds in the background.
 
-![Dashboard in a wide editor tab, with cards for six services](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-wide.png)
+![The Usage tab in a wide editor tab, with Account cards and Key chips](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-wide.png)
 
 ![Dashboard in the Light Modern theme](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-light.png)
 
@@ -30,10 +31,11 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 
 1. Install the extension
 2. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-3. Run **"AI Quota Tool: Set Up Accounts"**
-4. Paste session credentials for the services you use (each is optional)
+3. Run **"AI Quota Tool: Set Up Accounts"**. The panel opens on the Accounts tab.
+4. Click **Sign in** for each service that you use, and paste its session credential. Each service is optional.
+5. To add a DeepSeek or Kimi API key, open the **Keys** tab and click **Add key**.
 
-![Set Up Accounts, with a tab for each service](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/setup-accounts.png)
+![The Accounts tab, with one row for each Account and a Sign in or Sign out button](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/setup-accounts.png)
 
 ### How to get each credential
 
@@ -42,13 +44,13 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
 3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
 
-**GitHub Copilot** - click **Sign in with GitHub** in the setup panel. The panel shows a short code. Click **Copy code and open GitHub**, paste the code, and approve. You do not copy a token. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
+**GitHub Copilot** - click **Sign in with GitHub** on the Accounts tab. The panel shows a short code. Click **Copy code and open GitHub**, paste the code, and approve. You do not copy a token. Remaining usage % is often unavailable from GitHub; the dashboard shows an honest seat status instead of inventing 100%.
 
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in
-2. **Preferred:** DevTools → **Network** → any `chatgpt.com` request → Request Headers → copy the full **Cookie** value and paste it into Set Up Accounts
+2. **Preferred:** DevTools → **Network** → any `chatgpt.com` request → Request Headers → copy the full **Cookie** value and paste it in line 1 on the Accounts tab
 3. **Or:** Application → Cookies → if you see `__Secure-next-auth.session-token.0` and `.1`, that is **one** session split for size. **Double-click** each Value (full text, not `…`), paste `.0` on line 1 and `.1` on line 2
-4. Save & Test exchanges cookies for a short-lived access token, then reads usage
+4. **Test and save** exchanges cookies for a short-lived access token, then reads usage
 
 **Important:** Do not glue `.0`+`.1` into a single un-named string. The browser sends them as two cookie names; the extension does the same.
 
@@ -60,14 +62,14 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 **DeepSeek API key** (platform.deepseek.com account balance)
 1. Open [platform.deepseek.com](https://platform.deepseek.com) and sign in
 2. Go to **API keys** and create or copy a key
-3. Paste it into Set Up Accounts
+3. On the Keys tab, click **Add key**, choose the provider, and paste the key
 
 **Kimi API key** (platform.kimi.ai account balance)
 1. Open [platform.kimi.ai](https://platform.kimi.ai) and sign in
 2. Go to **API keys** and create or copy a key
-3. Paste it into Set Up Accounts
+3. On the Keys tab, click **Add key**, choose the provider, and paste the key
 
-Use **Save & Test** to validate before the secret is kept. Use **Clear saved key / token / cookie** to remove a secret. Paste a new value and Save & Test to replace.
+Use **Test and save** to test a secret before the extension keeps it. Use **Sign out** on the Accounts tab, or **Remove** on the Keys tab, to delete a secret.
 
 ---
 
@@ -75,10 +77,10 @@ Use **Save & Test** to validate before the secret is kept. Use **Clear saved key
 
 | Command | Description |
 |---|---|
-| `AI Quota Tool: Open Dashboard` | Opens the quota dashboard panel |
-| `AI Quota Tool: Set Up Accounts` | Set, replace, or clear session credentials |
+| `AI Quota Tool: Open Dashboard` | Opens the panel on the Usage tab |
+| `AI Quota Tool: Set Up Accounts` | Opens the panel on the Accounts tab |
 
-Click the status bar item (`$(pulse) AI Quota`) to open the dashboard directly.
+Click the status bar item (`$(pulse) AI Quota`) to open the Usage tab.
 
 ---
 
@@ -95,8 +97,8 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 - Session cookies and API keys are account-level secrets. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
 - Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, or GitHub APIs) for quota reads - no telemetry backend.
-- Lifecycle: **Save & Test** validates before persist; replace by saving again; **Clear saved key** removes the secret.
-- Invalid or expired sessions remove the old reading and show **Session expired** on the card and in the status bar. The secret is **not** auto-deleted. Open **Set Up Accounts** to replace or clear. Stale “full quota” is never invented.
+- Lifecycle: **Test and save** tests the secret before the extension keeps it. **Sign out** or **Remove** deletes the secret.
+- Invalid or expired sessions remove the old reading and show **Session ended** on the card and in the status bar. The secret is **not** auto-deleted. Open the Accounts tab to sign in again or sign out. Stale “full quota” is never invented.
 - Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.
 
 ---

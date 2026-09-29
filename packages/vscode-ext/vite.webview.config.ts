@@ -14,12 +14,11 @@ export default defineConfig({
   build: {
     outDir: 'dist/webview',
     emptyOutDir: true,
-    // One stylesheet for both panels, at a fixed name the extension host links.
+    // One stylesheet, at a fixed name the extension host links.
     cssCodeSplit: false,
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'src/webview/index.html'),
-        'credential-setup': resolve(__dirname, 'src/webview/credential-setup/index.tsx'),
       },
       output: {
         entryFileNames: '[name].js',

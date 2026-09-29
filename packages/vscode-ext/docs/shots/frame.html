@@ -215,8 +215,8 @@
         '<svg class="preview icon" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1" /><path d="M2.5 6h11" /></svg>';
       const tabs = {
         split: [['AI Quota Tool', true]],
-        full: [['AI Quota Tool', true], ['AI Quota Tool - Set Up Accounts', false]],
-        setup: [['AI Quota Tool', false], ['AI Quota Tool - Set Up Accounts', true]],
+        full: [['AI Quota Tool', true]],
+        setup: [['AI Quota Tool', true]],
       }[shot];
       document.getElementById('view-tabs').innerHTML = tabs
         .map(([label, on]) => `<div class="tab ${on ? 'on' : ''}">${previewIcon}${label}${on ? '<span class="x">×</span>' : ''}</div>`)
@@ -234,7 +234,7 @@
 
       const view = document.getElementById('view');
       view.addEventListener('load', () => setTimeout(() => (document.body.dataset.ready = '1'), 900));
-      view.src = `webview.html?page=${shot === 'setup' ? 'setup' : 'dashboard'}&theme=${theme}`;
+      view.src = `webview.html?tab=${shot === 'setup' ? 'accounts' : 'usage'}&theme=${theme}`;
     </script>
   </body>
 </html>

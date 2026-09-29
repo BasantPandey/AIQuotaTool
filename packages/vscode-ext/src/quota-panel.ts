@@ -1,44 +1,47 @@
 import * as vscode from 'vscode';
-import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
+import type { HostMessage, PanelSnapshot, PanelTab, WebviewMessage } from './webview/protocol.js';
 
-const CONFIGURE_COMMAND = 'aiQuotaTool.configure';
-
-/** Hosts the shared React UI bundle inside a VS Code webview panel. */
+/** The one AI Quota Tool panel: Usage, Accounts, and Keys tabs in a single webview. */
 export class QuotaPanel {
   static readonly viewType = 'aiQuotaTool.dashboard';
 
   private panel: vscode.WebviewPanel | null = null;
-  private readonly extensionUri: vscode.Uri;
-  private latestStates: QuotaState[] = [];
-  private latestReauth: ServiceId[] = [];
+  private tab: PanelTab = 'usage';
+  private snapshot: PanelSnapshot | null = null;
+  private handler: ((msg: WebviewMessage) => void | Promise<void>) | null = null;
 
-  constructor(extensionUri: vscode.Uri) {
-    this.extensionUri = extensionUri;
+  constructor(private readonly extensionUri: vscode.Uri) {}
+
+  onMessage(handler: (msg: WebviewMessage) => void | Promise<void>): void {
+    this.handler = handler;
   }
 
-  open(): void {
+  get isOpen(): boolean {
+    return this.panel != null;
+  }
+
+  open(tab: PanelTab): void {
+    this.tab = tab;
     if (this.panel) {
       this.panel.reveal();
+      this.post({ type: 'show_tab', tab });
       return;
     }
 
-    this.panel = vscode.window.createWebviewPanel(
-      QuotaPanel.viewType,
-      'AI Quota Tool',
-      vscode.ViewColumn.Two,
-      {
-        enableScripts: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview')],
-        retainContextWhenHidden: true,
-      },
-    );
-
+    this.panel = vscode.window.createWebviewPanel(QuotaPanel.viewType, 'AI Quota Tool', vscode.ViewColumn.Two, {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview')],
+      retainContextWhenHidden: true,
+    });
+    this.panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'icons', 'icon128.png');
     this.panel.webview.html = this.buildHtml();
 
-    // Webview signals readiness after React mounts. Send the current state at once.
-    this.panel.webview.onDidReceiveMessage((msg: { type: string }) => {
-      if (msg.type === 'webview_ready') this.pushStates(this.latestStates, this.latestReauth);
-      if (msg.type === 'open_setup') void vscode.commands.executeCommand(CONFIGURE_COMMAND);
+    this.panel.webview.onDidReceiveMessage(async (msg: WebviewMessage) => {
+      if (msg.type === 'ready') {
+        this.post({ type: 'show_tab', tab: this.tab });
+        if (this.snapshot) this.post({ type: 'snapshot', snapshot: this.snapshot });
+      }
+      await this.handler?.(msg);
     });
 
     this.panel.onDidDispose(() => {
@@ -46,10 +49,13 @@ export class QuotaPanel {
     });
   }
 
-  pushStates(states: QuotaState[], reauthServices: ServiceId[] = []): void {
-    this.latestStates = states;
-    this.latestReauth = reauthServices;
-    this.panel?.webview.postMessage({ type: 'quota_update', payload: states, reauthServices });
+  pushSnapshot(snapshot: PanelSnapshot): void {
+    this.snapshot = snapshot;
+    this.post({ type: 'snapshot', snapshot });
+  }
+
+  post(msg: HostMessage): void {
+    void this.panel?.webview.postMessage(msg);
   }
 
   private buildHtml(): string {
