@@ -42,10 +42,15 @@ export class KeyStore {
     return key;
   }
 
-  async rename(id: string, name: string): Promise<void> {
+  /** Changes the name and the budget. The value never changes: the user removes the Key and adds it again. */
+  async update(id: string, name: string, budget: number | undefined): Promise<void> {
     await this.state.update(
       LIST_KEY,
-      this.list().map((k) => (k.id === id ? { ...k, name } : k)),
+      this.list().map((k) => {
+        if (k.id !== id) return k;
+        const { budget: _old, ...rest } = k;
+        return budget != null ? { ...rest, name, budget } : { ...rest, name };
+      }),
     );
   }
 

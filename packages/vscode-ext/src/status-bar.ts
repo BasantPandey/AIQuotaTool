@@ -1,6 +1,13 @@
 import * as vscode from 'vscode';
-import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
-import { lowestPressureAmong, pressureRemaining, SERVICE_LABELS } from '@ai-quota-tool/core';
+import type { KeyRecord, QuotaState, ServiceId } from '@ai-quota-tool/core';
+import {
+  connectionIdOf,
+  connectionKindOf,
+  describeKey,
+  lowestPressureAmong,
+  pressureRemaining,
+  SERVICE_LABELS,
+} from '@ai-quota-tool/core';
 
 export class QuotaStatusBar {
   private item: vscode.StatusBarItem;
@@ -11,33 +18,34 @@ export class QuotaStatusBar {
   ) {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     this.item.command = openPanelCommand;
-    this.item.tooltip = 'Click to open AI Quota Tool dashboard';
+    this.item.tooltip = 'Click to open the AI Quota Tool panel';
     this.item.text = '$(pulse) AI Quota';
     this.item.show();
   }
 
-  update(states: QuotaState[]): void {
-    if (states.length === 0) {
-      this.item.text = '$(pulse) AI Quota';
-      this.item.command = this.openPanelCommand;
-      this.item.backgroundColor = undefined;
-      return;
-    }
-
+  /**
+   * The text shows Accounts only. The tooltip lists each Key with its headline number.
+   * The color counts Keys with a real percent (cap or budget) and an empty balance.
+   */
+  update(states: QuotaState[], keys: readonly KeyRecord[]): void {
     const parts: string[] = [];
     for (const s of states) {
+      if (connectionKindOf(s) !== 'account') continue;
       const pct = pressureRemaining(s);
-      const balance = s.balance?.infos[0];
       if (pct != null) {
         parts.push(`${SERVICE_LABELS[s.service]} ${pct}%`);
-      } else if (balance != null) {
-        parts.push(`${SERVICE_LABELS[s.service]} ${balance.total} ${balance.currency}`);
       } else if (s.honesty === 'seat_active_usage_unknown') {
         parts.push(`${SERVICE_LABELS[s.service]} ·`);
       }
     }
     this.item.text = parts.length > 0 ? `$(pulse) ${parts.join(' | ')}` : '$(pulse) AI Quota';
     this.item.command = this.openPanelCommand;
+
+    const keyLines = keys.map((key) => {
+      const reading = states.find((s) => connectionKindOf(s) === 'key' && connectionIdOf(s) === key.id);
+      return `${key.name} (${SERVICE_LABELS[key.service]}): ${describeKey(reading).headline}`;
+    });
+    this.item.tooltip = ['Click to open the AI Quota Tool panel', ...(keyLines.length > 0 ? ['', 'Keys:', ...keyLines] : [])].join('\n');
 
     const lowest = lowestPressureAmong(states);
     const emptyBalance = states.some((s) => s.honesty === 'balance_empty');

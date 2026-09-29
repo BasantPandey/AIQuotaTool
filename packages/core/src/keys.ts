@@ -8,6 +8,13 @@ export interface KeyRecord {
   name: string;
   /** The last 4 characters of the key. The only part of the value that the UI shows. */
   last4: string;
+  /** Optional monthly budget for a Spend only Key, in the currency of its spend. */
+  budget?: number;
+}
+
+/** A budget is a positive, finite amount. */
+export function isValidBudget(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 && value < 1e9;
 }
 
 /** Providers that take a Key, in catalog order. */
@@ -42,6 +49,6 @@ export function parseKeyRecords(stored: unknown): KeyRecord[] {
     if (typeof r.id !== 'string' || typeof r.name !== 'string' || typeof r.last4 !== 'string') return [];
     const service = KEY_SERVICES.find((s) => s === r.service);
     if (service == null) return [];
-    return [{ id: r.id, service, name: r.name, last4: r.last4 }];
+    return [{ id: r.id, service, name: r.name, last4: r.last4, ...(isValidBudget(r.budget) ? { budget: r.budget } : {}) }];
   });
 }

@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import {
+  applyKeyBudgets,
   type DeviceCode,
   defaultKeyName,
+  isValidBudget,
+  keyCardType,
+  connectionIdOf,
   isUniqueKeyName,
   KEY_SERVICES,
   normalizeApiKey,
@@ -129,8 +133,8 @@ export class PanelController {
       case 'key_add':
         await this.addKey(msg.service, msg.name, msg.value);
         break;
-      case 'key_rename':
-        await this.renameKey(msg.id, msg.name);
+      case 'key_update':
+        await this.updateKey(msg.id, msg.name, msg.budget);
         break;
       case 'key_remove':
         await this.removeKey(msg.id);
@@ -155,7 +159,8 @@ export class PanelController {
       const detail = status === 'connected' ? this.details.get(service) : undefined;
       return { service, status, ...(detail != null ? { detail } : {}) };
     });
-    return { readings: this.poller.getLatestStates(), accounts, keys: this.keys.list() };
+    const keys = this.keys.list();
+    return { readings: applyKeyBudgets(this.poller.getLatestStates(), keys), accounts, keys };
   }
 
   private form(form: FormStatus): void {
@@ -262,7 +267,7 @@ export class PanelController {
     await this.poller.pollNow();
   }
 
-  private async renameKey(id: string, rawName: string): Promise<void> {
+  private async updateKey(id: string, rawName: string, budget: number | null): Promise<void> {
     const target = `edit:${id}`;
     const key = this.keys.list().find((k) => k.id === id);
     if (!key) return;
@@ -275,8 +280,20 @@ export class PanelController {
       this.form({ target, status: 'error', detail: `A ${SERVICE_LABELS[key.service]} key with this name exists.` });
       return;
     }
-    await this.keys.rename(id, name);
+    if (budget != null) {
+      const reading = this.poller.getLatestStates().find((s) => connectionIdOf(s) === id);
+      if (reading == null || keyCardType(reading) !== 'spend') {
+        this.form({ target, status: 'error', detail: 'Only a Spend only Key can have a budget.' });
+        return;
+      }
+      if (!isValidBudget(budget)) {
+        this.form({ target, status: 'error', detail: 'Type a budget that is more than 0.' });
+        return;
+      }
+    }
+    await this.keys.update(id, name, budget ?? undefined);
     this.form({ target, status: 'ok' });
+    this.poller.emit();
     await this.refresh();
   }
 

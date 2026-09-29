@@ -165,6 +165,11 @@ export class QuotaPoller {
     }
   }
 
+  /** Tell listeners to show the latest readings again, for example after a Key budget change. */
+  emit(): void {
+    this.listeners.forEach((fn) => fn(this.latestStates));
+  }
+
   /** Clear re-auth flag after a successful Save & Test (before poll). */
   clearReauth(service: ServiceId): void {
     if (this.reauthNeeded.delete(service)) {

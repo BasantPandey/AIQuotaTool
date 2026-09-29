@@ -23,7 +23,7 @@ export interface PanelSnapshot {
   keys: KeyRow[];
 }
 
-/** Progress of one form: an Account sign-in (target = service), the add key form ("add_key"), or a rename ("edit:<key id>"). */
+/** Progress of one form: an Account sign-in (target = service), the add key form ("add_key"), or a Key edit ("edit:<key id>"). */
 export interface FormStatus {
   target: string;
   status: 'idle' | 'testing' | 'ok' | 'error';
@@ -44,6 +44,7 @@ export type WebviewMessage =
   | { type: 'github_open' }
   | { type: 'github_cancel' }
   | { type: 'key_add'; service: ServiceId; name: string; value: string }
-  | { type: 'key_rename'; id: string; name: string }
+  /** A null budget clears it. */
+  | { type: 'key_update'; id: string; name: string; budget: number | null }
   | { type: 'key_remove'; id: string }
   | { type: 'open_external'; url: string };

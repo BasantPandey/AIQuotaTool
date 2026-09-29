@@ -77,6 +77,8 @@ export interface KeySpend {
   /** ISO code, for example "USD". */
   currency: string;
   limit?: number;
+  /** Monthly budget that the user set on a Spend only Key. The host copies it from the Key list. */
+  budget?: number;
   /** Unix timestamp (ms) when the cap resets, if the provider gives a date. */
   resetsAt?: number;
   /** Whose money: this key, the whole account, or the whole org. */

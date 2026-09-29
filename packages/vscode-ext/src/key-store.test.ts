@@ -26,11 +26,18 @@ describe('KeyStore', () => {
     expect(secrets.get(`aiQuotaTool.key.${key.id}`)).toBe('sk-secret-value-1234');
   });
 
-  it('renames a Key and keeps its value', async () => {
+  it('changes the name and the budget, and keeps the value', async () => {
     const { store } = fakeStorage();
-    const key = await store.add('kimi', 'Old', 'sk-kimi-abcd');
-    await store.rename(key.id, 'New');
-    expect(await store.withSecrets()).toEqual([{ key: { ...key, name: 'New' }, secret: 'sk-kimi-abcd' }]);
+    const key = await store.add('openrouter', 'Old', 'sk-or-abcd');
+    const other = await store.add('openrouter', 'Other', 'sk-or-efgh');
+    await store.update(other.id, 'Other', 20);
+    await store.update(key.id, 'New', 50);
+    expect(await store.withSecrets()).toEqual([
+      { key: { ...key, name: 'New', budget: 50 }, secret: 'sk-or-abcd' },
+      { key: { ...other, budget: 20 }, secret: 'sk-or-efgh' },
+    ]);
+    await store.update(key.id, 'New', undefined);
+    expect(store.list()[0]).toEqual({ ...key, name: 'New' });
   });
 
   it('removes the list row and the secret', async () => {

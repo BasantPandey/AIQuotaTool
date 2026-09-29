@@ -165,9 +165,9 @@
       const theme = params.get('theme') ?? 'dark';
       if (theme === 'light') document.documentElement.dataset.theme = 'light';
 
-      // Same text the status bar item builds from the sample readings.
+      // Same text the status bar item builds from the sample readings. Keys show only in the tooltip.
       document.getElementById('quota').append(
-        'Claude 9% | Copilot · | Codex 58% | Grok 64% | DeepSeek 18.40 USD | Kimi 42.10 CNY',
+        'Claude 9% | Copilot · | Codex 58% | Grok 64%',
       );
 
       const CODE = [

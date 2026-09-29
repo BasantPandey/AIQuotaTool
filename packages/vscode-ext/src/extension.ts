@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { QuotaState } from '@ai-quota-tool/core';
+import { applyKeyBudgets, type QuotaState } from '@ai-quota-tool/core';
 import { QuotaWsServer } from './ws-server.js';
 import { QuotaPanel } from './quota-panel.js';
 import { QuotaStatusBar } from './status-bar.js';
@@ -26,7 +26,8 @@ export function activate(context: vscode.ExtensionContext): void {
     if (reauth.length > 0) {
       statusBar.showReauthPrompt(reauth);
     } else {
-      statusBar.update(states);
+      const keyList = keys.list();
+      statusBar.update(applyKeyBudgets(states, keyList), keyList);
     }
     if (panel.isOpen) void controller.refresh();
   };

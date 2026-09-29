@@ -10,7 +10,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 
 ## Features
 
-- **Status bar item** - remaining quota at a glance for each service (the lower of session and weekly %). The item turns amber when any service drops below 10%.
+- **Status bar item** - remaining quota at a glance for each Account (the lower of session and weekly %). The tooltip lists each Key. The item turns amber when an Account or a Key with a real percent drops below 10%, or when a Key balance is zero.
 - **One panel, three tabs** - **Usage** shows your Accounts and Keys. **Accounts** lets you sign in to each plan. **Keys** lets you add API keys.
 - **Lowest remaining** - the Usage tab starts with the one limit that has the least left, and when it resets.
 - **Account cards** - one card for each signed-in Account, with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
@@ -19,6 +19,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 - **Named Keys** - add many API keys on the Keys tab, each with its own name. After you save a Key, the panel shows only its last 4 characters.
   - **DeepSeek and Kimi** show the account balance (money left, not a percent).
   - **OpenRouter** shows the spend of that one key. If the key has a limit, it shows the spend against the limit and the real percent left. If not, it shows the spend this month.
+  - **Budget** - on a Key that shows spend only, click **Edit** and set a monthly budget. The Key then shows the spend against the budget and the percent left. With no budget, it never shows a percent.
 - **Standalone** - fetches quota directly from VS Code with your session credentials. **No Chrome extension required.**
 - **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
 - **Automatic refresh** - polls every 60 seconds in the background.

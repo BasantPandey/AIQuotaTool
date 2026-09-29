@@ -1,6 +1,7 @@
+import type React from 'react';
 import { useEffect, useState } from 'react';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
-import { defaultKeyName, KEY_SERVICES, SERVICE_LABELS } from '@ai-quota-tool/core';
+import { defaultKeyName, KEY_SERVICES, keyCardType, SERVICE_LABELS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
 import type { FormStatus, KeyRow } from './protocol.js';
 import { send, useForm } from './store.js';
@@ -94,10 +95,19 @@ function AddKeyForm({ keys, onClose }: { keys: KeyRow[]; onClose: () => void }) 
 function KeyTableRow({ row, reading }: { row: KeyRow; reading: QuotaState | undefined }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(row.name);
+  const [budget, setBudget] = useState(row.budget != null ? String(row.budget) : '');
   const target = `edit:${row.id}`;
   const form = useCloseOnOk(target, () => setEditing(false));
   const [, setForm] = useForm(target);
-  const save = () => send({ type: 'key_rename', id: row.id, name: name.trim() });
+  // Only a Spend only Key has a budget. A cap or a balance already gives a real number.
+  const canBudget = reading != null && keyCardType(reading) === 'spend';
+  const currency = reading?.spend?.currency ?? 'USD';
+  const save = () =>
+    send({ type: 'key_update', id: row.id, name: name.trim(), budget: canBudget && budget.trim() ? Number(budget) : null });
+  const keys = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') save();
+    if (e.key === 'Escape') setEditing(false);
+  };
 
   return (
     <tr>
@@ -110,10 +120,7 @@ function KeyTableRow({ row, reading }: { row: KeyRow; reading: QuotaState | unde
               value={name}
               autoFocus
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') save();
-                if (e.key === 'Escape') setEditing(false);
-              }}
+              onKeyDown={keys}
             />
             <FormNote form={form} />
           </>
@@ -128,7 +135,26 @@ function KeyTableRow({ row, reading }: { row: KeyRow; reading: QuotaState | unde
         </span>
       </td>
       <td className="num">…{row.last4}</td>
-      <td>{keyView(reading).shows}</td>
+      <td>
+        {editing && canBudget ? (
+          <label className="field field-inline">
+            Monthly budget ({currency})
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="any"
+              inputMode="decimal"
+              placeholder="No budget"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              onKeyDown={keys}
+            />
+          </label>
+        ) : (
+          keyView(reading).shows
+        )}
+      </td>
       <td className="cell-actions">
         {editing ? (
           <>
@@ -144,8 +170,10 @@ function KeyTableRow({ row, reading }: { row: KeyRow; reading: QuotaState | unde
             <button
               className="btn btn-ghost"
               aria-label={`Edit ${row.name}`}
+              title={canBudget ? 'Change the name or the budget' : 'Change the name'}
               onClick={() => {
                 setName(row.name);
+                setBudget(row.budget != null ? String(row.budget) : '');
                 setForm({ target, status: 'idle' });
                 setEditing(true);
               }}
