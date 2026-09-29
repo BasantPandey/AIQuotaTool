@@ -164,3 +164,12 @@ export function OpenRouterLogo({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Simple original letter mark for Anthropic (not an official brand asset). */
+export function AnthropicLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9.6 4h2.9l5.6 16h-3l-1.3-3.9H8.2L6.9 20H4L9.6 4Zm-.6 9.6h4.3L11.1 7.2 9 13.6Z" fill="#f0eee6" />
+    </svg>
+  );
+}

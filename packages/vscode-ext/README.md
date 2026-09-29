@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus the balance or spend of your **DeepSeek**, **Kimi**, and **OpenRouter** API keys - live in VS Code.
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus the balance or spend of your **DeepSeek**, **Kimi**, **OpenRouter**, **Anthropic**, and **OpenAI** API keys - live in VS Code.
 
 **Privacy:** the extension stores the session cookies and API keys that you paste in VS Code SecretStorage on this machine. It sends each one only to its own service. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
 
@@ -19,6 +19,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 - **Named Keys** - add many API keys on the Keys tab, each with its own name. After you save a Key, the panel shows only its last 4 characters.
   - **DeepSeek and Kimi** show the account balance (money left, not a percent).
   - **OpenRouter** shows the spend of that one key. If the key has a limit, it shows the spend against the limit and the real percent left. If not, it shows the spend this month.
+  - **Anthropic and OpenAI (Admin key only)** - show the org spend for the current month. An Admin key can manage your whole org, so the add form asks you to confirm it. The extension uses the key only to read the cost report.
   - **Budget** - on a Key that shows spend only, click **Edit** and set a monthly budget. The Key then shows the spend against the budget and the percent left. With no budget, it never shows a percent.
 - **Standalone** - fetches quota directly from VS Code with your session credentials. **No Chrome extension required.**
 - **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
@@ -101,7 +102,7 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 
 - Session cookies and API keys are account-level secrets. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
-- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, openrouter.ai, or GitHub APIs) for quota reads - no telemetry backend.
+- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, openrouter.ai, api.anthropic.com, api.openai.com, or GitHub APIs) for quota reads - no telemetry backend.
 - Lifecycle: **Test and save** tests the secret before the extension keeps it. **Sign out** or **Remove** deletes the secret.
 - Invalid or expired sessions remove the old reading and show **Session ended** on the card and in the status bar. The secret is **not** auto-deleted. Open the Accounts tab to sign in again or sign out. Stale “full quota” is never invented.
 - Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.

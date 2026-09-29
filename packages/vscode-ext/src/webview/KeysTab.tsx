@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
-import { defaultKeyName, KEY_SERVICES, keyCardType, SERVICE_LABELS } from '@ai-quota-tool/core';
+import { defaultKeyName, isAdminKeyService, KEY_SERVICES, keyCardType, SERVICE_LABELS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
 import type { FormStatus, KeyRow } from './protocol.js';
 import { send, useForm } from './store.js';
@@ -34,8 +34,10 @@ function AddKeyForm({ keys, onClose }: { keys: KeyRow[]; onClose: () => void }) 
   const [service, setService] = useState<ServiceId>(KEY_SERVICES[0]!);
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
+  const [adminConfirmed, setAdminConfirmed] = useState(false);
   const [, setForm] = useForm('add_key');
   const form = useCloseOnOk('add_key', onClose);
+  const admin = isAdminKeyService(service);
   const placeholder = defaultKeyName(
     SERVICE_LABELS[service],
     keys.filter((k) => k.service === service).map((k) => k.name),
@@ -46,10 +48,18 @@ function AddKeyForm({ keys, onClose }: { keys: KeyRow[]; onClose: () => void }) 
       <div className="form-title">Add a key</div>
       <label className="field">
         Provider
-        <select className="input" value={service} onChange={(e) => setService(e.target.value as ServiceId)}>
+        <select
+          className="input"
+          value={service}
+          onChange={(e) => {
+            setService(e.target.value as ServiceId);
+            setAdminConfirmed(false);
+          }}
+        >
           {KEY_SERVICES.map((id) => (
             <option key={id} value={id}>
               {SERVICE_LABELS[id]}
+              {isAdminKeyService(id) ? ' (Admin key)' : ''}
             </option>
           ))}
         </select>
@@ -68,13 +78,19 @@ function AddKeyForm({ keys, onClose }: { keys: KeyRow[]; onClose: () => void }) 
           onChange={(e) => setValue(e.target.value)}
         />
       </label>
+      {admin && (
+        <label className="check">
+          <input type="checkbox" checked={adminConfirmed} onChange={(e) => setAdminConfirmed(e.target.checked)} />
+          This is an Admin key. It can manage your whole org.
+        </label>
+      )}
       <div className="form-actions">
         <button
           className="btn btn-primary"
-          disabled={!value.trim() || form.status === 'testing'}
+          disabled={!value.trim() || form.status === 'testing' || (admin && !adminConfirmed)}
           onClick={() => {
             setForm({ target: 'add_key', status: 'testing' });
-            send({ type: 'key_add', service, name: name.trim(), value: value.trim() });
+            send({ type: 'key_add', service, name: name.trim(), value: value.trim(), adminConfirmed });
           }}
         >
           Test and save
@@ -132,6 +148,7 @@ function KeyTableRow({ row, reading }: { row: KeyRow; reading: QuotaState | unde
         <span className="cell-provider">
           <ProviderLogo service={row.service} size={18} />
           {SERVICE_LABELS[row.service]}
+          {isAdminKeyService(row.service) ? ' (Admin)' : ''}
         </span>
       </td>
       <td className="num">…{row.last4}</td>

@@ -1,7 +1,7 @@
 {
   "name": "ai-quota-tool-vscode",
   "displayName": "AI Quota Tool",
-  "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus DeepSeek, Kimi and OpenRouter API key balance or spend, in VS Code.",
+  "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus API key balance or spend for DeepSeek, Kimi, OpenRouter, Anthropic and OpenAI, in VS Code.",
   "version": "0.9.1",
   "publisher": "BasantPandey",
   "license": "Apache-2.0",

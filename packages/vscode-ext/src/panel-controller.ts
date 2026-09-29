@@ -6,6 +6,7 @@ import {
   isValidBudget,
   keyCardType,
   connectionIdOf,
+  isAdminKeyService,
   isUniqueKeyName,
   KEY_SERVICES,
   normalizeApiKey,
@@ -131,7 +132,7 @@ export class PanelController {
         this.form({ target: 'copilot', status: 'idle' });
         break;
       case 'key_add':
-        await this.addKey(msg.service, msg.name, msg.value);
+        await this.addKey(msg.service, msg.name, msg.value, msg.adminConfirmed);
         break;
       case 'key_update':
         await this.updateKey(msg.id, msg.name, msg.budget);
@@ -241,8 +242,12 @@ export class PanelController {
     }
   }
 
-  private async addKey(service: ServiceId, rawName: string, rawValue: string): Promise<void> {
+  private async addKey(service: ServiceId, rawName: string, rawValue: string, adminConfirmed: boolean): Promise<void> {
     if (!KEY_SERVICES.includes(service)) return;
+    if (isAdminKeyService(service) && !adminConfirmed) {
+      this.form({ target: 'add_key', status: 'error', detail: 'Tick the box to confirm that this is an Admin key.' });
+      return;
+    }
     const existing = this.keys.list();
     const name = rawName.trim() || defaultKeyName(SERVICE_LABELS[service], existing.filter((k) => k.service === service).map((k) => k.name));
     const value = normalizeApiKey(rawValue);

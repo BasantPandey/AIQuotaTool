@@ -2,6 +2,7 @@ import type React from 'react';
 import type { ServiceId } from '@ai-quota-tool/core';
 import { SERVICE_COLORS } from '@ai-quota-tool/core';
 import {
+  AnthropicLogo,
   ClaudeLogo,
   CodexLogo,
   CopilotLogo,
@@ -23,6 +24,8 @@ const MARKS: Record<ServiceId, (props: { size?: number }) => React.ReactNode> = 
   deepseek: DeepSeekLogo,
   kimi: KimiLogo,
   openrouter: OpenRouterLogo,
+  anthropic: AnthropicLogo,
+  openai: CodexLogo,
 };
 
 /** Tile colors where the catalog card color clashes with the mark. */

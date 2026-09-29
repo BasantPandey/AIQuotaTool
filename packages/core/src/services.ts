@@ -73,6 +73,24 @@ export const SERVICES = [
     auth: 'api_key',
     vscodeOnly: true,
   },
+  {
+    id: 'anthropic',
+    label: 'Anthropic',
+    color: '#262420',
+    host: 'console.anthropic.com',
+    auth: 'api_key',
+    vscodeOnly: true,
+    adminKey: true,
+  },
+  {
+    id: 'openai',
+    label: 'OpenAI',
+    color: '#0d0d0d',
+    host: 'platform.openai.com',
+    auth: 'api_key',
+    vscodeOnly: true,
+    adminKey: true,
+  },
 ] as const satisfies readonly {
   id: string;
   label: string;
@@ -81,6 +99,8 @@ export const SERVICES = [
   auth: ServiceAuth;
   /** Not in the Chrome extension. */
   vscodeOnly?: true;
+  /** The Key must be an Admin key. It can manage the whole org, so the user confirms it. */
+  adminKey?: true;
 }[];
 
 type ServiceRow = (typeof SERVICES)[number];

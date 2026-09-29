@@ -16,8 +16,12 @@ import {
   mapDeepSeekBalance,
   mapGrokRateLimits,
   mapGrokWeeklyUsage,
+  isAdminKeyService,
+  mapAnthropicCost,
   mapKimiBalance,
+  mapOpenAICost,
   mapOpenRouterKey,
+  monthStartUtc,
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
   type QuotaState,
@@ -374,10 +378,65 @@ export async function fetchOpenRouterKey(apiKey: string): Promise<QuotaState> {
   return mapOpenRouterKey(await res.json().catch(() => null), now);
 }
 
+/** A cost report of one month has at most 31 daily buckets, so one page is normal. The cap stops a bad cursor loop. */
+const MAX_COST_PAGES = 5;
+
+/**
+ * Get every page of an Admin cost report. A 401 or 403 means the provider rejected the key.
+ * https://platform.claude.com/docs/en/api/beta/organization/cost_report/retrieve
+ * https://developers.openai.com/api/reference/python/resources/admin/subresources/organization/subresources/usage/methods/costs
+ */
+async function fetchCostPages(
+  label: string,
+  url: (page: string | null) => string,
+  headers: Record<string, string>,
+): Promise<unknown[] | 'rejected'> {
+  const pages: unknown[] = [];
+  let page: string | null = null;
+  for (let i = 0; i < MAX_COST_PAGES; i++) {
+    const res = await fetch(url(page), { headers: { Accept: 'application/json', ...headers } });
+    if (res.status === 401 || res.status === 403) return 'rejected';
+    if (!res.ok) throw new Error(`${label} cost API: ${res.status}`);
+    const body = (await res.json().catch(() => null)) as { has_more?: unknown; next_page?: unknown } | null;
+    pages.push(body);
+    if (body?.has_more !== true || typeof body.next_page !== 'string') break;
+    page = body.next_page;
+  }
+  return pages;
+}
+
+const pageParam = (page: string | null) => (page ? `&page=${encodeURIComponent(page)}` : '');
+
+/** Org spend this month from an Anthropic Admin key. */
+export async function fetchAnthropicCost(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const start = encodeURIComponent(monthStartUtc(now).toISOString());
+  const pages = await fetchCostPages(
+    'Anthropic',
+    (page) => `https://api.anthropic.com/v1/organizations/cost_report?starting_at=${start}&limit=31${pageParam(page)}`,
+    { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+  );
+  return pages === 'rejected' ? apiKeyInvalid('anthropic', now) : mapAnthropicCost(pages, now);
+}
+
+/** Org spend this month from an OpenAI Admin key. */
+export async function fetchOpenAICost(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const start = Math.floor(monthStartUtc(now).getTime() / 1000);
+  const pages = await fetchCostPages(
+    'OpenAI',
+    (page) => `https://api.openai.com/v1/organization/costs?start_time=${start}&limit=31${pageParam(page)}`,
+    { Authorization: `Bearer ${apiKey}` },
+  );
+  return pages === 'rejected' ? apiKeyInvalid('openai', now) : mapOpenAICost(pages, now);
+}
+
 const KEY_FETCHERS: Partial<Record<ServiceId, (apiKey: string) => Promise<QuotaState>>> = {
   deepseek: fetchDeepSeekBalance,
   kimi: fetchKimiBalance,
   openrouter: fetchOpenRouterKey,
+  anthropic: fetchAnthropicCost,
+  openai: fetchOpenAICost,
 };
 
 /** One reading for a Key. A rejected key gives an honesty state; other failures throw. */
@@ -391,6 +450,10 @@ export function fetchKeyReading(service: ServiceId, apiKey: string): Promise<Quo
 export async function validateKey(service: ServiceId, apiKey: string): Promise<void> {
   const state = await fetchKeyReading(service, apiKey);
   if (state.honesty === 'api_key_invalid') {
-    throw new Error(`The provider rejected this ${SERVICE_LABELS[service]} API key.`);
+    throw new Error(
+      isAdminKeyService(service)
+        ? `The provider rejected this key. Use a ${SERVICE_LABELS[service]} Admin key from the org settings.`
+        : `The provider rejected this ${SERVICE_LABELS[service]} API key.`,
+    );
   }
 }

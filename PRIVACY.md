@@ -45,7 +45,8 @@ The VS Code extension shows your remaining quota for Claude, Codex, Copilot, and
 
 - It reads your own quota from claude.ai, chatgpt.com, and grok.com. It uses a session cookie that you paste.
 - It reads your GitHub Copilot seat status from api.github.com. It uses an OAuth token that you approve.
-- It reads the balance or the spend of each Key from its own provider: api.deepseek.com (DeepSeek), api.moonshot.ai (Kimi), and openrouter.ai (OpenRouter). It uses the API key that you add.
+- It reads the balance or the spend of each Key from its own provider: api.deepseek.com (DeepSeek), api.moonshot.ai (Kimi), openrouter.ai (OpenRouter), api.anthropic.com (Anthropic Admin key), and api.openai.com (OpenAI Admin key). It uses the API key that you add.
+- An Admin key can manage your whole org. The extension uses it only to read the cost report of the current month. You confirm that it is an Admin key before the extension saves it.
 - It stores these secrets in VS Code SecretStorage on your device: the Claude session key, the ChatGPT session token, the Grok sso cookie, each API key, and the GitHub token.
 - It stores the list of Keys (name, provider, and the last 4 characters) in VS Code extension storage. This list holds no secret.
 - It sends each secret only to its own service. There is no server of ours.

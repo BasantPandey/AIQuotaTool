@@ -20,7 +20,14 @@ export function isValidBudget(value: unknown): value is number {
 /** Providers that take a Key, in catalog order. */
 export const KEY_SERVICES: readonly ServiceId[] = SERVICES.filter((s) => s.auth === 'api_key').map((s) => s.id);
 
-const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+/** Key providers that take only an Admin key. The add form asks the user to confirm it. */
+export const ADMIN_KEY_SERVICES: readonly ServiceId[] = SERVICES.filter((s) => 'adminKey' in s).map((s) => s.id);
+
+export function isAdminKeyService(service: ServiceId): boolean {
+  return ADMIN_KEY_SERVICES.includes(service);
+}
+
+const sameName =(a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** "<Label> key N" with the lowest N that no existing name uses. */
 export function defaultKeyName(label: string, existingNames: readonly string[]): string {
