@@ -46,6 +46,6 @@ describe('parseKeyRecords', () => {
   });
 
   it('knows the Key providers', () => {
-    expect(KEY_SERVICES).toEqual(['deepseek', 'kimi']);
+    expect(KEY_SERVICES).toEqual(['deepseek', 'kimi', 'openrouter']);
   });
 });

@@ -1,8 +1,9 @@
 import type { ServiceId } from './services.js';
 
-export type { ServiceId, ServiceAuth } from './services.js';
+export type { ServiceId, ServiceAuth, ChromeServiceId } from './services.js';
 export {
   SERVICES,
+  CHROME_SERVICES,
   SERVICE_IDS,
   SERVICE_LABELS,
   SERVICE_COLORS,
@@ -67,6 +68,21 @@ export interface ProviderBalance {
   infos: AccountBalance[];
 }
 
+/**
+ * Money spent through a Key. Without `limit` it is the spend this month.
+ * With `limit` it is the spend against the provider cap, for the cap period.
+ */
+export interface KeySpend {
+  amount: number;
+  /** ISO code, for example "USD". */
+  currency: string;
+  limit?: number;
+  /** Unix timestamp (ms) when the cap resets, if the provider gives a date. */
+  resetsAt?: number;
+  /** Whose money: this key, the whole account, or the whole org. */
+  scope: 'key' | 'account' | 'org';
+}
+
 /** An Account is a consumer plan (one for each provider). A Key is a named API key (many for each provider). */
 export type ConnectionKind = 'account' | 'key';
 
@@ -103,6 +119,8 @@ export interface QuotaState {
    * Omit sessionPct and weeklyPct — there is no percent cap to invent.
    */
   balance?: ProviderBalance;
+  /** Key spend. Never a remaining percent by itself: see `keyPercent`. */
+  spend?: KeySpend;
   /** Unix timestamp (ms) of the last successful poll */
   lastUpdated: number;
 }

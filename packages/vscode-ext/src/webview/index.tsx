@@ -42,7 +42,7 @@ function Panel() {
       <section id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === 'usage' && <UsageTab snapshot={snapshot} onTab={setTab} />}
         {tab === 'accounts' && <AccountsTab accounts={snapshot.accounts} />}
-        {tab === 'keys' && <KeysTab keys={snapshot.keys} />}
+        {tab === 'keys' && <KeysTab keys={snapshot.keys} readings={snapshot.readings} />}
       </section>
     </main>
   );

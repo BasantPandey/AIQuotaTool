@@ -1,5 +1,5 @@
-import type { ServiceId } from '@ai-quota-tool/core';
-import { SERVICES } from '@ai-quota-tool/core';
+import type { ChromeServiceId } from '@ai-quota-tool/core';
+import { CHROME_SERVICES } from '@ai-quota-tool/core';
 import type { ServiceFetcher } from './fetchers/base.js';
 import { ClaudeFetcher } from './fetchers/claude.js';
 import { CodexFetcher } from './fetchers/codex.js';
@@ -11,7 +11,7 @@ import { GrokFetcher } from './fetchers/grok.js';
 import { KimiFetcher } from './fetchers/kimi.js';
 
 /**
- * One factory per catalog service. Adding a ServiceId without a factory
+ * One factory per catalog service. Adding a ChromeServiceId without a factory
  * fails this file's type check.
  */
 const FETCHER_FACTORIES = {
@@ -23,8 +23,8 @@ const FETCHER_FACTORIES = {
   cursor: () => new CursorFetcher(),
   deepseek: () => new DeepSeekFetcher(),
   kimi: () => new KimiFetcher(),
-} satisfies Record<ServiceId, () => ServiceFetcher>;
+} satisfies Record<ChromeServiceId, () => ServiceFetcher>;
 
 export function createFetchers(): ServiceFetcher[] {
-  return SERVICES.map((service) => FETCHER_FACTORIES[service.id]());
+  return CHROME_SERVICES.map((service) => FETCHER_FACTORIES[service.id]());
 }

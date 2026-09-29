@@ -32,9 +32,8 @@ code {
 
 .chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 6px; }
 .chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  gap: 6px;
   min-width: 0;
   padding: 7px 10px;
   border: 1px solid var(--aq-border);
@@ -42,7 +41,10 @@ code {
   background: var(--aq-surface);
   font-size: 12px;
 }
+.chip-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .chip-value { white-space: nowrap; }
+.chip[data-level='low'] .chip-value { color: var(--aq-low); }
+.chip[data-level='critical'] .chip-value { color: var(--aq-critical); }
 .chip-value.zero { color: var(--aq-critical); }
 
 .list { max-width: 880px; margin: 0; padding: 0; list-style: none; border: 1px solid var(--aq-border); border-radius: 10px; overflow: hidden; }

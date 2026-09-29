@@ -18,3 +18,5 @@ export * from './cursor.js';
 export * from './gemini.js';
 export * from './enabled.js';
 export * from './keys.js';
+export * from './openrouter.js';
+export * from './key-card.js';

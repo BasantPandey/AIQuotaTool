@@ -1,21 +1,21 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
-import { ENABLED_SERVICES_KEY, SERVICES, SERVICE_LABELS, SERVICE_URLS } from '@ai-quota-tool/core';
+import type { QuotaState, ChromeServiceId } from '@ai-quota-tool/core';
+import { ENABLED_SERVICES_KEY, CHROME_SERVICES, SERVICE_LABELS, SERVICE_URLS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
 import { type DeviceCode, requestDeviceCode, waitForDeviceToken } from '../background/github-auth.js';
 import { SERVICE_HINTS, sendPanelMessage } from './shared.js';
 
 interface Props {
-  enabled: ServiceId[];
-  connections: Record<ServiceId, boolean>;
+  enabled: ChromeServiceId[];
+  connections: Record<ChromeServiceId, boolean>;
   githubConnected: boolean;
   /** Last 4 characters of a stored API key, keyed by service. */
-  apiKeyTails: Partial<Record<ServiceId, string>>;
+  apiKeyTails: Partial<Record<ChromeServiceId, string>>;
   states: QuotaState[];
 }
 
-export function setEnabled(enabled: ServiceId[], service: ServiceId, on: boolean): Promise<void> {
+export function setEnabled(enabled: ChromeServiceId[], service: ChromeServiceId, on: boolean): Promise<void> {
   const next = on ? [...enabled, service] : enabled.filter((id) => id !== service);
   return chrome.storage.local.set({ [ENABLED_SERVICES_KEY]: next });
 }
@@ -135,7 +135,7 @@ function ApiKeyControls({
   tail,
   rejected,
 }: {
-  service: ServiceId;
+  service: ChromeServiceId;
   tail: string | undefined;
   rejected: boolean;
 }) {
@@ -190,7 +190,7 @@ function ApiKeyControls({
   );
 }
 
-function SessionControls({ service, connected }: { service: ServiceId; connected: boolean }) {
+function SessionControls({ service, connected }: { service: ChromeServiceId; connected: boolean }) {
   return (
     <div className="row-status">
       <Status tone={connected ? 'ok' : 'idle'}>{connected ? 'Signed in' : 'Not signed in'}</Status>
@@ -205,8 +205,8 @@ function SessionControls({ service, connected }: { service: ServiceId; connected
 
 export function ProvidersView({ enabled, connections, githubConnected, apiKeyTails, states }: Props) {
   const groups = [
-    { title: 'Plan quota', items: SERVICES.filter((s) => s.auth !== 'api_key') },
-    { title: 'API balance', items: SERVICES.filter((s) => s.auth === 'api_key') },
+    { title: 'Plan quota', items: CHROME_SERVICES.filter((s) => s.auth !== 'api_key') },
+    { title: 'API balance', items: CHROME_SERVICES.filter((s) => s.auth === 'api_key') },
   ];
   return (
     <div className="content">

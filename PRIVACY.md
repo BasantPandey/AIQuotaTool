@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: 29 September 2026
+Last updated: 30 September 2026
 
 AI Quota Tool is a Chrome extension and a VS Code extension. The Chrome extension shows your remaining AI quota for Claude, Codex, Copilot, Grok, Gemini, and Cursor, and your DeepSeek and Kimi API balance, in one side panel.
 
@@ -41,17 +41,18 @@ All data stays on your device in local extension storage. Nothing is synced.
 
 ## VS Code extension
 
-The VS Code extension shows your remaining quota for Claude, Codex, Copilot, and Grok, and your DeepSeek and Kimi API balance.
+The VS Code extension shows your remaining quota for Claude, Codex, Copilot, and Grok. It also shows the balance or the spend of API keys that you add (Keys).
 
 - It reads your own quota from claude.ai, chatgpt.com, and grok.com. It uses a session cookie that you paste.
 - It reads your GitHub Copilot seat status from api.github.com. It uses an OAuth token that you approve.
-- It reads your DeepSeek and Kimi API balance from api.deepseek.com and api.moonshot.ai. It uses an API key that you paste.
-- It stores these secrets in VS Code SecretStorage on your device: the Claude session key, the ChatGPT session token, the Grok sso cookie, the DeepSeek and Kimi API keys, and the GitHub token.
+- It reads the balance or the spend of each Key from its own provider: api.deepseek.com (DeepSeek), api.moonshot.ai (Kimi), and openrouter.ai (OpenRouter). It uses the API key that you add.
+- It stores these secrets in VS Code SecretStorage on your device: the Claude session key, the ChatGPT session token, the Grok sso cookie, each API key, and the GitHub token.
+- It stores the list of Keys (name, provider, and the last 4 characters) in VS Code extension storage. This list holds no secret.
 - It sends each secret only to its own service. There is no server of ours.
 - It does not read your chats, your prompts, or your files.
 - It does not use analytics, tracking, ads, or remote code.
 - It does not sell or share your data.
-- To remove a secret, use Clear saved key in Set Up Accounts. To delete everything, uninstall the extension.
+- To remove an Account secret, click Sign out on the Accounts tab. To remove a Key, click Remove on the Keys tab. To delete everything, uninstall the extension.
 - An optional local connection on 127.0.0.1 can receive quota readings. Any program on your device can send to it.
 
 ## Contact

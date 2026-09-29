@@ -5,7 +5,9 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 ## Exports
 - `QuotaState`, `QuotaHonesty`, `QUOTA_HONESTY_LABELS`, `WsMessage`, `ServiceId`, `ClaudeSubcategory`
 - `SERVICE_LABELS`, `SERVICE_COLORS`, `SERVICE_URLS`
-- **Merge:** `preferQuotaState`, `upsertQuotaState`, `mergeQuotaStates` (freshest-wins by `lastUpdated`)
+- **Catalog:** `SERVICES`, `CHROME_SERVICES` (rows without `vscodeOnly`), `ChromeServiceId`
+- **Merge:** `preferQuotaState`, `upsertQuotaState`, `mergeQuotaStates` (freshest-wins by `lastUpdated`, matched on `connectionIdOf`; an Account uses its provider id)
+- **Keys:** `KeyRecord`, `KEY_SERVICES`, `defaultKeyName`, `isUniqueKeyName`, `parseKeyRecords`; card math `keyCardType`, `keyPercent` (percent only from a real cap), `formatMoney`; mappers `mapOpenRouterKey`
 - **Mappers:** `mapClaudeUsage`, `mapCodexUsage` (+ response types)
 - **Copilot honesty:** `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`, `mapCopilotSeatStatus`
 - **Grok honesty / weekly map:** `grokUsageUnknown`, `grokNotConnected`, `grokBrowserSessionRequired`, `mapGrokWeeklyUsage`, `extractGrokWeeklyUsage`

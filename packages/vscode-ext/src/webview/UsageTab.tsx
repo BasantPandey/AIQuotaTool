@@ -1,42 +1,29 @@
 import type { QuotaState } from '@ai-quota-tool/core';
-import {
-  connectionIdOf,
-  connectionKindOf,
-  formatAccountBalance,
-  isConnectedReading,
-  QUOTA_HONESTY_LABELS,
-  SERVICE_LABELS,
-} from '@ai-quota-tool/core';
-import { LowestLimit, ProviderCard, ProviderLogo } from '@ai-quota-tool/ui';
+import { connectionIdOf, connectionKindOf, SERVICE_LABELS } from '@ai-quota-tool/core';
+import { level, LowestLimit, Meter, ProviderCard, ProviderLogo } from '@ai-quota-tool/ui';
 import type { KeyRow, PanelSnapshot, PanelTab } from './protocol.js';
+import { keyReading, keyView } from './key-view.js';
 
 const ENDED_HINT = 'Your session ended. Sign in again on the Accounts tab.';
 const WAITING_HINT = 'Reading your usage. This can take a few seconds.';
 
-function readingOf(readings: QuotaState[], id: string, kind: 'account' | 'key'): QuotaState | undefined {
-  return readings.find((s) => connectionIdOf(s) === id && connectionKindOf(s) === kind);
-}
-
-/** The one number a Key chip shows. */
-export function keyHeadline(reading: QuotaState | undefined): string {
-  if (reading == null) return 'Waiting';
-  const balance = reading.balance?.infos[0];
-  if (balance != null && isConnectedReading(reading)) return formatAccountBalance(balance.total, balance.currency);
-  if (reading.honesty === 'api_key_invalid') return 'Key rejected';
-  if (reading.honesty != null) return QUOTA_HONESTY_LABELS[reading.honesty];
-  return 'No data';
+function accountReading(readings: QuotaState[], service: string): QuotaState | undefined {
+  return readings.find((s) => connectionIdOf(s) === service && connectionKindOf(s) === 'account');
 }
 
 function KeyChip({ row, reading }: { row: KeyRow; reading: QuotaState | undefined }) {
-  const zero = reading?.honesty === 'balance_empty';
+  const view = keyView(reading);
   return (
-    <div className="chip" title={`${SERVICE_LABELS[row.service]} - ends ${row.last4}`}>
-      <ProviderLogo service={row.service} size={18} />
-      <span className="grow ellipsis">
-        {row.name}
-        <span className="sub">account balance</span>
-      </span>
-      <span className={zero ? 'num chip-value zero' : 'num chip-value'}>{keyHeadline(reading)}</span>
+    <div className="chip" title={`${SERVICE_LABELS[row.service]} - ends ${row.last4}`} {...(view.pct != null ? { 'data-level': level(view.pct) } : {})}>
+      <div className="chip-row">
+        <ProviderLogo service={row.service} size={18} />
+        <span className="grow ellipsis">
+          {row.name}
+          <span className="sub">{view.detail}</span>
+        </span>
+        <span className={view.empty ? 'num chip-value zero' : 'num chip-value'}>{view.headline}</span>
+      </div>
+      {view.pct != null && <Meter pct={view.pct} label={row.name} thin />}
     </div>
   );
 }
@@ -44,7 +31,7 @@ function KeyChip({ row, reading }: { row: KeyRow; reading: QuotaState | undefine
 export function UsageTab({ snapshot, onTab }: { snapshot: PanelSnapshot; onTab: (tab: PanelTab) => void }) {
   const accounts = snapshot.accounts.filter((a) => a.status !== 'none');
   const accountReadings = accounts.flatMap((a) => {
-    const reading = readingOf(snapshot.readings, a.service, 'account');
+    const reading = accountReading(snapshot.readings, a.service);
     return a.status === 'connected' && reading != null ? [reading] : [];
   });
 
@@ -68,7 +55,7 @@ export function UsageTab({ snapshot, onTab }: { snapshot: PanelSnapshot; onTab: 
           <div className="kicker">Accounts</div>
           <div className="cards">
             {accounts.map((a) => {
-              const reading = readingOf(snapshot.readings, a.service, 'account');
+              const reading = accountReading(snapshot.readings, a.service);
               if (a.status === 'ended') {
                 return (
                   <ProviderCard
@@ -102,7 +89,7 @@ export function UsageTab({ snapshot, onTab }: { snapshot: PanelSnapshot; onTab: 
           <div className="kicker">Keys</div>
           <div className="chips">
             {snapshot.keys.map((row) => (
-              <KeyChip key={row.id} row={row} reading={readingOf(snapshot.readings, row.id, 'key')} />
+              <KeyChip key={row.id} row={row} reading={keyReading(snapshot.readings, row.id)} />
             ))}
           </div>
         </>

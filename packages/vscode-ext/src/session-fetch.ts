@@ -3,6 +3,7 @@
  * Remaining % math stays in @ai-quota-tool/core pure mappers only.
  */
 import {
+  apiKeyInvalid,
   combineGrokQuotaState,
   deepseekApiKeyInvalid,
   deepseekBalanceUnreadable,
@@ -16,6 +17,7 @@ import {
   mapGrokRateLimits,
   mapGrokWeeklyUsage,
   mapKimiBalance,
+  mapOpenRouterKey,
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
   type QuotaState,
@@ -361,9 +363,21 @@ export async function fetchKimiBalance(apiKey: string): Promise<QuotaState> {
   }
 }
 
+/** OpenRouter spend and cap for this one key. https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key */
+export async function fetchOpenRouterKey(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const res = await fetch('https://openrouter.ai/api/v1/key', {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
+  if (res.status === 401 || res.status === 403) return apiKeyInvalid('openrouter', now);
+  if (!res.ok) throw new Error(`OpenRouter key API: ${res.status}`);
+  return mapOpenRouterKey(await res.json().catch(() => null), now);
+}
+
 const KEY_FETCHERS: Partial<Record<ServiceId, (apiKey: string) => Promise<QuotaState>>> = {
   deepseek: fetchDeepSeekBalance,
   kimi: fetchKimiBalance,
+  openrouter: fetchOpenRouterKey,
 };
 
 /** One reading for a Key. A rejected key gives an honesty state; other failures throw. */

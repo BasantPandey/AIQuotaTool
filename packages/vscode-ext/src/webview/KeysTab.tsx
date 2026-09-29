@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { ServiceId } from '@ai-quota-tool/core';
+import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { defaultKeyName, KEY_SERVICES, SERVICE_LABELS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
 import type { FormStatus, KeyRow } from './protocol.js';
 import { send, useForm } from './store.js';
-
-/** What the card for a Key shows. */
-export function keyShows(_row: KeyRow): string {
-  return 'Account balance';
-}
+import { keyReading, keyView } from './key-view.js';
 
 function FormNote({ form }: { form: FormStatus }) {
   if (form.status === 'testing') return <p className="form-note">Testing…</p>;
@@ -95,7 +91,7 @@ function AddKeyForm({ keys, onClose }: { keys: KeyRow[]; onClose: () => void }) 
   );
 }
 
-function KeyTableRow({ row }: { row: KeyRow }) {
+function KeyTableRow({ row, reading }: { row: KeyRow; reading: QuotaState | undefined }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(row.name);
   const target = `edit:${row.id}`;
@@ -132,7 +128,7 @@ function KeyTableRow({ row }: { row: KeyRow }) {
         </span>
       </td>
       <td className="num">…{row.last4}</td>
-      <td>{keyShows(row)}</td>
+      <td>{keyView(reading).shows}</td>
       <td className="cell-actions">
         {editing ? (
           <>
@@ -170,7 +166,7 @@ function KeyTableRow({ row }: { row: KeyRow }) {
   );
 }
 
-export function KeysTab({ keys }: { keys: KeyRow[] }) {
+export function KeysTab({ keys, readings }: { keys: KeyRow[]; readings: QuotaState[] }) {
   const [adding, setAdding] = useState(false);
 
   return (
@@ -201,7 +197,7 @@ export function KeysTab({ keys }: { keys: KeyRow[] }) {
           </thead>
           <tbody>
             {keys.map((row) => (
-              <KeyTableRow key={row.id} row={row} />
+              <KeyTableRow key={row.id} row={row} reading={keyReading(readings, row.id)} />
             ))}
           </tbody>
         </table>

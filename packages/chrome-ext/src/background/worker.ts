@@ -1,4 +1,4 @@
-import type { LowQuotaArmed, PanelMessage, QuotaState, ServiceId } from '@ai-quota-tool/core';
+import type { LowQuotaArmed, PanelMessage, QuotaState, ChromeServiceId } from '@ai-quota-tool/core';
 import {
   decideLowQuotaAlerts,
   DEFAULT_ENABLED_SERVICES,
@@ -50,7 +50,7 @@ async function checkLowQuota(states: QuotaState[]): Promise<void> {
   await chrome.storage.local.set({ [LOW_QUOTA_ARMED_KEY]: decision.armed });
 }
 
-async function readEnabled(): Promise<ServiceId[]> {
+async function readEnabled(): Promise<ChromeServiceId[]> {
   const stored = await chrome.storage.local.get([ENABLED_SERVICES_KEY]);
   return resolveEnabledServices(stored[ENABLED_SERVICES_KEY]);
 }
@@ -58,7 +58,7 @@ async function readEnabled(): Promise<ServiceId[]> {
 /** Merge readings into storage, keeping only providers the user turned on. */
 async function storeMerged(
   merge: (existing: QuotaState[]) => QuotaState[],
-  enabled: ServiceId[],
+  enabled: ChromeServiceId[],
 ): Promise<void> {
   const stored = await chrome.storage.local.get(['quotaStates']);
   const existing: QuotaState[] = (stored['quotaStates'] as QuotaState[] | undefined) ?? [];
@@ -182,7 +182,7 @@ async function migrateEnabledServices(): Promise<void> {
   const stored = await chrome.storage.local.get([ENABLED_SERVICES_KEY, API_KEYS_STORAGE_KEY]);
   if (stored[ENABLED_SERVICES_KEY] !== undefined) return;
   const keys = (stored[API_KEYS_STORAGE_KEY] as StoredApiKeys | undefined) ?? {};
-  const withKeys = Object.keys(keys) as ServiceId[];
+  const withKeys = Object.keys(keys) as ChromeServiceId[];
   await chrome.storage.local.set({
     [ENABLED_SERVICES_KEY]: resolveEnabledServices([...DEFAULT_ENABLED_SERVICES, ...withKeys]),
   });

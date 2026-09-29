@@ -148,3 +148,19 @@ export function GeminiLogo({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Simple original branching mark for OpenRouter (not an official brand asset). */
+export function OpenRouterLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M2.5 12h5c3 0 3.5-5.5 7-5.5h3.5M7.5 12c3 0 3.5 5.5 7 5.5h3.5"
+        stroke="#fff"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M17 3.5 21 6.5 17 9.5ZM17 14.5 21 17.5 17 20.5Z" fill="#fff" />
+    </svg>
+  );
+}

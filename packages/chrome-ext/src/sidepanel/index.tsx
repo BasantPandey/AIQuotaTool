@@ -2,14 +2,14 @@ import { StrictMode, Suspense, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
-import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
+import type { QuotaState, ChromeServiceId } from '@ai-quota-tool/core';
 import {
   DEFAULT_ENABLED_SERVICES,
   deriveConnections,
   ENABLED_SERVICES_KEY,
   filterEnabled,
   resolveEnabledServices,
-  SERVICES,
+  CHROME_SERVICES,
   SERVICE_URLS,
 } from '@ai-quota-tool/core';
 import { LowestLimit, ProviderCard, ProviderLogo, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
@@ -37,9 +37,9 @@ const queryClient = new QueryClient({
   },
 });
 
-function apiKeyTails(keys: StoredApiKeys): Partial<Record<ServiceId, string>> {
-  const tails: Partial<Record<ServiceId, string>> = {};
-  for (const service of SERVICES) {
+function apiKeyTails(keys: StoredApiKeys): Partial<Record<ChromeServiceId, string>> {
+  const tails: Partial<Record<ChromeServiceId, string>> = {};
+  for (const service of CHROME_SERVICES) {
     if (service.auth !== 'api_key') continue;
     const key = keys[service.id];
     if (typeof key === 'string' && key.length >= 4) tails[service.id] = key.slice(-4);
@@ -48,13 +48,13 @@ function apiKeyTails(keys: StoredApiKeys): Partial<Record<ServiceId, string>> {
 }
 
 function Welcome() {
-  const [picked, setPicked] = useState<ServiceId[]>(DEFAULT_ENABLED_SERVICES);
+  const [picked, setPicked] = useState<ChromeServiceId[]>(DEFAULT_ENABLED_SERVICES);
   return (
     <div className="welcome">
       <BrandMark size={44} />
       <h1>See every AI limit in one place</h1>
       <p className="lead">Pick the tools you use. You can change this at any time.</p>
-      {SERVICES.map((service) => (
+      {CHROME_SERVICES.map((service) => (
         <label className="row" key={service.id} style={{ alignItems: 'center', cursor: 'pointer' }}>
           <ProviderLogo service={service.id} size={28} />
           <span className="row-main row-title">
@@ -100,7 +100,7 @@ function CardAction({
   githubConnected,
   onProviders,
 }: {
-  service: (typeof SERVICES)[number];
+  service: (typeof CHROME_SERVICES)[number];
   githubConnected: boolean;
   onProviders: () => void;
 }) {
@@ -145,7 +145,7 @@ function Panel() {
   if (!consent) return <Welcome />;
 
   const states = filterEnabled(allStates, enabled);
-  const visible = SERVICES.filter((service) => enabled.includes(service.id));
+  const visible = CHROME_SERVICES.filter((service) => enabled.includes(service.id));
 
   return (
     <div className="shell">

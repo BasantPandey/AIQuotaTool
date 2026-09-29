@@ -1,6 +1,6 @@
 # AI Quota Tool
 
-Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus your **DeepSeek** and **Kimi** API balance - live in VS Code.
+Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus the balance or spend of your **DeepSeek**, **Kimi**, and **OpenRouter** API keys - live in VS Code.
 
 **Privacy:** the extension stores the session cookies and API keys that you paste in VS Code SecretStorage on this machine. It sends each one only to its own service. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
 
@@ -16,7 +16,9 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 - **Account cards** - one card for each signed-in Account, with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
 - **Fits your theme** - the panel uses the colors and fonts of your VS Code theme: dark, light and high contrast. In a wide tab the cards show as a grid.
 - **Grok** - paste a grok.com `sso` cookie on the Accounts tab. You see short-window rate limits, plus the SuperGrok weekly pool when available.
-- **Named Keys** - add many DeepSeek and Kimi API keys on the Keys tab, each with its own name. Each Key shows the account balance (money left, not a percent). After you save a Key, the panel shows only its last 4 characters.
+- **Named Keys** - add many API keys on the Keys tab, each with its own name. After you save a Key, the panel shows only its last 4 characters.
+  - **DeepSeek and Kimi** show the account balance (money left, not a percent).
+  - **OpenRouter** shows the spend of that one key. If the key has a limit, it shows the spend against the limit and the real percent left. If not, it shows the spend this month.
 - **Standalone** - fetches quota directly from VS Code with your session credentials. **No Chrome extension required.**
 - **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
 - **Automatic refresh** - polls every 60 seconds in the background.
@@ -94,11 +96,11 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 
 ## Privacy and security
 
-**This extension stores** the Claude `sessionKey`, the ChatGPT session token, the Grok `sso` cookie, the DeepSeek and Kimi API keys, and the GitHub sign-in token. It keeps them in VS Code SecretStorage. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
+**This extension stores** the Claude `sessionKey`, the ChatGPT session token, the Grok `sso` cookie, each API key that you add, and the GitHub sign-in token. It keeps them in VS Code SecretStorage. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
 
 - Session cookies and API keys are account-level secrets. Treat them like passwords.
 - Stored only in VS Code **SecretStorage** on this machine (encrypted at rest by the host OS / VS Code), not in plain-text settings or our servers.
-- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, or GitHub APIs) for quota reads - no telemetry backend.
+- Secrets are sent only to the owning service (claude.ai, chatgpt.com, grok.com, api.deepseek.com, api.moonshot.ai, openrouter.ai, or GitHub APIs) for quota reads - no telemetry backend.
 - Lifecycle: **Test and save** tests the secret before the extension keeps it. **Sign out** or **Remove** deletes the secret.
 - Invalid or expired sessions remove the old reading and show **Session ended** on the card and in the status bar. The secret is **not** auto-deleted. Open the Accounts tab to sign in again or sign out. Stale “full quota” is never invented.
 - Optional local WebSocket (`127.0.0.1`) may receive quota updates from the Chrome extension; any process on your machine could spoof that channel.
@@ -108,7 +110,7 @@ A Chrome extension package may exist in this monorepo for optional browser-sessi
 ## Requirements
 
 - VS Code 1.95 or later
-- Active accounts on the services you want to monitor (Claude Pro/Free, GitHub Copilot, ChatGPT, Grok, DeepSeek, Kimi)
+- Active accounts on the services you want to monitor (Claude Pro/Free, GitHub Copilot, ChatGPT, Grok, DeepSeek, Kimi, OpenRouter)
 
 ---
 

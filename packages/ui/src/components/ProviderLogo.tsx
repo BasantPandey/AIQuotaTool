@@ -10,6 +10,7 @@ import {
   GeminiLogo,
   GrokLogo,
   KimiLogo,
+  OpenRouterLogo,
 } from './logos.js';
 
 const MARKS: Record<ServiceId, (props: { size?: number }) => React.ReactNode> = {
@@ -21,6 +22,7 @@ const MARKS: Record<ServiceId, (props: { size?: number }) => React.ReactNode> = 
   cursor: CursorLogo,
   deepseek: DeepSeekLogo,
   kimi: KimiLogo,
+  openrouter: OpenRouterLogo,
 };
 
 /** Tile colors where the catalog card color clashes with the mark. */
