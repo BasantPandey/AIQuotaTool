@@ -8,7 +8,8 @@ VS Code extension. **V1 product surface** - first-class standalone quota monitor
 | `src/extension.ts` | `activate` — poller, credentials, WS, panel, status bar, setup |
 | `src/quota-poller.ts` | Poll loop; uses `session-fetch`; `upsertQuotaState`; `pollNow` after save |
 | `src/session-fetch.ts` | Shared Claude/Codex/Copilot/Grok HTTP + core pure mappers (poller + Save & Test) |
-| `src/credentials.ts` | SecretStorage Claude sessionKey / Codex token / Grok sso; clear methods |
+| `src/credentials.ts` | SecretStorage Claude sessionKey / Codex token / Grok sso / API keys / GitHub token; clear methods |
+| GitHub sign-in | Device flow from `@ai-quota-tool/core` (same as Chrome). `credential-panel.ts` runs it; no `vscode.authentication` |
 | `src/credential-panel.ts` | Set Up Accounts host; Save & Test via `session-fetch`; clear |
 | `src/ws-server.ts` | WebSocket server `127.0.0.1:54321` — optional Chrome sink |
 | `src/quota-panel.ts` | WebviewPanel host — dashboard webview |

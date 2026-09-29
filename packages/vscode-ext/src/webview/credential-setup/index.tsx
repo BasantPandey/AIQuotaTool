@@ -65,13 +65,17 @@ function CredentialSetup() {
   const [claudeStatus, setClaudeStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
   const [codexStatus, setCodexStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
   const [githubStatus, setGithubStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
+  /** GitHub device flow code while the host waits for approval. */
+  const [githubCode, setGithubCode] = useState<string | null>(null);
   const [grokStatus, setGrokStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
   const [deepseekStatus, setDeepseekStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
   const [kimiStatus, setKimiStatus] = useState<CredStatus>({ status: 'idle', detail: undefined });
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      const msg = e.data as { type?: string; service?: string; status?: string; detail?: string };
+      const msg = e.data as { type?: string; service?: string; status?: string; detail?: string; userCode?: string };
+      if (msg.type === 'github_device' && msg.userCode) setGithubCode(msg.userCode);
+      if (msg.type === 'credential_status' && msg.service === 'github') setGithubCode(null);
       if (msg.type === 'credential_status' && msg.service && msg.status) {
         const update: CredStatus = { status: msg.status as StatusKind, detail: msg.detail || undefined };
         if (msg.service === 'claude') setClaudeStatus(update);
@@ -128,7 +132,7 @@ function CredentialSetup() {
         }}
       >
         <strong>Privacy:</strong> Claude, Codex, and Grok use browser <em>session cookies</em> (account-level secrets).
-        DeepSeek and Kimi use a pasted <em>API key</em> (balance only). All are stored only in this machine&apos;s VS
+        DeepSeek and Kimi use a pasted <em>API key</em> (balance only). Copilot uses a GitHub sign-in token. All are stored only in this machine&apos;s VS
         Code <code>SecretStorage</code> (encrypted at rest by the host). They are never sent to us or any third-party
         server - only to claude.ai / chatgpt.com / grok.com / GitHub / api.deepseek.com / api.moonshot.ai for quota
         reads. Clear a secret anytime with <strong>Clear saved key</strong> below. Do not share session keys or API
@@ -328,23 +332,48 @@ function CredentialSetup() {
       {activeTab === 'github' && (
         <div>
           <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 20 }}>
-            Sign in with your <strong>GitHub account</strong>. VS Code handles the OAuth flow - no token copying required.
+            Sign in with your <strong>GitHub account</strong>. You type a short code on GitHub. You do not copy a token.
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setGithubStatus({ status: 'testing', detail: undefined });
-                vscode?.postMessage({ type: 'github_signin' });
-              }}
-            >
-              Sign in with GitHub
-            </button>
-            <StatusBadge s={githubStatus} />
-          </div>
+          {githubCode != null ? (
+            <div className="device" role="status" style={{ maxWidth: 420 }}>
+              <div className="device-label">Enter this code on GitHub</div>
+              <div className="device-code num">{githubCode}</div>
+              <div className="device-actions">
+                <button className="btn btn-primary" onClick={() => vscode?.postMessage({ type: 'github_open' })}>
+                  Copy code and open GitHub
+                </button>
+                <button className="btn btn-ghost" onClick={() => vscode?.postMessage({ type: 'github_cancel' })}>
+                  Cancel
+                </button>
+              </div>
+              <div className="device-wait">
+                <span className="dot warn" />
+                Waiting for you to approve on GitHub
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <button
+                className="btn btn-primary"
+                disabled={githubStatus.status === 'testing'}
+                onClick={() => {
+                  setGithubStatus({ status: 'testing', detail: undefined });
+                  vscode?.postMessage({ type: 'github_signin' });
+                }}
+              >
+                {githubStatus.status === 'ok' ? 'Sign in again' : 'Sign in with GitHub'}
+              </button>
+              {githubStatus.status === 'ok' && (
+                <button className="btn" onClick={() => vscode?.postMessage({ type: 'clear_github' })}>
+                  Disconnect
+                </button>
+              )}
+              <StatusBadge s={githubStatus} />
+            </div>
+          )}
           {githubStatus.status === 'ok' && (
             <p style={{ marginTop: 14, fontSize: 12, color: 'var(--vscode-descriptionForeground)', lineHeight: 1.5 }}>
-              GitHub Copilot quota will appear in the dashboard. If you don't have an active Copilot subscription it will show as unavailable.
+              Copilot shows in the dashboard. Without an active Copilot plan, the card says so.
             </p>
           )}
         </div>

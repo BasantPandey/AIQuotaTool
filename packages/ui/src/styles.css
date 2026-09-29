@@ -180,6 +180,23 @@ html, body {
 .hero .meter { margin-top: 12px; height: 12px; --cells: 30; }
 .hero-reset { margin-top: 8px; font-size: 11.5px; color: var(--aq-muted); }
 
+/* GitHub device flow sign-in */
+.device {
+  flex-basis: 100%;
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--aq-border);
+  background: var(--aq-bg);
+}
+.device-label { font-size: 11.5px; color: var(--aq-muted); }
+.device-code { margin: 4px 0 10px; font-size: 24px; font-weight: 600; letter-spacing: 0.08em; color: var(--aq-text); user-select: all; }
+.device-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.device-wait { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11.5px; color: var(--aq-muted); }
+.device-wait .dot { animation: aq-pulse 1.4s ease-in-out infinite; }
+@keyframes aq-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .device-wait .dot { animation: none; } }
+
 .empty { text-align: center; padding: 40px 16px; color: var(--aq-muted); }
 .empty h2 { margin: 12px 0 6px; font-size: 15px; color: var(--aq-text); }
 .empty p { margin: 0 0 16px; font-size: 12.5px; }

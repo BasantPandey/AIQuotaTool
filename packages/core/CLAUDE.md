@@ -13,7 +13,7 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 - **Pressure:** `pressureRemaining`, `lowestPressureAmong` (never invent 100% for honesty-only states)
 - **Badge:** `deriveBadge` + `BADGE_COLORS` (lowest remaining %; amber < 10%, red < 5%; empty when no real %)
 - **Low-quota alerts:** `decideLowQuotaAlerts`, `initialLowQuotaArmed`, `LOW_QUOTA_THRESHOLD` (once per drop; re-arm on recovery)
-- **GitHub OAuth (PKCE):** `buildGitHubAuthorizeUrl`, `extractAuthorizationCode` (state-checked code extraction)
+- **GitHub device flow (both hosts):** `GITHUB_OAUTH_CLIENT_ID`, `requestDeviceCode`, `pollDeviceToken`, `nextDevicePollStep`. Hosts pass their own `post`, `sleep` and `now`. No client secret
 - **Onboarding:** `isConnectedReading`, `deriveConnections`
 - `formatTimeRemaining(ms)`, `calcPct(used, limit)`
 

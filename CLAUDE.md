@@ -45,7 +45,7 @@ node scripts/vscode-assets.mjs            # VS Code icon + Marketplace screensho
 **Chrome V2 (standalone):** Build chrome-ext, load `packages/chrome-ext/dist/` unpacked - action click opens the side panel.
 
 ## Architecture: VS Code primary (V1)
-- **VS Code standalone (required path):** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub OAuth seat). Credentials in SecretStorage. Empty → Set Up Accounts.
+- **VS Code standalone (required path):** `QuotaPoller` fetches Claude (sessionKey cookie), Codex (ChatGPT session token), Copilot (GitHub seat; token from the shared device flow). Credentials in SecretStorage. Empty → Set Up Accounts.
 - **Grok:** VS Code SecretStorage `sso` cookie (Claude-style) + `POST /rest/rate-limits` / pure `mapGrokRateLimits`; optional Chrome WS merge (see `docs/GROK-SPEC.md`).
 - **Chrome push (dormant):** VS Code still runs the WS server `:54321`, but chrome-ext V2 no longer ships a WS client - nothing currently pushes. Kept for a possible future bridge.
 - VS Code never initiates messages to Chrome.
@@ -92,7 +92,7 @@ Empty state / no data → **Set Up Accounts** (not Chrome-only messaging).
 - `pressureRemaining` / `lowestPressureAmong` (badge/status pressure; no inventing 100%)
 - `deriveBadge` (badge text/color; amber < 10%, red < 5%)
 - `decideLowQuotaAlerts` (alert once per drop; re-arm on recovery)
-- `nextDevicePollStep` (GitHub device flow poll step)
+- `requestDeviceCode` / `pollDeviceToken` / `nextDevicePollStep` (GitHub device flow, shared by both hosts; no client secret)
 - `isConnectedReading` / `deriveConnections` (onboarding connection flags)
 
 ## VS Code extension: two tsconfigs — critical

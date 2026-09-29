@@ -2,7 +2,7 @@
 
 Resolves issue #28 (part of #27). Scope: how a standalone MV3 Chrome extension authenticates with GitHub (Copilot seat check) via `chrome.identity`.
 
-> **Update 2026-09-28 (open question a, tested):** GitHub rejects the web-flow token exchange without `client_secret`, even with PKCE. It returns `incorrect_client_credentials`. The extension now uses the **device flow**, which needs no secret. `POST /login/device/code` and the token poll both work with the client id alone. See `packages/chrome-ext/src/background/github-auth.ts`.
+> **Update 2026-09-28 (open question a, tested):** GitHub rejects the web-flow token exchange without `client_secret`, even with PKCE. It returns `incorrect_client_credentials`. The extension now uses the **device flow**, which needs no secret. `POST /login/device/code` and the token poll both work with the client id alone. Both extensions share the flow in `packages/core/src/github-oauth.ts`.
 
 ## Summary verdict
 

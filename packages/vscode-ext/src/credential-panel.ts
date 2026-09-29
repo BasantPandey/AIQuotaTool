@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { type DeviceCode, pollDeviceToken, requestDeviceCode } from '@ai-quota-tool/core';
 import type { CredentialManager } from './credentials.js';
 import {
   normalizeCodexSessionToken,
@@ -12,6 +13,24 @@ import {
 // ── Panel host ──────────────────────────────────────────────────────────────
 
 type WvMsg = Record<string, string>;
+
+async function postJson(url: string, body: Record<string, string>): Promise<unknown> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+function abortableSleep(signal: AbortSignal): (ms: number) => Promise<boolean> {
+  return (ms) =>
+    new Promise((resolve) => {
+      if (signal.aborted) return resolve(false);
+      const timer = setTimeout(() => resolve(!signal.aborted), ms);
+      signal.addEventListener('abort', () => (clearTimeout(timer), resolve(false)), { once: true });
+    });
+}
 
 function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
@@ -47,10 +66,13 @@ export type SavedCredentialService =
   | 'grok'
   | 'deepseek'
   | 'kimi';
-export type ClearedCredentialService = 'claude' | 'codex' | 'grok' | 'deepseek' | 'kimi';
+export type ClearedCredentialService = 'claude' | 'codex' | 'copilot' | 'grok' | 'deepseek' | 'kimi';
 
 export class CredentialPanel {
   private panel: vscode.WebviewPanel | null = null;
+  /** Running GitHub device flow. Cancel, a new sign-in, or closing the panel aborts it. */
+  private githubAbort: AbortController | null = null;
+  private githubCode: DeviceCode | null = null;
   private onSaved: ((service?: SavedCredentialService) => void | Promise<void>) | null = null;
   private onCleared: ((service: ClearedCredentialService) => void | Promise<void>) | null = null;
 
@@ -111,6 +133,21 @@ export class CredentialPanel {
         case 'github_signin':
           await this.handleGithubSignIn();
           break;
+        case 'github_open':
+          if (this.githubCode) {
+            await vscode.env.clipboard.writeText(this.githubCode.userCode);
+            await vscode.env.openExternal(vscode.Uri.parse(this.githubCode.verificationUri));
+          }
+          break;
+        case 'github_cancel':
+          this.githubAbort?.abort();
+          this.send('github', 'idle');
+          break;
+        case 'clear_github':
+          await this.credentials.clearGithubToken();
+          this.send('github', 'idle');
+          await this.onCleared?.('copilot');
+          break;
         case 'clear_claude':
           await this.handleClearClaude();
           break;
@@ -139,6 +176,7 @@ export class CredentialPanel {
     });
 
     this.panel.onDidDispose(() => {
+      this.githubAbort?.abort();
       this.panel = null;
     });
   }
@@ -188,14 +226,7 @@ export class CredentialPanel {
       }
     }
 
-    try {
-      const session = await vscode.authentication.getSession('github', ['read:user'], {
-        createIfNone: false,
-      });
-      if (session) this.send('github', 'ok', `Connected as @${session.account.label}`);
-    } catch {
-      // not signed in - stay in idle state
-    }
+    if (await this.credentials.getGithubToken()) this.send('github', 'ok', 'Connected');
 
     if (creds.deepseekApiKey) {
       this.send('deepseek', 'testing');
@@ -251,15 +282,29 @@ export class CredentialPanel {
     }
   }
 
+  /** GitHub device flow: show the code in the webview, poll until the user approves, store the token. */
   private async handleGithubSignIn(): Promise<void> {
+    this.githubAbort?.abort();
+    const abort = new AbortController();
+    this.githubAbort = abort;
     try {
-      const session = await vscode.authentication.getSession('github', ['read:user'], {
-        createIfNone: true,
-      });
-      this.send('github', 'ok', `Connected as @${session.account.label}`);
+      const code = await requestDeviceCode(postJson);
+      this.githubCode = code;
+      this.panel?.webview.postMessage({ type: 'github_device', userCode: code.userCode });
+      const token = await pollDeviceToken(code, { post: postJson, sleep: abortableSleep(abort.signal), now: Date.now });
+      if (token == null) return;
+      await this.credentials.setGithubToken(token);
+      this.send('github', 'ok', 'Connected');
       await this.onSaved?.('github');
-    } catch {
-      this.send('github', 'error', 'Sign-in cancelled or failed');
+    } catch (e) {
+      if (!abort.signal.aborted) {
+        this.send('github', 'error', e instanceof Error ? e.message : 'GitHub sign-in failed. Try again.');
+      }
+    } finally {
+      if (this.githubAbort === abort) {
+        this.githubAbort = null;
+        this.githubCode = null;
+      }
     }
   }
 

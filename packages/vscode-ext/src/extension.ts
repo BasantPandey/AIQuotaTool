@@ -10,17 +10,6 @@ import { CredentialPanel } from './credential-panel.js';
 const OPEN_PANEL_COMMAND = 'aiQuotaTool.openPanel';
 const CONFIGURE_COMMAND = 'aiQuotaTool.configure';
 
-async function getGithubToken(): Promise<string | undefined> {
-  try {
-    const session = await vscode.authentication.getSession('github', ['read:user'], {
-      createIfNone: false,
-    });
-    return session?.accessToken;
-  } catch {
-    return undefined;
-  }
-}
-
 export function activate(context: vscode.ExtensionContext): void {
   const credentials = new CredentialManager(context.secrets);
   const poller = new QuotaPoller();
@@ -50,7 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
   // Standalone polling — fetches quota directly from Node.js (no Chrome needed).
-  poller.start(() => credentials.get(), getGithubToken);
+  poller.start(() => credentials.get(), () => credentials.getGithubToken());
   poller.onUpdate(applyStates);
 
   // After Save & Test (or Done), clear re-auth flag and re-poll.

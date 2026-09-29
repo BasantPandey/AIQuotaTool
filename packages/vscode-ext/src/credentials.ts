@@ -6,6 +6,8 @@ const KEY_CODEX_COOKIE = 'aiQuotaTool.codexSessionToken';
 const KEY_GROK_SSO = 'aiQuotaTool.grokSsoCookie';
 const KEY_DEEPSEEK_API_KEY = 'aiQuotaTool.deepseekApiKey';
 const KEY_KIMI_API_KEY = 'aiQuotaTool.kimiApiKey';
+/** GitHub OAuth token from the device flow (Copilot seat check). */
+const KEY_GITHUB_TOKEN = 'aiQuotaTool.githubToken';
 // Accidentally stored Anthropic API keys in 0.5.x — not used for claude.ai usage.
 const KEY_CLAUDE_API_LEGACY = 'aiQuotaTool.claudeApiKey';
 
@@ -46,14 +48,19 @@ export class CredentialManager {
       creds.kimiApiKey
     )
       return true;
-    try {
-      const session = await vscode.authentication.getSession('github', ['read:user'], {
-        createIfNone: false,
-      });
-      return !!session;
-    } catch {
-      return false;
-    }
+    return !!(await this.getGithubToken());
+  }
+
+  getGithubToken(): Promise<string | undefined> {
+    return Promise.resolve(this.secrets.get(KEY_GITHUB_TOKEN));
+  }
+
+  async setGithubToken(token: string): Promise<void> {
+    await this.secrets.store(KEY_GITHUB_TOKEN, token);
+  }
+
+  async clearGithubToken(): Promise<void> {
+    await this.secrets.delete(KEY_GITHUB_TOKEN);
   }
 
   async setClaudeKey(key: string): Promise<void> {
