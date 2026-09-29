@@ -67,8 +67,18 @@ export interface ProviderBalance {
   infos: AccountBalance[];
 }
 
+/** An Account is a consumer plan (one for each provider). A Key is a named API key (many for each provider). */
+export type ConnectionKind = 'account' | 'key';
+
 export interface QuotaState {
   service: ServiceId;
+  /**
+   * The connection this reading belongs to. Merge matches on it.
+   * An Account uses its provider id. Omit it for an Account; read it with `connectionIdOf`.
+   */
+  connectionId?: string;
+  /** Omit for an Account; read it with `connectionKindOf`. */
+  kind?: ConnectionKind;
   /** 0–100, percentage REMAINING in the current session window. Omit if the service has no session quota. */
   sessionPct?: number;
   /** 0–100, percentage REMAINING in the current weekly window. Omit if the service has no weekly quota. */
