@@ -1,4 +1,4 @@
-# One-time helper: print the Marketplace id of the Azure managed identity.
+# One-time helper: print the Marketplace id of the Azure managed identity, and check its publish rights.
 # Paste that id in the publisher page → Members → Add (Contributor).
 # See packages/vscode-ext/README.md (Publishing → One-time setup, step 5).
 
@@ -29,3 +29,7 @@ jobs:
           ID="$(az rest -u https://app.vssps.visualstudio.com/_apis/profile/profiles/me --resource 499b84ac-1321-427f-aa17-267ca6975798 --query id -o tsv)"
           echo "Marketplace id: ${ID}"
           echo "Add this id to the publisher as Contributor: \`${ID}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check publish rights for BasantPandey
+        # Fails until the id above is a Contributor on the publisher.
+        run: npx --yes @vscode/vsce@3.9.2 verify-pat --azure-credential BasantPandey
