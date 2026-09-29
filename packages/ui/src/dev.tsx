@@ -103,8 +103,12 @@ if (host === 'vscode') {
 
 const stateOf = (id: ServiceId) => MOCK_STATES.find((s) => s.service === id);
 
+const { AccountsKeysPrototype } =
+  params.get('screen') === 'accounts-keys' ? await import('./prototype-accounts-keys.js') : { AccountsKeysPrototype: null };
+
 function Preview() {
   if (params.has('loading')) return <QuotaLoadingFallback />;
+  if (AccountsKeysPrototype) return <AccountsKeysPrototype />;
   return (
     <main className="page" style={width ? { maxWidth: Number(width), margin: 0 } : undefined}>
       <LowestLimit states={MOCK_STATES} />
