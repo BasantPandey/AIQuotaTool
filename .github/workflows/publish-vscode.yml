@@ -14,12 +14,12 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Git ref (branch) to publish from
+        description: "Branch: the branch to publish from"
         required: true
         default: main
         type: string
       bump:
-        description: Semver bump when not dry-run. Use none when a PR already set the version.
+        description: "Version bump: patch, minor or major. Use none when package.json already has the new version."
         required: true
         default: patch
         type: choice
@@ -29,7 +29,7 @@ on:
           - major
           - none
       dry_run:
-        description: Package only (no version bump, no Marketplace publish). Uncheck for a live release.
+        description: "Dry run: build the VSIX only. Uncheck to publish to the Marketplace."
         required: true
         default: true
         type: boolean
