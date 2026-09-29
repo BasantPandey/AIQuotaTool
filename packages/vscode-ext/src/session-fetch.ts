@@ -19,6 +19,8 @@ import {
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
   type QuotaState,
+  type ServiceId,
+  SERVICE_LABELS,
   type WhamUsageResponse,
 } from '@ai-quota-tool/core';
 
@@ -340,14 +342,6 @@ export async function fetchDeepSeekBalance(apiKey: string): Promise<QuotaState> 
   }
 }
 
-/** Validate a DeepSeek API key for Save & Test. Throws only on a rejected key. */
-export async function validateDeepSeekApiKey(apiKey: string): Promise<void> {
-  const state = await fetchDeepSeekBalance(apiKey);
-  if (state.honesty === 'api_key_invalid') {
-    throw new Error('DeepSeek API key invalid or expired');
-  }
-}
-
 /**
  * Kimi (Moonshot AI) API balance. Official GET /v1/users/me/balance with a
  * user-pasted key. Same honesty-vs-throw split as DeepSeek above.
@@ -367,10 +361,22 @@ export async function fetchKimiBalance(apiKey: string): Promise<QuotaState> {
   }
 }
 
-/** Validate a Kimi API key for Save & Test. Throws only on a rejected key. */
-export async function validateKimiApiKey(apiKey: string): Promise<void> {
-  const state = await fetchKimiBalance(apiKey);
+const KEY_FETCHERS: Partial<Record<ServiceId, (apiKey: string) => Promise<QuotaState>>> = {
+  deepseek: fetchDeepSeekBalance,
+  kimi: fetchKimiBalance,
+};
+
+/** One reading for a Key. A rejected key gives an honesty state; other failures throw. */
+export function fetchKeyReading(service: ServiceId, apiKey: string): Promise<QuotaState> {
+  const fetcher = KEY_FETCHERS[service];
+  if (!fetcher) return Promise.reject(new Error(`${SERVICE_LABELS[service]} does not take a Key`));
+  return fetcher(apiKey);
+}
+
+/** The free test call before a Key is saved. Throws when the provider rejects the key. */
+export async function validateKey(service: ServiceId, apiKey: string): Promise<void> {
+  const state = await fetchKeyReading(service, apiKey);
   if (state.honesty === 'api_key_invalid') {
-    throw new Error('Kimi API key invalid or expired');
+    throw new Error(`The provider rejected this ${SERVICE_LABELS[service]} API key.`);
   }
 }

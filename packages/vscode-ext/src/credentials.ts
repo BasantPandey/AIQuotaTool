@@ -4,50 +4,37 @@ const KEY_CLAUDE_COOKIE = 'aiQuotaTool.claudeSessionKey';
 const KEY_CODEX_COOKIE = 'aiQuotaTool.codexSessionToken';
 /** grok.com `sso` session cookie (JWT). Also sent as sso-rw for host parity. */
 const KEY_GROK_SSO = 'aiQuotaTool.grokSsoCookie';
-const KEY_DEEPSEEK_API_KEY = 'aiQuotaTool.deepseekApiKey';
-const KEY_KIMI_API_KEY = 'aiQuotaTool.kimiApiKey';
 /** GitHub OAuth token from the device flow (Copilot seat check). */
 const KEY_GITHUB_TOKEN = 'aiQuotaTool.githubToken';
 // Accidentally stored Anthropic API keys in 0.5.x — not used for claude.ai usage.
 const KEY_CLAUDE_API_LEGACY = 'aiQuotaTool.claudeApiKey';
 
+/** Account secrets. API keys live in `KeyStore`. */
 export interface Credentials {
   claudeSessionKey: string | undefined;
   codexSessionToken: string | undefined;
   grokSsoCookie: string | undefined;
-  deepseekApiKey: string | undefined;
-  kimiApiKey: string | undefined;
 }
 
 export class CredentialManager {
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
   async get(): Promise<Credentials> {
-    const [claudeSessionKey, codexSessionToken, grokSsoCookie, deepseekApiKey, kimiApiKey] =
-      await Promise.all([
-        this.secrets.get(KEY_CLAUDE_COOKIE),
-        this.secrets.get(KEY_CODEX_COOKIE),
-        this.secrets.get(KEY_GROK_SSO),
-        this.secrets.get(KEY_DEEPSEEK_API_KEY),
-        this.secrets.get(KEY_KIMI_API_KEY),
-      ]);
+    const [claudeSessionKey, codexSessionToken, grokSsoCookie] = await Promise.all([
+      this.secrets.get(KEY_CLAUDE_COOKIE),
+      this.secrets.get(KEY_CODEX_COOKIE),
+      this.secrets.get(KEY_GROK_SSO),
+    ]);
     // Drop the unused API-key secret if present (0.5.x regression leftover).
     Promise.resolve(this.secrets.delete(KEY_CLAUDE_API_LEGACY)).catch(() => {
       /* ignore */
     });
-    return { claudeSessionKey, codexSessionToken, grokSsoCookie, deepseekApiKey, kimiApiKey };
+    return { claudeSessionKey, codexSessionToken, grokSsoCookie };
   }
 
   async hasAny(): Promise<boolean> {
     const creds = await this.get();
-    if (
-      creds.claudeSessionKey ||
-      creds.codexSessionToken ||
-      creds.grokSsoCookie ||
-      creds.deepseekApiKey ||
-      creds.kimiApiKey
-    )
-      return true;
+    if (creds.claudeSessionKey || creds.codexSessionToken || creds.grokSsoCookie) return true;
     return !!(await this.getGithubToken());
   }
 
@@ -75,14 +62,6 @@ export class CredentialManager {
     await this.secrets.store(KEY_GROK_SSO, cookie);
   }
 
-  async setDeepSeekApiKey(key: string): Promise<void> {
-    await this.secrets.store(KEY_DEEPSEEK_API_KEY, key);
-  }
-
-  async setKimiApiKey(key: string): Promise<void> {
-    await this.secrets.store(KEY_KIMI_API_KEY, key);
-  }
-
   async clearClaudeKey(): Promise<void> {
     await this.secrets.delete(KEY_CLAUDE_COOKIE);
   }
@@ -93,13 +72,5 @@ export class CredentialManager {
 
   async clearGrokSso(): Promise<void> {
     await this.secrets.delete(KEY_GROK_SSO);
-  }
-
-  async clearDeepSeekApiKey(): Promise<void> {
-    await this.secrets.delete(KEY_DEEPSEEK_API_KEY);
-  }
-
-  async clearKimiApiKey(): Promise<void> {
-    await this.secrets.delete(KEY_KIMI_API_KEY);
   }
 }

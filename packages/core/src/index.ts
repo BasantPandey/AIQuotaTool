@@ -17,3 +17,4 @@ export * from './balance.js';
 export * from './cursor.js';
 export * from './gemini.js';
 export * from './enabled.js';
+export * from './keys.js';

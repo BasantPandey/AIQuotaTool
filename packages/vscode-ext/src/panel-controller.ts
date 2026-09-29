@@ -1,21 +1,31 @@
 import * as vscode from 'vscode';
-import { type DeviceCode, pollDeviceToken, requestDeviceCode, SERVICE_IDS, SERVICE_LABELS } from '@ai-quota-tool/core';
+import {
+  type DeviceCode,
+  defaultKeyName,
+  isUniqueKeyName,
+  KEY_SERVICES,
+  normalizeApiKey,
+  pollDeviceToken,
+  requestDeviceCode,
+  SERVICE_IDS,
+  SERVICE_LABELS,
+  type ServiceId,
+} from '@ai-quota-tool/core';
 import type { CredentialManager } from './credentials.js';
+import type { KeyStore } from './key-store.js';
 import type { QuotaPanel } from './quota-panel.js';
 import type { QuotaPoller } from './quota-poller.js';
 import {
   normalizeCodexSessionToken,
   validateClaudeSession,
   validateCodexSession,
-  validateDeepSeekApiKey,
   validateGrokSession,
-  validateKimiApiKey,
+  validateKey,
 } from './session-fetch.js';
 import type {
   AccountRow,
   AccountService,
   FormStatus,
-  KeyRow,
   PanelSnapshot,
   WebviewMessage,
 } from './webview/protocol.js';
@@ -84,6 +94,7 @@ export class PanelController {
   constructor(
     private readonly panel: QuotaPanel,
     private readonly credentials: CredentialManager,
+    private readonly keys: KeyStore,
     private readonly poller: QuotaPoller,
   ) {}
 
@@ -116,7 +127,10 @@ export class PanelController {
         this.form({ target: 'copilot', status: 'idle' });
         break;
       case 'key_add':
-        await this.addKey(msg.service, msg.value);
+        await this.addKey(msg.service, msg.name, msg.value);
+        break;
+      case 'key_rename':
+        await this.renameKey(msg.id, msg.name);
         break;
       case 'key_remove':
         await this.removeKey(msg.id);
@@ -141,14 +155,7 @@ export class PanelController {
       const detail = status === 'connected' ? this.details.get(service) : undefined;
       return { service, status, ...(detail != null ? { detail } : {}) };
     });
-    const keys: KeyRow[] = [];
-    for (const [service, value] of [
-      ['deepseek', creds.deepseekApiKey],
-      ['kimi', creds.kimiApiKey],
-    ] as const) {
-      if (value) keys.push({ id: service, service, name: `${SERVICE_LABELS[service]} key 1`, last4: value.slice(-4) });
-    }
-    return { readings: this.poller.getLatestStates(), accounts, keys };
+    return { readings: this.poller.getLatestStates(), accounts, keys: this.keys.list() };
   }
 
   private form(form: FormStatus): void {
@@ -196,7 +203,7 @@ export class PanelController {
     }
     this.details.delete(service);
     this.form({ target: service, status: 'idle' });
-    this.poller.dropService(service);
+    this.poller.dropConnection(service);
     await this.refresh();
   }
 
@@ -229,36 +236,61 @@ export class PanelController {
     }
   }
 
-  private async addKey(service: string, raw: string): Promise<void> {
-    const value = raw.trim();
-    if (service !== 'deepseek' && service !== 'kimi') return;
-    if (!value) {
-      this.form({ target: 'add_key', status: 'error', detail: 'The API key is empty.' });
+  private async addKey(service: ServiceId, rawName: string, rawValue: string): Promise<void> {
+    if (!KEY_SERVICES.includes(service)) return;
+    const existing = this.keys.list();
+    const name = rawName.trim() || defaultKeyName(SERVICE_LABELS[service], existing.filter((k) => k.service === service).map((k) => k.name));
+    const value = normalizeApiKey(rawValue);
+    if (!isUniqueKeyName(name, service, existing)) {
+      this.form({ target: 'add_key', status: 'error', detail: `A ${SERVICE_LABELS[service]} key with this name exists. Type a different name.` });
+      return;
+    }
+    if (value == null) {
+      this.form({ target: 'add_key', status: 'error', detail: 'This does not look like an API key. Paste the full key on one line.' });
       return;
     }
     this.form({ target: 'add_key', status: 'testing' });
     try {
-      if (service === 'deepseek') {
-        await validateDeepSeekApiKey(value);
-        await this.credentials.setDeepSeekApiKey(value);
-      } else {
-        await validateKimiApiKey(value);
-        await this.credentials.setKimiApiKey(value);
-      }
+      await validateKey(service, value);
     } catch (e) {
       this.form({ target: 'add_key', status: 'error', detail: errorText(e) });
       return;
     }
+    await this.keys.add(service, name, value);
     this.form({ target: 'add_key', status: 'ok' });
     await this.refresh();
     await this.poller.pollNow();
   }
 
+  private async renameKey(id: string, rawName: string): Promise<void> {
+    const target = `edit:${id}`;
+    const key = this.keys.list().find((k) => k.id === id);
+    if (!key) return;
+    const name = rawName.trim();
+    if (!name) {
+      this.form({ target, status: 'error', detail: 'Type a name.' });
+      return;
+    }
+    if (!isUniqueKeyName(name, key.service, this.keys.list(), id)) {
+      this.form({ target, status: 'error', detail: `A ${SERVICE_LABELS[key.service]} key with this name exists.` });
+      return;
+    }
+    await this.keys.rename(id, name);
+    this.form({ target, status: 'ok' });
+    await this.refresh();
+  }
+
   private async removeKey(id: string): Promise<void> {
-    if (id === 'deepseek') await this.credentials.clearDeepSeekApiKey();
-    else if (id === 'kimi') await this.credentials.clearKimiApiKey();
-    else return;
-    this.poller.dropService(id);
+    const key = this.keys.list().find((k) => k.id === id);
+    if (!key) return;
+    const answer = await vscode.window.showWarningMessage(
+      `Remove the key "${key.name}"?`,
+      { modal: true, detail: 'This deletes the key from VS Code SecretStorage. To use it again, add it again.' },
+      'Remove',
+    );
+    if (answer !== 'Remove') return;
+    await this.keys.remove(id);
+    this.poller.dropConnection(id);
     await this.refresh();
   }
 }

@@ -50,7 +50,8 @@
     "type-check": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.webview.json --noEmit",
     "clean": "rimraf dist",
     "package": "vsce package --no-dependencies",
-    "publish:vsce": "vsce publish --no-dependencies"
+    "publish:vsce": "vsce publish --no-dependencies",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-quota-tool/core": "workspace:*",
@@ -73,6 +74,7 @@
     "esbuild": "^0.25.12",
     "rimraf": "^6.0.1",
     "typescript": "^5.7.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^3.2.4"
   }
 }

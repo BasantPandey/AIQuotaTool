@@ -62,11 +62,10 @@ code {
   background: var(--vscode-input-background, var(--aq-surface-raised));
   color: var(--vscode-input-foreground, var(--aq-text));
   font: inherit;
-  font-family: var(--aq-font-num);
   font-size: 12px;
 }
+.input.mono { font-family: var(--aq-font-num); }
 textarea.input { resize: vertical; }
-select.input { font-family: inherit; }
 .input:focus { outline: 1px solid var(--aq-focus); outline-offset: -1px; }
 .form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .form-title { font-weight: 650; }
@@ -80,3 +79,4 @@ select.input { font-family: inherit; }
 .table td { padding: 6px 8px; border-bottom: 1px solid var(--aq-border); vertical-align: middle; }
 .cell-provider { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .cell-actions { text-align: right; white-space: nowrap; }
+.cell-actions .btn + .btn { margin-left: 6px; }

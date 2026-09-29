@@ -32,7 +32,10 @@ function KeyChip({ row, reading }: { row: KeyRow; reading: QuotaState | undefine
   return (
     <div className="chip" title={`${SERVICE_LABELS[row.service]} - ends ${row.last4}`}>
       <ProviderLogo service={row.service} size={18} />
-      <span className="grow ellipsis">{row.name}</span>
+      <span className="grow ellipsis">
+        {row.name}
+        <span className="sub">account balance</span>
+      </span>
       <span className={zero ? 'num chip-value zero' : 'num chip-value'}>{keyHeadline(reading)}</span>
     </div>
   );

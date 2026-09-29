@@ -100,20 +100,20 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
             <span>
               Line 1 - <code>.0</code> value, or the full Cookie header
             </span>
-            <textarea className="input" rows={2} spellCheck={false} value={value} onChange={(e) => setValue(e.target.value)} />
+            <textarea className="input mono" rows={2} spellCheck={false} value={value} onChange={(e) => setValue(e.target.value)} />
           </label>
           <label className="field">
             <span>
               Line 2 - <code>.1</code> value (keep empty if there is only one cookie)
             </span>
-            <textarea className="input" rows={2} spellCheck={false} value={second} onChange={(e) => setSecond(e.target.value)} />
+            <textarea className="input mono" rows={2} spellCheck={false} value={second} onChange={(e) => setSecond(e.target.value)} />
           </label>
         </>
       ) : (
         <label className="field">
           {service === 'claude' ? 'Session key' : 'sso cookie'}
           <input
-            className="input"
+            className="input mono"
             type="password"
             placeholder={service === 'claude' ? 'sk-ant-sid02-…' : 'eyJ…'}
             value={value}

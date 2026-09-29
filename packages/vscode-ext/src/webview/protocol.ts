@@ -1,5 +1,5 @@
 // Messages between the extension host and the panel webview. Types only: both tsconfigs import this file.
-import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
+import type { KeyRecord, QuotaState, ServiceId } from '@ai-quota-tool/core';
 
 export type PanelTab = 'usage' | 'accounts' | 'keys';
 
@@ -14,12 +14,8 @@ export interface AccountRow {
   detail?: string;
 }
 
-export interface KeyRow {
-  id: string;
-  service: ServiceId;
-  name: string;
-  last4: string;
-}
+/** A Key as the panel sees it. It never holds the key value. */
+export type KeyRow = KeyRecord;
 
 export interface PanelSnapshot {
   readings: QuotaState[];
@@ -27,7 +23,7 @@ export interface PanelSnapshot {
   keys: KeyRow[];
 }
 
-/** Progress of one form: an Account sign-in (target = service) or the add key form (target = "add_key"). */
+/** Progress of one form: an Account sign-in (target = service), the add key form ("add_key"), or a rename ("edit:<key id>"). */
 export interface FormStatus {
   target: string;
   status: 'idle' | 'testing' | 'ok' | 'error';
@@ -47,6 +43,7 @@ export type WebviewMessage =
   | { type: 'github_sign_in' }
   | { type: 'github_open' }
   | { type: 'github_cancel' }
-  | { type: 'key_add'; service: ServiceId; value: string }
+  | { type: 'key_add'; service: ServiceId; name: string; value: string }
+  | { type: 'key_rename'; id: string; name: string }
   | { type: 'key_remove'; id: string }
   | { type: 'open_external'; url: string };

@@ -16,7 +16,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 - **Account cards** - one card for each signed-in Account, with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
 - **Fits your theme** - the panel uses the colors and fonts of your VS Code theme: dark, light and high contrast. In a wide tab the cards show as a grid.
 - **Grok** - paste a grok.com `sso` cookie on the Accounts tab. You see short-window rate limits, plus the SuperGrok weekly pool when available.
-- **DeepSeek and Kimi Keys** - add an API key on the Keys tab to see the account balance (money left, not a percent).
+- **Named Keys** - add many DeepSeek and Kimi API keys on the Keys tab, each with its own name. Each Key shows the account balance (money left, not a percent). After you save a Key, the panel shows only its last 4 characters.
 - **Standalone** - fetches quota directly from VS Code with your session credentials. **No Chrome extension required.**
 - **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
 - **Automatic refresh** - polls every 60 seconds in the background.
@@ -69,7 +69,9 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 2. Go to **API keys** and create or copy a key
 3. On the Keys tab, click **Add key**, choose the provider, and paste the key
 
-Use **Test and save** to test a secret before the extension keeps it. Use **Sign out** on the Accounts tab, or **Remove** on the Keys tab, to delete a secret.
+Use **Test and save** to test a secret before the extension keeps it. Use **Sign out** on the Accounts tab, or **Remove** on the Keys tab, to delete a secret. Use **Edit** on the Keys tab to change the name of a Key. To change the value of a Key, remove it and add it again.
+
+If you saved a DeepSeek or Kimi key in version 0.9, it becomes the Key "DeepSeek key 1" or "Kimi key 1". You do not need to add it again.
 
 ---
 
