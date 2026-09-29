@@ -1,10 +1,10 @@
 # Privacy Policy
 
-Last updated: 24 September 2026
+Last updated: 29 September 2026
 
-AI Quota Tool is a Chrome extension. It shows your remaining AI quota for Claude, Codex, Copilot, Grok, Gemini, and Cursor, and your DeepSeek and Kimi API balance, in one side panel.
+AI Quota Tool is a Chrome extension and a VS Code extension. The Chrome extension shows your remaining AI quota for Claude, Codex, Copilot, Grok, Gemini, and Cursor, and your DeepSeek and Kimi API balance, in one side panel.
 
-## What the extension reads
+## Chrome extension: what it reads
 
 The extension reads data only for the providers that you turn on.
 
@@ -13,7 +13,7 @@ The extension reads data only for the providers that you turn on.
 - It reads your DeepSeek API balance from api.deepseek.com. It uses an API key that you paste.
 - It reads your Kimi API balance from api.moonshot.ai. It uses an API key that you paste.
 
-## What the extension stores
+## Chrome extension: what it stores
 
 All data stays on your device in local extension storage. Nothing is synced.
 
@@ -22,7 +22,7 @@ All data stays on your device in local extension storage. Nothing is synced.
 - The GitHub OAuth token. The extension removes this token when you disconnect.
 - The DeepSeek and Kimi API keys. The extension removes a key when you remove it.
 
-## What the extension never does
+## Chrome extension: what it never does
 
 - It does not send your data to a server of ours. There is no server. Requests go only to the services you connect.
 - It does not store session cookies or session keys.
@@ -30,7 +30,7 @@ All data stays on your device in local extension storage. Nothing is synced.
 - It does not use analytics, tracking, ads, or remote code.
 - It does not sell or share your data.
 
-## How to revoke access
+## Chrome extension: how to revoke access
 
 - Any provider: turn it off in the Providers screen. The extension stops all requests to that provider.
 - Claude, Codex, Grok, Gemini, and Cursor: sign out on the service website.
@@ -38,6 +38,21 @@ All data stays on your device in local extension storage. Nothing is synced.
 - DeepSeek: remove the key in the extension. To revoke the key everywhere, delete it at https://platform.deepseek.com.
 - Kimi: remove the key in the extension. To revoke the key everywhere, delete it at https://platform.kimi.ai.
 - To delete everything, remove the extension from Chrome.
+
+## VS Code extension
+
+The VS Code extension shows your remaining quota for Claude, Codex, Copilot, and Grok, and your DeepSeek and Kimi API balance.
+
+- It reads your own quota from claude.ai, chatgpt.com, and grok.com. It uses a session cookie that you paste.
+- It reads your GitHub Copilot seat status from api.github.com. It uses an OAuth token that you approve.
+- It reads your DeepSeek and Kimi API balance from api.deepseek.com and api.moonshot.ai. It uses an API key that you paste.
+- It stores these secrets in VS Code SecretStorage on your device: the Claude session key, the ChatGPT session token, the Grok sso cookie, the DeepSeek and Kimi API keys, and the GitHub token.
+- It sends each secret only to its own service. There is no server of ours.
+- It does not read your chats, your prompts, or your files.
+- It does not use analytics, tracking, ads, or remote code.
+- It does not sell or share your data.
+- To remove a secret, use Clear saved key in Set Up Accounts. To delete everything, uninstall the extension.
+- An optional local connection on 127.0.0.1 can receive quota readings. Any program on your device can send to it.
 
 ## Contact
 
