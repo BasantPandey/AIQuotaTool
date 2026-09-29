@@ -114,11 +114,17 @@ Releases go to the Visual Studio Marketplace under publisher **BasantPandey** vi
 
 ### One-time setup
 
-1. Create an [Azure DevOps personal access token](https://dev.azure.com/) with **Marketplace** access that can publish for the **BasantPandey** publisher.
-2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `VSCE_PAT`
-   - Value: the PAT (never commit it)
-3. Keep **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests** turned on. The workflow opens a release PR, because `main` is protected.
+The workflow signs in with Microsoft Entra ID through GitHub OIDC. There is no PAT and no stored secret. (Azure DevOps stops accepting global PATs on 2026-12-01.)
+
+1. **Create a managed identity.** In the Azure portal, open **Managed Identities → Create**. Use any resource group and region. Use a user-assigned managed identity, not an app registration: an app registration signs in but the publish fails with `InvalidAccessException`.
+2. **Trust this repo.** Open the identity → **Settings → Federated credentials → Add credential**:
+   - Scenario: **GitHub Actions deploying Azure resources**
+   - Organization: `BasantPandey`, Repository: `AIQuotaTool`
+   - Entity type: **Environment**, name: `marketplace-publish`
+3. **Add two repository secrets** (**Settings → Secrets and variables → Actions**): `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`, from the identity's **Properties** page. They are ids, not passwords.
+4. **Create the environment** `marketplace-publish` (**Settings → Environments**). Optional: add yourself as a required reviewer, so each live publish waits for your approval.
+5. **Add the identity to the publisher.** Run **Actions → Show Marketplace identity id → Run workflow** one time. Copy the id from the run summary. Then open [the publisher page](https://marketplace.visualstudio.com/manage/publishers/basantpandey) → **Members → Add**, paste that `id`, and choose **Contributor**.
+6. Keep **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests** turned on. The workflow opens a release PR, because `main` is protected.
 
 ### Run a release
 
@@ -127,8 +133,9 @@ Releases go to the Visual Studio Marketplace under publisher **BasantPandey** vi
    - **ref** - branch to ship (default `main`; use a branch name, not a raw SHA, for live runs)
    - **bump** - `patch` (default), `minor`, `major`, or `none`. Use `none` when a merged PR already set the version in `package.json`. Then the run tags and publishes that version, with no release PR.
    - **dry_run** - leave **checked** to package only (no bump, no Marketplace). Uncheck for a live release.
+   - A dry run needs no Azure setup. A live run needs steps 1 to 5 above. If the environment has required reviewers, every run waits for your approval.
 3. Prefer a **dry run** first; download the `.vsix` artifact and confirm it installs.
-4. Live run: uncheck dry_run → workflow bumps `package.json`, commits to `release/vscode-vX.Y.Z`, tags `vscode-vX.Y.Z`, opens a release PR, packages, then runs `vsce publish`.
+4. Live run: uncheck dry_run → workflow bumps `package.json`, commits to `release/vscode-vX.Y.Z`, tags `vscode-vX.Y.Z`, opens a release PR, packages, then runs `vsce publish --azure-credential`.
 5. Merge the release PR after CI passes. This puts the new version on `main`.
 6. Verify the listing: [Marketplace manage (BasantPandey)](https://marketplace.visualstudio.com/manage/publishers/basantpandey)
 
