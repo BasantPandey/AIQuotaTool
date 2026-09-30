@@ -6,11 +6,18 @@ import { send, useForm } from './store.js';
 
 type PasteService = Exclude<AccountService, 'copilot'>;
 
-const HOST: Record<PasteService, string> = { claude: 'claude.ai', codex: 'chatgpt.com', grok: 'grok.com', cursor: 'cursor.com' };
+const HOST: Record<PasteService, string> = {
+  claude: 'claude.ai',
+  codex: 'chatgpt.com',
+  grok: 'grok.com',
+  gemini: 'gemini.google.com',
+  cursor: 'cursor.com',
+};
 
 const FIELD: Record<Exclude<PasteService, 'codex'>, { label: string; placeholder: string }> = {
   claude: { label: 'Session key', placeholder: 'sk-ant-sid02-…' },
   grok: { label: 'sso cookie', placeholder: 'eyJ…' },
+  gemini: { label: 'Cookie header', placeholder: '__Secure-1PSID=…; __Secure-1PSIDTS=…' },
   cursor: { label: 'WorkosCursorSessionToken cookie', placeholder: 'user_…' },
 };
 
@@ -91,6 +98,13 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
           <li>Open <strong>cursor.com/dashboard</strong> in your browser and sign in.</li>
           <li>Press <code>F12</code>. Open <strong>Application</strong>, then <strong>Cookies</strong>, then <code>https://cursor.com</code>.</li>
           <li>Copy the value of <code>WorkosCursorSessionToken</code>.</li>
+        </ol>
+      )}
+      {service === 'gemini' && (
+        <ol className="steps">
+          <li>Open <strong>gemini.google.com</strong> in your browser and sign in.</li>
+          <li>Press <code>F12</code>. Open <strong>Network</strong> and reload the page. Click a request to <code>gemini.google.com</code>.</li>
+          <li>Under <strong>Request Headers</strong>, copy the full value of <strong>Cookie</strong>. The extension keeps only the Google session cookies.</li>
         </ol>
       )}
       {service === 'codex' && (
@@ -210,6 +224,9 @@ function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; on
         <span className="grow">
           {label}
           <span className="sub">{methodText(row)}</span>
+          {row.service === 'gemini' && (
+            <span className="sub risk">High risk: Google can bind this session to the browser, so it can end within hours.</span>
+          )}
         </span>
         <StatusPill row={row} />
         {action}

@@ -26,7 +26,7 @@ describe('CredentialManager.moveLegacy', () => {
       'aiQuotaTool.account.codex': 'part0\npart1',
       'aiQuotaTool.account.grok': 'eyJ-old',
     });
-    expect(await manager.get()).toEqual({ claude: 'sk-ant-old', codex: 'part0\npart1', grok: 'eyJ-old', cursor: undefined });
+    expect(await manager.get()).toEqual({ claude: 'sk-ant-old', codex: 'part0\npart1', grok: 'eyJ-old', gemini: undefined, cursor: undefined });
   });
 
   it('keeps a newer value at the new name', async () => {
