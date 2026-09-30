@@ -173,3 +173,18 @@ export function AnthropicLogo({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Simple original mark for Perplexity (not an official brand asset). */
+export function PerplexityLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M12 2.5v19M5 6.5l7 5.5 7-5.5M5 6.5v7.5l7-2M19 6.5v7.5l-7-2M5 14l7 5.5 7-5.5"
+        stroke="#20b8cd"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

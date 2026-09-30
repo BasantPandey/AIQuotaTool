@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BROWSER_PROVIDERS } from './browser-providers.js';
+import { BROWSER_PROVIDERS, perplexityFromPaste } from './browser-providers.js';
 import { codexCookieHeader } from './session-fetch.js';
 
 describe('BROWSER_PROVIDERS', () => {
@@ -22,6 +22,19 @@ describe('BROWSER_PROVIDERS', () => {
     expect(BROWSER_PROVIDERS.grok!.toSecret({ 'sso-rw': 'b' })).toBe('b');
   });
 
+  it('Perplexity keeps any of its session cookie names, also split', () => {
+    expect(
+      BROWSER_PROVIDERS.perplexity!.toSecret({ '__Secure-authjs.session-token.0': 'a', '__Secure-authjs.session-token.1': 'b', other: 'x' }),
+    ).toBe('__Secure-authjs.session-token.0=a; __Secure-authjs.session-token.1=b');
+  });
+
+  it('a pasted Perplexity Cookie header keeps only the session cookie', () => {
+    expect(perplexityFromPaste('Cookie: pplx.visitor=1; __Secure-next-auth.session-token=tok; _ga=2')).toBe('__Secure-next-auth.session-token=tok');
+    expect(perplexityFromPaste('baretoken')).toBe('__Secure-next-auth.session-token=baretoken');
+    expect(perplexityFromPaste('pplx.visitor=1')).toBeUndefined();
+    expect(perplexityFromPaste('  ')).toBeUndefined();
+  });
+
   it('a missing cookie gives no secret', () => {
     for (const provider of Object.values(BROWSER_PROVIDERS)) expect(provider.toSecret({})).toBeUndefined();
   });
@@ -32,6 +45,7 @@ describe('BROWSER_PROVIDERS', () => {
       codex: 'chatgpt.com',
       grok: 'grok.com',
       cursor: 'cursor.com',
+      perplexity: 'perplexity.ai',
     });
   });
 });

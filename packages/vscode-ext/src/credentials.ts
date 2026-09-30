@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 
 /** Accounts that sign in with a session cookie. Copilot uses the VS Code GitHub sign-in instead. */
-export type CookieAccount = 'claude' | 'codex' | 'grok' | 'cursor';
+export type CookieAccount = 'claude' | 'codex' | 'grok' | 'cursor' | 'perplexity';
 
 const secretName = (service: CookieAccount) => `aiQuotaTool.account.${service}`;
 
@@ -19,7 +19,7 @@ const KEY_CLAUDE_API_LEGACY = 'aiQuotaTool.claudeApiKey';
 /** Account secrets: one session cookie value for each cookie Account. API keys live in `KeyStore`. */
 export type Credentials = Record<CookieAccount, string | undefined>;
 
-const COOKIE_ACCOUNTS: readonly CookieAccount[] = ['claude', 'codex', 'grok', 'cursor'];
+const COOKIE_ACCOUNTS: readonly CookieAccount[] = ['claude', 'codex', 'grok', 'cursor', 'perplexity'];
 
 export class CredentialManager {
   constructor(private readonly secrets: vscode.SecretStorage) {}

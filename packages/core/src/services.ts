@@ -66,6 +66,14 @@ export const SERVICES = [
     auth: 'api_key',
   },
   {
+    id: 'perplexity',
+    label: 'Perplexity',
+    color: '#0f2f33',
+    host: 'www.perplexity.ai',
+    auth: 'session',
+    vscodeOnly: true,
+  },
+  {
     id: 'openrouter',
     label: 'OpenRouter',
     color: '#1e2140',

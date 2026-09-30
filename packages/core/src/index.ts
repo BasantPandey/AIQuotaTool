@@ -22,3 +22,4 @@ export * from './openrouter.js';
 export * from './key-card.js';
 export * from './org-cost.js';
 export * from './copilot-user.js';
+export * from './perplexity.js';

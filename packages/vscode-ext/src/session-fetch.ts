@@ -25,6 +25,7 @@ import {
   mapKimiBalance,
   mapOpenAICost,
   mapOpenRouterKey,
+  mapPerplexityCredits,
   monthStartUtc,
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
@@ -278,6 +279,38 @@ export async function fetchCursorUsage(sessionToken: string): Promise<QuotaState
 /** Test a Cursor session with the same call as the poller. */
 export async function validateCursorSession(sessionToken: string): Promise<void> {
   await fetchCursorUsage(sessionToken);
+}
+
+/**
+ * Perplexity monthly credits (not documented). The secret is a Cookie header with the session cookie.
+ * https://github.com/steipete/CodexBar (perplexity.md) documents the endpoint and the headers.
+ */
+export async function fetchPerplexityCredits(cookieHeader: string): Promise<QuotaState> {
+  const res = await fetch('https://www.perplexity.ai/rest/billing/credits?version=2.18&source=default', {
+    headers: {
+      Accept: 'application/json',
+      Cookie: cookieHeader,
+      'User-Agent': BROWSER_UA,
+      Origin: 'https://www.perplexity.ai',
+      Referer: 'https://www.perplexity.ai/account/usage',
+    },
+  });
+  const text = await res.text();
+  if (isHtmlBody(text)) throw new Error('Perplexity credits API blocked (HTML/Cloudflare)');
+  if (res.status === 401 || res.status === 403) throw new Error(`Perplexity credits API: ${res.status} invalid or expired session`);
+  if (!res.ok) throw new Error(`Perplexity credits API: ${res.status}`);
+  let body: unknown = null;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    /* mapPerplexityCredits gives "usage unknown" */
+  }
+  return mapPerplexityCredits(body, Date.now());
+}
+
+/** Test a Perplexity session with the same call as the poller. */
+export async function validatePerplexitySession(cookieHeader: string): Promise<void> {
+  await fetchPerplexityCredits(cookieHeader);
 }
 
 /** Copilot seat status → honest QuotaState (never invents remaining %). */

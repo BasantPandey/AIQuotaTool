@@ -10,6 +10,7 @@ import {
   fetchCursorUsage,
   fetchGrokUsage,
   fetchKeyReading,
+  fetchPerplexityCredits,
 } from './session-fetch.js';
 
 export interface PollSources {
@@ -139,6 +140,7 @@ export class QuotaPoller {
           ...accountJob('codex', creds.codex, fetchCodexUsage),
           ...accountJob('grok', creds.grok, fetchGrokUsage),
           ...accountJob('cursor', creds.cursor, fetchCursorUsage),
+          ...accountJob('perplexity', creds.perplexity, fetchPerplexityCredits),
         ]
       : [];
     const keyJobs = keys.map(({ key, secret }): Job => ({

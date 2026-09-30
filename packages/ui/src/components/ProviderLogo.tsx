@@ -12,6 +12,7 @@ import {
   GrokLogo,
   KimiLogo,
   OpenRouterLogo,
+  PerplexityLogo,
 } from './logos.js';
 
 const MARKS: Record<ServiceId, (props: { size?: number }) => React.ReactNode> = {
@@ -23,6 +24,7 @@ const MARKS: Record<ServiceId, (props: { size?: number }) => React.ReactNode> = 
   cursor: CursorLogo,
   deepseek: DeepSeekLogo,
   kimi: KimiLogo,
+  perplexity: PerplexityLogo,
   openrouter: OpenRouterLogo,
   anthropic: AnthropicLogo,
   openai: CodexLogo,
