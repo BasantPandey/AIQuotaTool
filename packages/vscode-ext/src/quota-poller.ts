@@ -3,7 +3,14 @@ import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
 import { connectionIdOf, connectionKindOf, sessionAuthFailureAction, upsertQuotaState } from '@ai-quota-tool/core';
 import type { Credentials } from './credentials.js';
 import type { KeyWithSecret } from './key-store.js';
-import { fetchClaudeUsage, fetchCodexUsage, fetchCopilotUsage, fetchGrokUsage, fetchKeyReading } from './session-fetch.js';
+import {
+  fetchClaudeUsage,
+  fetchCodexUsage,
+  fetchCopilotUsage,
+  fetchCursorUsage,
+  fetchGrokUsage,
+  fetchKeyReading,
+} from './session-fetch.js';
 
 export interface PollSources {
   credentials: () => Promise<Credentials>;
@@ -127,10 +134,11 @@ export class QuotaPoller {
 
     const accounts: Job[] = focused
       ? [
-          ...accountJob('claude', creds.claudeSessionKey, fetchClaudeUsage),
+          ...accountJob('claude', creds.claude, fetchClaudeUsage),
           ...accountJob('copilot', githubToken, fetchCopilotUsage),
-          ...accountJob('codex', creds.codexSessionToken, fetchCodexUsage),
-          ...accountJob('grok', creds.grokSsoCookie, fetchGrokUsage),
+          ...accountJob('codex', creds.codex, fetchCodexUsage),
+          ...accountJob('grok', creds.grok, fetchGrokUsage),
+          ...accountJob('cursor', creds.cursor, fetchCursorUsage),
         ]
       : [];
     const keyJobs = keys.map(({ key, secret }): Job => ({

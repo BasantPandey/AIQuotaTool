@@ -1,52 +1,56 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
-const KEY_CLAUDE_COOKIE = 'aiQuotaTool.account.claude';
+/** Accounts that sign in with a session cookie. Copilot uses the VS Code GitHub sign-in instead. */
+export type CookieAccount = 'claude' | 'codex' | 'grok' | 'cursor';
+
+const secretName = (service: CookieAccount) => `aiQuotaTool.account.${service}`;
+
 /** Old storage names of Account secrets (0.9.x). `moveLegacy` moves them to the new names. */
-const LEGACY_ACCOUNT_SECRETS: readonly [newName: string, oldName: string][] = [
-  [KEY_CLAUDE_COOKIE, 'aiQuotaTool.claudeSessionKey'],
+const LEGACY_ACCOUNT_SECRETS: readonly [CookieAccount, string][] = [
+  ['claude', 'aiQuotaTool.claudeSessionKey'],
+  ['codex', 'aiQuotaTool.codexSessionToken'],
+  ['grok', 'aiQuotaTool.grokSsoCookie'],
 ];
-const KEY_CODEX_COOKIE = 'aiQuotaTool.codexSessionToken';
-/** grok.com `sso` session cookie (JWT). Also sent as sso-rw for host parity. */
-const KEY_GROK_SSO = 'aiQuotaTool.grokSsoCookie';
 /** GitHub token from the 0.9.x device flow. Copilot now uses the VS Code GitHub sign-in. */
 const KEY_GITHUB_TOKEN_LEGACY = 'aiQuotaTool.githubToken';
 // Accidentally stored Anthropic API keys in 0.5.x — not used for claude.ai usage.
 const KEY_CLAUDE_API_LEGACY = 'aiQuotaTool.claudeApiKey';
 
-/** Account secrets. API keys live in `KeyStore`. */
-export interface Credentials {
-  claudeSessionKey: string | undefined;
-  codexSessionToken: string | undefined;
-  grokSsoCookie: string | undefined;
-}
+/** Account secrets: one session cookie value for each cookie Account. API keys live in `KeyStore`. */
+export type Credentials = Record<CookieAccount, string | undefined>;
+
+const COOKIE_ACCOUNTS: readonly CookieAccount[] = ['claude', 'codex', 'grok', 'cursor'];
 
 export class CredentialManager {
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
   async get(): Promise<Credentials> {
-    const [claudeSessionKey, codexSessionToken, grokSsoCookie] = await Promise.all([
-      this.secrets.get(KEY_CLAUDE_COOKIE),
-      this.secrets.get(KEY_CODEX_COOKIE),
-      this.secrets.get(KEY_GROK_SSO),
-    ]);
+    const values = await Promise.all(COOKIE_ACCOUNTS.map((service) => this.secrets.get(secretName(service))));
     // Drop the unused API-key secret if present (0.5.x regression leftover).
     Promise.resolve(this.secrets.delete(KEY_CLAUDE_API_LEGACY)).catch(() => {
       /* ignore */
     });
-    return { claudeSessionKey, codexSessionToken, grokSsoCookie };
+    return Object.fromEntries(COOKIE_ACCOUNTS.map((service, i) => [service, values[i]])) as Credentials;
   }
 
   async hasAny(): Promise<boolean> {
-    const creds = await this.get();
-    return !!(creds.claudeSessionKey || creds.codexSessionToken || creds.grokSsoCookie);
+    return Object.values(await this.get()).some(Boolean);
+  }
+
+  async set(service: CookieAccount, value: string): Promise<void> {
+    await this.secrets.store(secretName(service), value);
+  }
+
+  async clear(service: CookieAccount): Promise<void> {
+    await this.secrets.delete(secretName(service));
   }
 
   /** Move 0.9.x Account secrets to the new names. A value at the new name wins. Safe to run again. */
   async moveLegacy(): Promise<void> {
-    for (const [newName, oldName] of LEGACY_ACCOUNT_SECRETS) {
+    for (const [service, oldName] of LEGACY_ACCOUNT_SECRETS) {
       const old = await this.secrets.get(oldName);
       if (!old) continue;
-      if (!(await this.secrets.get(newName))) await this.secrets.store(newName, old);
+      if (!(await this.secrets.get(secretName(service)))) await this.secrets.store(secretName(service), old);
       await this.secrets.delete(oldName);
     }
   }
@@ -54,29 +58,5 @@ export class CredentialManager {
   /** Delete the 0.9.x device-flow token. Safe to run on each start. */
   async deleteLegacyGithubToken(): Promise<void> {
     await this.secrets.delete(KEY_GITHUB_TOKEN_LEGACY);
-  }
-
-  async setClaudeKey(key: string): Promise<void> {
-    await this.secrets.store(KEY_CLAUDE_COOKIE, key);
-  }
-
-  async setCodexToken(token: string): Promise<void> {
-    await this.secrets.store(KEY_CODEX_COOKIE, token);
-  }
-
-  async setGrokSso(cookie: string): Promise<void> {
-    await this.secrets.store(KEY_GROK_SSO, cookie);
-  }
-
-  async clearClaudeKey(): Promise<void> {
-    await this.secrets.delete(KEY_CLAUDE_COOKIE);
-  }
-
-  async clearCodexToken(): Promise<void> {
-    await this.secrets.delete(KEY_CODEX_COOKIE);
-  }
-
-  async clearGrokSso(): Promise<void> {
-    await this.secrets.delete(KEY_GROK_SSO);
   }
 }

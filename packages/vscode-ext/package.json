@@ -1,7 +1,7 @@
 {
   "name": "ai-quota-tool-vscode",
   "displayName": "AI Quota Tool",
-  "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus API key spend. Claude sign-in opens Chrome or Edge in a new profile and reads one session cookie.",
+  "description": "See remaining AI quota for Claude, Copilot, Codex, Grok and Cursor, plus API key spend. Sign-in opens Chrome or Edge in a new profile and reads one session cookie.",
   "version": "0.9.1",
   "publisher": "BasantPandey",
   "license": "Apache-2.0",
@@ -22,6 +22,7 @@
     "Copilot",
     "Codex",
     "Grok",
+    "Cursor",
     "DeepSeek",
     "Kimi",
     "OpenRouter",
