@@ -75,6 +75,27 @@ describe('mapCopilotUser', () => {
     expect(state?.monthlyPct).toBe(0);
   });
 
+  it('a real Free plan response (2026-09-30, ids removed): quota_reset_at 0 falls back to the plan reset date', () => {
+    const real = {
+      access_type_sku: 'free_limited_copilot',
+      copilot_plan: 'individual',
+      token_based_billing: false,
+      quota_reset_date: '2026-10-01',
+      quota_reset_date_utc: '2026-10-01T00:00:00.000Z',
+      quota_snapshots: {
+        chat: { unlimited: false, entitlement: 200, percent_remaining: 100, quota_reset_at: 0, credits_used: 0 },
+        completions: { unlimited: false, entitlement: 2000, percent_remaining: 100, quota_reset_at: 0, credits_used: 0 },
+        premium_interactions: { unlimited: false, entitlement: 0, percent_remaining: 0, quota_reset_at: 0, credits_used: 0 },
+      },
+    };
+    const state = mapCopilotUser(real, NOW)!;
+    expect(state.monthlyPct).toBe(100);
+    expect(state.monthlyLabel).toBe('Monthly');
+    expect(state.monthlyResetsAt).toBe(Date.parse('2026-10-01T00:00:00.000Z'));
+    expect(state.subcategories?.map((s) => s.name)).toEqual(['Chat', 'Completions']);
+    expect(state.creditsUsed).toBeUndefined();
+  });
+
   it('an unknown shape returns null, so the host falls back to the seat check', () => {
     for (const body of [
       null,
