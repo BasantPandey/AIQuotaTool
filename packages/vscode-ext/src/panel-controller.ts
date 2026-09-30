@@ -166,6 +166,7 @@ export class PanelController {
     }
     this.form({ target: service, status: 'ok' });
     this.poller.clearReauth(service);
+    this.poller.pollSoon(service);
     await this.refresh();
     await this.poller.pollNow();
   }
@@ -191,7 +192,7 @@ export class PanelController {
       return;
     }
     this.form({ target: 'copilot', status: 'ok' });
-    this.poller.pollCopilotSoon();
+    this.poller.pollSoon('copilot');
     await this.refresh();
     await this.poller.pollNow();
   }
@@ -220,7 +221,8 @@ export class PanelController {
       this.form({ target: 'add_key', status: 'error', detail: errorText(e) });
       return;
     }
-    await this.keys.add(service, name, value);
+    const key = await this.keys.add(service, name, value);
+    this.poller.pollSoon(key.id);
     this.form({ target: 'add_key', status: 'ok' });
     await this.refresh();
     await this.poller.pollNow();

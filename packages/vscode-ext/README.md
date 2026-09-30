@@ -23,7 +23,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
   - **Budget** - on a Key that shows spend only, click **Edit** and set a monthly budget. The Key then shows the spend against the budget and the percent left. With no budget, it never shows a percent.
 - **Standalone** - fetches quota directly from VS Code with your session credentials. **No Chrome extension required.**
 - **Optional Chrome push** - if you also run the Chrome package, it can merge readings over a local WebSocket (freshest wins). Not required.
-- **Automatic refresh** - polls every 60 seconds in the background.
+- **Automatic refresh** - each Account refreshes every 5 minutes, only while the VS Code window has focus. Each Key refreshes every 5 minutes. A new sign-in or a new Key refreshes at once.
 
 ![The Usage tab in a wide editor tab, with Account cards and Key chips](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-wide.png)
 
@@ -48,7 +48,7 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
 3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
 
-**GitHub Copilot** - click **Sign in with GitHub** on the Accounts tab. VS Code shows one dialog to use your VS Code GitHub account. You do not copy a code or a token. The card shows the percent left and the reset time for each limited quota (premium requests, or chat and completions on the Free plan). A quota with no limit shows the AI credits used. If GitHub does not give these numbers, the card shows your seat status instead of inventing 100%. Copilot updates every 5 minutes.
+**GitHub Copilot** - click **Sign in with GitHub** on the Accounts tab. VS Code shows one dialog to use your VS Code GitHub account. You do not copy a code or a token. The card shows the percent left and the reset time for each limited quota (premium requests, or chat and completions on the Free plan). A quota with no limit shows the AI credits used. If GitHub does not give these numbers, the card shows your seat status instead of inventing 100%. 
 
 **ChatGPT session token** (for Codex)
 1. Open [chatgpt.com](https://chatgpt.com) in Chrome and sign in

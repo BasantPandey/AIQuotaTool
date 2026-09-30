@@ -93,3 +93,18 @@ describe('sessionExpired', () => {
     expect(state.weeklyPct).toBeUndefined();
   });
 });
+
+describe('Cloudflare challenge (decision in #88)', () => {
+  it('is not an ended session: no action, so the host keeps the secret and the last reading', () => {
+    expect(sessionAuthFailureAction('codex', new Error('Codex usage API blocked (HTML/Cloudflare)'))).toBeNull();
+    expect(sessionAuthFailureAction('claude', new Error('Claude usage API: 503'))).toBeNull();
+  });
+
+  it('a 401 or 403 is an ended session', () => {
+    expect(sessionAuthFailureAction('claude', new Error('Claude usage API: 403 invalid or expired session key'))).toEqual({
+      dropRing: true,
+      keepSecret: true,
+      requireReauthSignal: true,
+    });
+  });
+});

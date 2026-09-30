@@ -10,6 +10,8 @@ export interface PollSources {
   /** The VS Code GitHub session token, when the user connected Copilot. */
   githubToken: () => Promise<string | undefined>;
   keys: () => Promise<KeyWithSecret[]>;
+  /** True while the VS Code window has focus. Accounts poll only then (decision in #99). */
+  focused: () => boolean;
 }
 
 type UpdateListener = (states: QuotaState[]) => void;
@@ -18,15 +20,19 @@ interface Job {
   /** Connection id: the provider id for an Account, the Key id for a Key. */
   id: string;
   service: ServiceId;
-  promise: Promise<QuotaState>;
+  run: () => Promise<QuotaState>;
 }
 
-const POLL_INTERVAL_MS = 60_000;
-/** GitHub does not document copilot_internal/user. Poll it no more often than every 5 minutes. */
-const COPILOT_INTERVAL_MS = 5 * 60_000;
+/** How often the poller checks which connections are due. A check with nothing due makes no request. */
+const TICK_MS = 60_000;
+/**
+ * Each connection polls at most every 5 minutes. Accounts use undocumented consumer endpoints, and the
+ * provider terms limit automated access (#99). Copilot's endpoint is not documented either (#96).
+ */
+export const CONNECTION_INTERVAL_MS = 5 * 60_000;
 
 function accountJob(service: ServiceId, secret: string | undefined, fetch: (secret: string) => Promise<QuotaState>): Job[] {
-  return secret ? [{ id: service, service, promise: fetch(secret) }] : [];
+  return secret ? [{ id: service, service, run: () => fetch(secret) }] : [];
 }
 
 // ──── Poller ────────────────────────────────────────────────────────────────
@@ -41,8 +47,8 @@ export class QuotaPoller {
   private pollPromise: Promise<void> | null = null;
   /** If pollNow is requested while a poll is in-flight, run one more after it finishes. */
   private pendingPoll = false;
-  /** The next Copilot poll runs at or after this time (ms). */
-  private copilotDueAt = 0;
+  /** The next poll of each connection runs at or after this time (ms). No entry: due now. */
+  private dueAt = new Map<string, number>();
 
   onUpdate(listener: UpdateListener): () => void {
     this.listeners.add(listener);
@@ -62,12 +68,16 @@ export class QuotaPoller {
     this.sources = sources;
     void this.pollNow();
     if (this.timer) clearInterval(this.timer);
-    this.timer = setInterval(() => void this.pollNow(), POLL_INTERVAL_MS);
+    this.timer = setInterval(() => void this.pollNow(), TICK_MS);
   }
 
-  /** Poll Copilot in the next poll, for example after a sign-in. */
-  pollCopilotSoon(): void {
-    this.copilotDueAt = 0;
+  /** Poll this connection in the next poll, for example after a sign-in or a new Key. */
+  pollSoon(id: string): void {
+    this.dueAt.delete(id);
+  }
+
+  private isDue(id: string, now: number): boolean {
+    return now >= (this.dueAt.get(id) ?? 0);
   }
 
   stop(): void {
@@ -107,27 +117,31 @@ export class QuotaPoller {
     const sources = this.sources;
     if (!sources) return;
 
-    const copilotDue = Date.now() >= this.copilotDueAt;
+    const now = Date.now();
+    const focused = sources.focused();
     const [creds, githubToken, keys] = await Promise.all([
       sources.credentials(),
-      copilotDue ? sources.githubToken() : Promise.resolve(undefined),
+      focused && this.isDue('copilot', now) ? sources.githubToken() : Promise.resolve(undefined),
       sources.keys(),
     ]);
-    if (githubToken) this.copilotDueAt = Date.now() + COPILOT_INTERVAL_MS;
 
-    const jobs: Job[] = [
-      ...accountJob('claude', creds.claudeSessionKey, fetchClaudeUsage),
-      ...accountJob('copilot', githubToken, fetchCopilotUsage),
-      ...accountJob('codex', creds.codexSessionToken, fetchCodexUsage),
-      ...accountJob('grok', creds.grokSsoCookie, fetchGrokUsage),
-      ...keys.map(({ key, secret }): Job => ({
-        id: key.id,
-        service: key.service,
-        promise: fetchKeyReading(key.service, secret).then((s) => ({ ...s, connectionId: key.id, kind: 'key' })),
-      })),
-    ];
+    const accounts: Job[] = focused
+      ? [
+          ...accountJob('claude', creds.claudeSessionKey, fetchClaudeUsage),
+          ...accountJob('copilot', githubToken, fetchCopilotUsage),
+          ...accountJob('codex', creds.codexSessionToken, fetchCodexUsage),
+          ...accountJob('grok', creds.grokSsoCookie, fetchGrokUsage),
+        ]
+      : [];
+    const keyJobs = keys.map(({ key, secret }): Job => ({
+      id: key.id,
+      service: key.service,
+      run: () => fetchKeyReading(key.service, secret).then((s) => ({ ...s, connectionId: key.id, kind: 'key' })),
+    }));
+    const jobs = [...accounts, ...keyJobs].filter((job) => this.isDue(job.id, now));
+    for (const job of jobs) this.dueAt.set(job.id, now + CONNECTION_INTERVAL_MS);
 
-    const results = await Promise.allSettled(jobs.map((j) => j.promise));
+    const results = await Promise.allSettled(jobs.map((j) => j.run()));
 
     // A Key removed since the last poll leaves no stale chip.
     const keyIds = new Set(keys.map(({ key }) => key.id));

@@ -45,8 +45,14 @@ export function activate(context: vscode.ExtensionContext): void {
         credentials: () => credentials.get(),
         githubToken: () => copilot.token(),
         keys: () => keys.withSecrets(),
+        focused: () => vscode.window.state.focused,
       });
     });
+
+  // Accounts poll only while VS Code has focus. Catch up when the window gets focus again.
+  const focusWatch = vscode.window.onDidChangeWindowState((state) => {
+    if (state.focused) void poller.pollNow();
+  });
 
   // Chrome extension push — merges into polled state (both sources coexist).
   wsServer.start();
@@ -67,6 +73,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     openCmd,
     configureCmd,
+    focusWatch,
     { dispose: () => wsServer.stop() },
     { dispose: () => poller.stop() },
     { dispose: () => statusBar.dispose() },
