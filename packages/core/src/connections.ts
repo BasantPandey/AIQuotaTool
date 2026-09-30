@@ -1,5 +1,5 @@
-import type { QuotaState, ServiceId } from './types.js';
-import { SERVICE_IDS } from './services.js';
+import type { QuotaState } from './types.js';
+import { CHROME_SERVICES, type ChromeServiceId } from './services.js';
 
 /**
  * Does this reading prove an account is connected? Real remaining percentages
@@ -21,6 +21,8 @@ export function isConnectedReading(state: QuotaState): boolean {
     state.weeklyPct != null ||
     state.monthlyPct != null ||
     (state.balance != null && state.balance.infos.length > 0) ||
+    state.spend != null ||
+    state.creditsUsed != null ||
     state.honesty === 'usage_unknown' ||
     state.honesty === 'seat_active_usage_unknown' ||
     state.honesty === 'no_plan' ||
@@ -29,12 +31,12 @@ export function isConnectedReading(state: QuotaState): boolean {
   );
 }
 
-/** Connection flag per service, derived from stored quota readings. */
+/** Connection flag for each Chrome service, from stored quota readings. */
 export function deriveConnections(
   states: QuotaState[],
-): Record<ServiceId, boolean> {
-  const connections = {} as Record<ServiceId, boolean>;
-  for (const id of SERVICE_IDS) {
+): Record<ChromeServiceId, boolean> {
+  const connections = {} as Record<ChromeServiceId, boolean>;
+  for (const { id } of CHROME_SERVICES) {
     connections[id] = states.some(
       (s) => s.service === id && isConnectedReading(s),
     );

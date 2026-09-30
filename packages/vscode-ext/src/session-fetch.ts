@@ -3,7 +3,10 @@
  * Remaining % math stays in @ai-quota-tool/core pure mappers only.
  */
 import {
+  apiKeyInvalid,
   combineGrokQuotaState,
+  copilotAuthUnavailable,
+  mapCopilotUser,
   deepseekApiKeyInvalid,
   deepseekBalanceUnreadable,
   extractGrokWeeklyUsage,
@@ -15,10 +18,17 @@ import {
   mapDeepSeekBalance,
   mapGrokRateLimits,
   mapGrokWeeklyUsage,
+  isAdminKeyService,
+  mapAnthropicCost,
   mapKimiBalance,
+  mapOpenAICost,
+  mapOpenRouterKey,
+  monthStartUtc,
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
   type QuotaState,
+  type ServiceId,
+  SERVICE_LABELS,
   type WhamUsageResponse,
 } from '@ai-quota-tool/core';
 
@@ -224,6 +234,22 @@ export async function fetchCodexUsage(sessionToken: string): Promise<QuotaState>
   return mapCodexUsage(data);
 }
 
+/**
+ * Copilot quota from `copilot_internal/user` (the source that VS Code itself uses).
+ * An unknown shape or a 404 falls back to the seat check. It never invents 100%.
+ */
+export async function fetchCopilotUsage(token: string): Promise<QuotaState> {
+  const res = await fetch('https://api.github.com/copilot_internal/user', {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 401) return copilotAuthUnavailable();
+  if (res.ok) {
+    const state = mapCopilotUser(await res.json().catch(() => null));
+    if (state != null) return state;
+  }
+  return fetchCopilotSeat(token);
+}
+
 /** Copilot seat status → honest QuotaState (never invents remaining %). */
 export async function fetchCopilotSeat(token: string): Promise<QuotaState> {
   const seatRes = await fetch('https://api.github.com/user/copilot', {
@@ -340,14 +366,6 @@ export async function fetchDeepSeekBalance(apiKey: string): Promise<QuotaState> 
   }
 }
 
-/** Validate a DeepSeek API key for Save & Test. Throws only on a rejected key. */
-export async function validateDeepSeekApiKey(apiKey: string): Promise<void> {
-  const state = await fetchDeepSeekBalance(apiKey);
-  if (state.honesty === 'api_key_invalid') {
-    throw new Error('DeepSeek API key invalid or expired');
-  }
-}
-
 /**
  * Kimi (Moonshot AI) API balance. Official GET /v1/users/me/balance with a
  * user-pasted key. Same honesty-vs-throw split as DeepSeek above.
@@ -367,10 +385,93 @@ export async function fetchKimiBalance(apiKey: string): Promise<QuotaState> {
   }
 }
 
-/** Validate a Kimi API key for Save & Test. Throws only on a rejected key. */
-export async function validateKimiApiKey(apiKey: string): Promise<void> {
-  const state = await fetchKimiBalance(apiKey);
+/** OpenRouter spend and cap for this one key. https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key */
+export async function fetchOpenRouterKey(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const res = await fetch('https://openrouter.ai/api/v1/key', {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  });
+  if (res.status === 401 || res.status === 403) return apiKeyInvalid('openrouter', now);
+  if (!res.ok) throw new Error(`OpenRouter key API: ${res.status}`);
+  return mapOpenRouterKey(await res.json().catch(() => null), now);
+}
+
+/** A cost report of one month has at most 31 daily buckets, so one page is normal. The cap stops a bad cursor loop. */
+const MAX_COST_PAGES = 5;
+
+/**
+ * Get every page of an Admin cost report. A 401 or 403 means the provider rejected the key.
+ * https://platform.claude.com/docs/en/api/beta/organization/cost_report/retrieve
+ * https://developers.openai.com/api/reference/python/resources/admin/subresources/organization/subresources/usage/methods/costs
+ */
+async function fetchCostPages(
+  label: string,
+  url: (page: string | null) => string,
+  headers: Record<string, string>,
+): Promise<unknown[] | 'rejected'> {
+  const pages: unknown[] = [];
+  let page: string | null = null;
+  for (let i = 0; i < MAX_COST_PAGES; i++) {
+    const res = await fetch(url(page), { headers: { Accept: 'application/json', ...headers } });
+    if (res.status === 401 || res.status === 403) return 'rejected';
+    if (!res.ok) throw new Error(`${label} cost API: ${res.status}`);
+    const body = (await res.json().catch(() => null)) as { has_more?: unknown; next_page?: unknown } | null;
+    pages.push(body);
+    if (body?.has_more !== true || typeof body.next_page !== 'string') break;
+    page = body.next_page;
+  }
+  return pages;
+}
+
+const pageParam = (page: string | null) => (page ? `&page=${encodeURIComponent(page)}` : '');
+
+/** Org spend this month from an Anthropic Admin key. */
+export async function fetchAnthropicCost(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const start = encodeURIComponent(monthStartUtc(now).toISOString());
+  const pages = await fetchCostPages(
+    'Anthropic',
+    (page) => `https://api.anthropic.com/v1/organizations/cost_report?starting_at=${start}&limit=31${pageParam(page)}`,
+    { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+  );
+  return pages === 'rejected' ? apiKeyInvalid('anthropic', now) : mapAnthropicCost(pages, now);
+}
+
+/** Org spend this month from an OpenAI Admin key. */
+export async function fetchOpenAICost(apiKey: string): Promise<QuotaState> {
+  const now = Date.now();
+  const start = Math.floor(monthStartUtc(now).getTime() / 1000);
+  const pages = await fetchCostPages(
+    'OpenAI',
+    (page) => `https://api.openai.com/v1/organization/costs?start_time=${start}&limit=31${pageParam(page)}`,
+    { Authorization: `Bearer ${apiKey}` },
+  );
+  return pages === 'rejected' ? apiKeyInvalid('openai', now) : mapOpenAICost(pages, now);
+}
+
+const KEY_FETCHERS: Partial<Record<ServiceId, (apiKey: string) => Promise<QuotaState>>> = {
+  deepseek: fetchDeepSeekBalance,
+  kimi: fetchKimiBalance,
+  openrouter: fetchOpenRouterKey,
+  anthropic: fetchAnthropicCost,
+  openai: fetchOpenAICost,
+};
+
+/** One reading for a Key. A rejected key gives an honesty state; other failures throw. */
+export function fetchKeyReading(service: ServiceId, apiKey: string): Promise<QuotaState> {
+  const fetcher = KEY_FETCHERS[service];
+  if (!fetcher) return Promise.reject(new Error(`${SERVICE_LABELS[service]} does not take a Key`));
+  return fetcher(apiKey);
+}
+
+/** The free test call before a Key is saved. Throws when the provider rejects the key. */
+export async function validateKey(service: ServiceId, apiKey: string): Promise<void> {
+  const state = await fetchKeyReading(service, apiKey);
   if (state.honesty === 'api_key_invalid') {
-    throw new Error('Kimi API key invalid or expired');
+    throw new Error(
+      isAdminKeyService(service)
+        ? `The provider rejected this key. Use a ${SERVICE_LABELS[service]} Admin key from the org settings.`
+        : `The provider rejected this ${SERVICE_LABELS[service]} API key.`,
+    );
   }
 }

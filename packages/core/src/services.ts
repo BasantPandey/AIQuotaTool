@@ -3,7 +3,7 @@ export type ServiceAuth = 'session' | 'oauth' | 'api_key';
 /**
  * Catalog of services the product knows about.
  * A new agent is a row here. Chrome also needs a fetcher factory in
- * `packages/chrome-ext/src/background/providers.ts` (the `Record<ServiceId, …>`
+ * `packages/chrome-ext/src/background/providers.ts` (the `Record<ChromeServiceId, …>`
  * check fails the build until that factory exists). Host permissions stay
  * an explicit manifest list.
  */
@@ -65,15 +65,54 @@ export const SERVICES = [
     host: 'platform.kimi.ai',
     auth: 'api_key',
   },
+  {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    color: '#1e2140',
+    host: 'openrouter.ai',
+    auth: 'api_key',
+    vscodeOnly: true,
+  },
+  {
+    id: 'anthropic',
+    label: 'Anthropic',
+    color: '#262420',
+    host: 'console.anthropic.com',
+    auth: 'api_key',
+    vscodeOnly: true,
+    adminKey: true,
+  },
+  {
+    id: 'openai',
+    label: 'OpenAI',
+    color: '#0d0d0d',
+    host: 'platform.openai.com',
+    auth: 'api_key',
+    vscodeOnly: true,
+    adminKey: true,
+  },
 ] as const satisfies readonly {
   id: string;
   label: string;
   color: string;
   host: string;
   auth: ServiceAuth;
+  /** Not in the Chrome extension. */
+  vscodeOnly?: true;
+  /** The Key must be an Admin key. It can manage the whole org, so the user confirms it. */
+  adminKey?: true;
 }[];
 
-export type ServiceId = (typeof SERVICES)[number]['id'];
+type ServiceRow = (typeof SERVICES)[number];
+
+export type ServiceId = ServiceRow['id'];
+
+/** Services that the Chrome extension knows. */
+export type ChromeServiceId = Exclude<ServiceRow, { vscodeOnly: true }>['id'];
+
+export const CHROME_SERVICES = SERVICES.filter(
+  (service): service is Extract<ServiceRow, { id: ChromeServiceId }> => !('vscodeOnly' in service),
+);
 
 export const SERVICE_IDS: readonly ServiceId[] = SERVICES.map((service) => service.id);
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { mergeQuotaStates, preferQuotaState, upsertQuotaState } from './merge.js';
+import {
+  connectionIdOf,
+  connectionKindOf,
+  mergeQuotaStates,
+  preferQuotaState,
+  upsertQuotaState,
+} from './merge.js';
 import type { QuotaState } from './types.js';
 
 function state(partial: Partial<QuotaState> & Pick<QuotaState, 'service' | 'lastUpdated'>): QuotaState {
@@ -130,5 +136,54 @@ describe('mergeQuotaStates', () => {
     ];
     const result = mergeQuotaStates(base, incoming);
     expect(result[0]?.sessionPct).toBe(20);
+  });
+});
+
+describe('connection id', () => {
+  it('an Account reading uses its provider id and the account kind', () => {
+    const account = state({ service: 'deepseek', lastUpdated: 1 });
+    expect(connectionIdOf(account)).toBe('deepseek');
+    expect(connectionKindOf(account)).toBe('account');
+  });
+
+  it('upsert keeps two Keys for the same provider apart', () => {
+    const work = state({ service: 'deepseek', connectionId: 'k-work', kind: 'key', lastUpdated: 1 });
+    const home = state({ service: 'deepseek', connectionId: 'k-home', kind: 'key', lastUpdated: 2 });
+    const result = upsertQuotaState([work], home);
+    expect(result.map(connectionIdOf)).toEqual(['k-work', 'k-home']);
+  });
+
+  it('upsert replaces only the Key with the same connection id', () => {
+    const work = state({ service: 'deepseek', connectionId: 'k-work', kind: 'key', lastUpdated: 1 });
+    const home = state({ service: 'deepseek', connectionId: 'k-home', kind: 'key', lastUpdated: 1 });
+    const fresh = state({ ...home, lastUpdated: 9 });
+    const result = upsertQuotaState([work, home], fresh);
+    expect(result).toEqual([work, fresh]);
+  });
+
+  it('a Key does not replace the Account of its provider', () => {
+    const account = state({ service: 'deepseek', lastUpdated: 1 });
+    const key = state({ service: 'deepseek', connectionId: 'k-1', kind: 'key', lastUpdated: 5 });
+    expect(upsertQuotaState([account], key)).toEqual([account, key]);
+  });
+
+  it('merge matches on the connection id, freshest wins', () => {
+    const base = [
+      state({ service: 'deepseek', connectionId: 'k-work', kind: 'key', lastUpdated: 5 }),
+      state({ service: 'deepseek', connectionId: 'k-home', kind: 'key', lastUpdated: 5 }),
+    ];
+    const incoming = [
+      state({ service: 'deepseek', connectionId: 'k-home', kind: 'key', lastUpdated: 9 }),
+      state({ service: 'deepseek', connectionId: 'k-new', kind: 'key', lastUpdated: 1 }),
+    ];
+    const result = mergeQuotaStates(base, incoming);
+    expect(result.map(connectionIdOf)).toEqual(['k-work', 'k-home', 'k-new']);
+    expect(result[1]?.lastUpdated).toBe(9);
+  });
+
+  it('an explicit Account connection id equal to the provider id merges with a legacy reading', () => {
+    const legacy = state({ service: 'claude', lastUpdated: 1, weeklyPct: 50 });
+    const explicit = state({ service: 'claude', connectionId: 'claude', kind: 'account', lastUpdated: 2, weeklyPct: 40 });
+    expect(mergeQuotaStates([legacy], [explicit])).toEqual([explicit]);
   });
 });

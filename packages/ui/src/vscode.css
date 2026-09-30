@@ -37,3 +37,5 @@ body.vscode-high-contrast {
   --aq-border: var(--vscode-contrastBorder);
   --aq-track: color-mix(in srgb, var(--vscode-foreground) 30%, transparent);
 }
+.btn-primary, .btn-primary:hover { border-color: var(--vscode-button-border, transparent); }
+body.vscode-high-contrast .btn { border-color: var(--vscode-button-border, var(--vscode-contrastBorder)); }

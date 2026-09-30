@@ -15,7 +15,7 @@ const NEEDS_ACTION: ReadonlySet<QuotaHonesty> = new Set([
 ]);
 
 const STATUS_TEXT: Partial<Record<QuotaHonesty, string>> = {
-  session_expired: 'Session expired',
+  session_expired: 'Session ended',
   api_key_invalid: 'Key rejected',
   auth_unavailable: 'Sign in needed',
 };
@@ -25,6 +25,8 @@ interface Props {
   state?: QuotaState;
   /** What the user does to connect. Shown when there is no usable reading. */
   hint: string;
+  /** Pill text when there is no reading yet. Default: "Not connected". */
+  pendingText?: string;
   /** Host-owned control (link or button) shown under the hint. */
   action?: React.ReactNode;
 }
@@ -47,14 +49,14 @@ function StatusPill({ tone, children }: { tone: 'ok' | 'warn' | 'idle'; children
 }
 
 /** Pure display card for one provider. Wrap the list in Suspense and ErrorBoundary at the call site. */
-export function ProviderCard({ service, state, hint, action }: Props) {
+export function ProviderCard({ service, state, hint, pendingText, action }: Props) {
   const needsAction = state == null || (state.honesty != null && NEEDS_ACTION.has(state.honesty));
   const bars = state == null
     ? []
     : [
         { label: 'Session', pct: state.sessionPct, resetsAt: state.sessionResetsAt },
         { label: 'Weekly', pct: state.weeklyPct, resetsAt: state.weeklyResetsAt },
-        { label: 'Monthly', pct: state.monthlyPct, resetsAt: state.monthlyResetsAt },
+        { label: state.monthlyLabel ?? 'Monthly', pct: state.monthlyPct, resetsAt: state.monthlyResetsAt },
       ].filter((bar): bar is { label: string; pct: number; resetsAt: number | undefined } => bar.pct != null);
   const infos = state?.balance?.infos ?? [];
   const info =
@@ -62,7 +64,7 @@ export function ProviderCard({ service, state, hint, action }: Props) {
 
   const pill =
     state == null ? (
-      <StatusPill tone="idle">Not connected</StatusPill>
+      <StatusPill tone="idle">{pendingText ?? 'Not connected'}</StatusPill>
     ) : needsAction ? (
       <StatusPill tone="warn">{(state.honesty && STATUS_TEXT[state.honesty]) ?? 'Not connected'}</StatusPill>
     ) : (
@@ -101,6 +103,12 @@ export function ProviderCard({ service, state, hint, action }: Props) {
             </div>
           </div>
         ))}
+
+      {!needsAction && state?.creditsUsed != null && (
+        <p className="card-note">
+          <span className="num">{state.creditsUsed.toLocaleString('en-US')}</span> AI credits used. This pool has no limit.
+        </p>
+      )}
 
       {info != null && <p className="card-note">{info}</p>}
 

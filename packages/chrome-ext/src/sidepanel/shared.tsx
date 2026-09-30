@@ -1,6 +1,6 @@
-import type { PanelMessage, ServiceId } from '@ai-quota-tool/core';
+import type { PanelMessage, ChromeServiceId } from '@ai-quota-tool/core';
 
-export const SERVICE_HINTS: Record<ServiceId, string> = {
+export const SERVICE_HINTS: Record<ChromeServiceId, string> = {
   claude: 'Sign in at claude.ai in this browser. Your quota shows here within a minute.',
   codex: 'Sign in at chatgpt.com in this browser. Your Codex quota shows here within a minute.',
   copilot: 'Connect GitHub to check your Copilot plan. GitHub does not share a remaining %.',

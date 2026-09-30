@@ -1,7 +1,7 @@
 {
   "name": "ai-quota-tool-vscode",
   "displayName": "AI Quota Tool",
-  "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus DeepSeek and Kimi balance, in VS Code.",
+  "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus API key balance or spend for DeepSeek, Kimi, OpenRouter, Anthropic and OpenAI, in VS Code.",
   "version": "0.9.1",
   "publisher": "BasantPandey",
   "license": "Apache-2.0",
@@ -24,6 +24,7 @@
     "Grok",
     "DeepSeek",
     "Kimi",
+    "OpenRouter",
     "VS Code",
     "monitoring"
   ],
@@ -50,7 +51,8 @@
     "type-check": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.webview.json --noEmit",
     "clean": "rimraf dist",
     "package": "vsce package --no-dependencies",
-    "publish:vsce": "vsce publish --no-dependencies"
+    "publish:vsce": "vsce publish --no-dependencies",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-quota-tool/core": "workspace:*",
@@ -73,6 +75,7 @@
     "esbuild": "^0.25.12",
     "rimraf": "^6.0.1",
     "typescript": "^5.7.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^3.2.4"
   }
 }

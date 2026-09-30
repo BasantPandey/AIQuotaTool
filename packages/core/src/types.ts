@@ -1,8 +1,9 @@
 import type { ServiceId } from './services.js';
 
-export type { ServiceId, ServiceAuth } from './services.js';
+export type { ServiceId, ServiceAuth, ChromeServiceId } from './services.js';
 export {
   SERVICES,
+  CHROME_SERVICES,
   SERVICE_IDS,
   SERVICE_LABELS,
   SERVICE_COLORS,
@@ -12,8 +13,9 @@ export {
 
 export type ClaudeSubcategoryName = 'Sonnet' | 'Designs' | 'Daily Routines';
 
+/** One sub-bucket of a plan, for example the Claude "Sonnet" limit or the Copilot "Chat" quota. */
 export interface ClaudeSubcategory {
-  name: ClaudeSubcategoryName;
+  name: ClaudeSubcategoryName | (string & {});
   /** 0–100, percentage USED */
   usedPct: number;
   /** Human-readable label, e.g. "97% left" */
@@ -67,8 +69,35 @@ export interface ProviderBalance {
   infos: AccountBalance[];
 }
 
+/**
+ * Money spent through a Key. Without `limit` it is the spend this month.
+ * With `limit` it is the spend against the provider cap, for the cap period.
+ */
+export interface KeySpend {
+  amount: number;
+  /** ISO code, for example "USD". */
+  currency: string;
+  limit?: number;
+  /** Monthly budget that the user set on a Spend only Key. The host copies it from the Key list. */
+  budget?: number;
+  /** Unix timestamp (ms) when the cap resets, if the provider gives a date. */
+  resetsAt?: number;
+  /** Whose money: this key, the whole account, or the whole org. */
+  scope: 'key' | 'account' | 'org';
+}
+
+/** An Account is a consumer plan (one for each provider). A Key is a named API key (many for each provider). */
+export type ConnectionKind = 'account' | 'key';
+
 export interface QuotaState {
   service: ServiceId;
+  /**
+   * The connection this reading belongs to. Merge matches on it.
+   * An Account uses its provider id. Omit it for an Account; read it with `connectionIdOf`.
+   */
+  connectionId?: string;
+  /** Omit for an Account; read it with `connectionKindOf`. */
+  kind?: ConnectionKind;
   /** 0–100, percentage REMAINING in the current session window. Omit if the service has no session quota. */
   sessionPct?: number;
   /** 0–100, percentage REMAINING in the current weekly window. Omit if the service has no weekly quota. */
@@ -81,6 +110,10 @@ export interface QuotaState {
   monthlyPct?: number;
   /** Unix timestamp (ms) when the billing month resets. Omit when monthlyPct is absent. */
   monthlyResetsAt?: number;
+  /** Name of the monthly bar when it is one named quota, for example "Premium requests". Default: "Monthly". */
+  monthlyLabel?: string;
+  /** AI credits used from a pool with no limit (Copilot). A count, never a percent. */
+  creditsUsed?: number;
   /** Claude-only breakdown by sub-bucket */
   subcategories?: ClaudeSubcategory[];
   /**
@@ -93,6 +126,8 @@ export interface QuotaState {
    * Omit sessionPct and weeklyPct — there is no percent cap to invent.
    */
   balance?: ProviderBalance;
+  /** Key spend. Never a remaining percent by itself: see `keyPercent`. */
+  spend?: KeySpend;
   /** Unix timestamp (ms) of the last successful poll */
   lastUpdated: number;
 }

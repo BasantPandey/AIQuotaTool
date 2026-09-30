@@ -30,7 +30,7 @@ Chrome Manifest V3 extension. **V2: fully standalone, first-class product** - si
 - **Cursor** - `GET https://cursor.com/api/usage-summary` with the session cookie (unofficial). Pure `mapCursorUsageSummary`; lowest pool remaining becomes `monthlyPct`. Bad shape → `usage_unknown`
 - **DeepSeek** - official `GET https://api.deepseek.com/user/balance` with a user-pasted API key (`chrome.storage.local` key `apiKeys`, removed on disconnect, never synced). Card shows currency amounts (granted vs topped-up), never a percent. 401/403 drops the amount (`api_key_invalid`). A funded balance does not move the toolbar badge; an empty balance does.
 
-Fetchers are registered in `src/background/providers.ts`, one factory per `ServiceId` from `@ai-quota-tool/core`.
+Fetchers are registered in `src/background/providers.ts`, one factory per `ChromeServiceId` from `@ai-quota-tool/core`. Catalog rows with `vscodeOnly: true` (Key providers such as OpenRouter) are not in `CHROME_SERVICES`, so Chrome never shows them.
 
 ## GitHub OAuth
 - GitHub OAuth App `Ov23liNRlhzedfjImsrQ` with **device flow** turned on. The web flow needs a client secret, so the extension does not use it

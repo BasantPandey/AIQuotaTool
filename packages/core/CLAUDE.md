@@ -5,12 +5,14 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 ## Exports
 - `QuotaState`, `QuotaHonesty`, `QUOTA_HONESTY_LABELS`, `WsMessage`, `ServiceId`, `ClaudeSubcategory`
 - `SERVICE_LABELS`, `SERVICE_COLORS`, `SERVICE_URLS`
-- **Merge:** `preferQuotaState`, `upsertQuotaState`, `mergeQuotaStates` (freshest-wins by `lastUpdated`)
+- **Catalog:** `SERVICES`, `CHROME_SERVICES` (rows without `vscodeOnly`), `ChromeServiceId`
+- **Merge:** `preferQuotaState`, `upsertQuotaState`, `mergeQuotaStates` (freshest-wins by `lastUpdated`, matched on `connectionIdOf`; an Account uses its provider id)
+- **Keys:** `KeyRecord`, `KEY_SERVICES`, `defaultKeyName`, `isUniqueKeyName`, `parseKeyRecords`; card math `keyCardType`, `keyPercent` (percent only from a real cap or a user budget), `applyKeyBudgets`, `describeKey` (words for the panel and the status bar), `formatMoney`; mappers `mapOpenRouterKey`, `mapAnthropicCost`, `mapOpenAICost` (org spend this month), `monthStartUtc`; `ADMIN_KEY_SERVICES`, `isAdminKeyService`
 - **Mappers:** `mapClaudeUsage`, `mapCodexUsage` (+ response types)
-- **Copilot honesty:** `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`, `mapCopilotSeatStatus`
+- **Copilot:** `mapCopilotUser` (`copilot_internal/user`; null for an unknown shape so the host falls back to the seat check). Honesty: `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`, `mapCopilotSeatStatus`
 - **Grok honesty / weekly map:** `grokUsageUnknown`, `grokNotConnected`, `grokBrowserSessionRequired`, `mapGrokWeeklyUsage`, `extractGrokWeeklyUsage`
 - **Session auth failure:** `sessionAuthFailureAction`, `isSessionAuthFailure`, `isSessionCookieService` (drop ring, keep secret, re-auth signal; Grok is **not** a session-cookie service); `sessionExpired` builder + `session_expired` honesty (Chrome live-session expiry drops the ring)
-- **Pressure:** `pressureRemaining`, `lowestPressureAmong` (never invent 100% for honesty-only states)
+- **Pressure:** `pressureRemaining`, `lowestPressureAmong` (never invent 100% for honesty-only states; a Key counts only with a real percent)
 - **Badge:** `deriveBadge` + `BADGE_COLORS` (lowest remaining %; amber < 10%, red < 5%; empty when no real %)
 - **Low-quota alerts:** `decideLowQuotaAlerts`, `initialLowQuotaArmed`, `LOW_QUOTA_THRESHOLD` (once per drop; re-arm on recovery)
 - **GitHub device flow (both hosts):** `GITHUB_OAUTH_CLIENT_ID`, `requestDeviceCode`, `pollDeviceToken`, `nextDevicePollStep`. Hosts pass their own `post`, `sleep` and `now`. No client secret

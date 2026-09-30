@@ -8,14 +8,15 @@ VS Code extension. **V1 product surface** - first-class standalone quota monitor
 | `src/extension.ts` | `activate` — poller, credentials, WS, panel, status bar, setup |
 | `src/quota-poller.ts` | Poll loop; uses `session-fetch`; `upsertQuotaState`; `pollNow` after save |
 | `src/session-fetch.ts` | Shared Claude/Codex/Copilot/Grok HTTP + core pure mappers (poller + Save & Test) |
-| `src/credentials.ts` | SecretStorage Claude sessionKey / Codex token / Grok sso / API keys / GitHub token; clear methods |
-| GitHub sign-in | Device flow from `@ai-quota-tool/core` (same as Chrome). `credential-panel.ts` runs it; no `vscode.authentication` |
-| `src/credential-panel.ts` | Set Up Accounts host; Save & Test via `session-fetch`; clear |
+| `src/credentials.ts` | SecretStorage Account secrets: Claude sessionKey / Codex token / Grok sso / GitHub token |
+| `src/key-store.ts` | Named Keys: list in `globalState` (`aiQuotaTool.keys`, no secrets), value in SecretStorage (`aiQuotaTool.key.<id>`). Moves 0.9.x DeepSeek and Kimi secrets on start. Tested with vitest |
+| `src/panel-controller.ts` | Panel actions (sign in, sign out, add and remove Keys) and the snapshot that the panel shows. Copilot sign-in goes through `copilot-auth.ts` |
+| `src/copilot-auth.ts` | Copilot uses the VS Code built-in GitHub session (`vscode.authentication.getSession("github", ["read:user"])`). Our device-flow token fails on `copilot_internal/user`. Keeps only a flag in `globalState`. The 0.9.x token is deleted on start |
 | `src/ws-server.ts` | WebSocket server `127.0.0.1:54321` — optional Chrome sink |
-| `src/quota-panel.ts` | WebviewPanel host — dashboard webview |
+| `src/quota-panel.ts` | The one WebviewPanel: Usage, Accounts, and Keys tabs. `open(tab)` shows a tab |
 | `src/status-bar.ts` | Status bar: min(session, weekly); setup / re-auth prompts |
-| `src/webview/index.tsx` | Dashboard React app (push via `setQueryData`) |
-| `src/webview/credential-setup/index.tsx` | Setup UI + privacy disclosure |
+| `src/webview/index.tsx` | Panel React app with three tabs (push via `setQueryData`) |
+| `src/webview/protocol.ts` | Types only: messages between the host and the webview. Both tsconfigs import it |
 
 ## IPC flow
 ```
@@ -33,13 +34,13 @@ QuotaPoller ──upsert──▶ latestStates ◀── merge(WS from Chrome)
 Do NOT add DOM types to `tsconfig.json` and do NOT use Node APIs in `src/webview/`.
 
 ## Graceful degradation
-- No credentials / no data → Set Up Accounts (not “Chrome not connected”).
+- No credentials / no data → the Usage tab links to the Accounts tab. The Set Up Accounts command opens the Accounts tab.
 - Poller works with zero Chrome.
 - Auth 401/403 on Claude/Codex/Grok: `sessionAuthFailureAction` → drop ring, **keep** SecretStorage, `getReauthNeeded()` → status bar re-auth cue; secrets never logged.
-- **Grok:** SecretStorage `sso` cookie (same Claude-style paste flow); `POST /rest/rate-limits` + pure `mapGrokRateLimits`. No secret → `grokBrowserSessionRequired` setup cue; optional Chrome WS merge still freshest-wins.
+- **Grok:** SecretStorage `sso` cookie (same Claude-style paste flow); `POST /rest/rate-limits` + pure `mapGrokRateLimits`. No secret → no reading (the Accounts tab shows "Not signed in"); optional Chrome WS merge still freshest-wins.
 
 ## Build
 1. esbuild `src/extension.ts` → `dist/extension.js` (Node CJS, external vscode)
-2. Vite webviews → `dist/webview/`. Both panels link one stylesheet, `dist/webview/webview.css` (shared `@ai-quota-tool/ui` styles plus the VS Code theme map).
+2. Vite webview → `dist/webview/`. The panel links one stylesheet, `dist/webview/webview.css` (shared `@ai-quota-tool/ui` styles plus the VS Code theme map).
 
 Package: `pnpm --filter ai-quota-tool-vscode run package` → `.vsix` (gitignored).

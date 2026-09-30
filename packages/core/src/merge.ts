@@ -1,4 +1,13 @@
-import type { QuotaState, ServiceId } from './types.js';
+import type { ConnectionKind, QuotaState } from './types.js';
+
+/** The connection id of a reading. Readings with no id are the Account of their provider. */
+export function connectionIdOf(state: QuotaState): string {
+  return state.connectionId ?? state.service;
+}
+
+export function connectionKindOf(state: QuotaState): ConnectionKind {
+  return state.kind ?? 'account';
+}
 
 /** Optional quota fields that contribute to "richer" on equal lastUpdated. */
 function richness(state: QuotaState): number {
@@ -10,12 +19,14 @@ function richness(state: QuotaState): number {
   if (state.weeklyResetsAt !== undefined) score += 1;
   if (state.subcategories !== undefined && state.subcategories.length > 0) score += 1;
   if (state.balance !== undefined && state.balance.infos.length > 0) score += 1;
+  if (state.spend !== undefined) score += 1;
+  if (state.creditsUsed !== undefined) score += 1;
   if (state.honesty !== undefined) score += 1;
   return score;
 }
 
 /**
- * Choose which of two readings for the same service to keep.
+ * Choose which of two readings for the same connection to keep.
  * Fresher `lastUpdated` wins. On equal timestamps, prefer the richer state
  * (more defined optional fields). On equal richness, prefer `incoming`.
  */
@@ -26,11 +37,12 @@ export function preferQuotaState(existing: QuotaState, incoming: QuotaState): Qu
 }
 
 /**
- * Insert or replace a single service reading in a list using freshest-wins.
+ * Insert or replace a single connection reading in a list using freshest-wins.
  * Returns a new array; does not mutate `states`.
  */
 export function upsertQuotaState(states: readonly QuotaState[], incoming: QuotaState): QuotaState[] {
-  const index = states.findIndex((s) => s.service === incoming.service);
+  const id = connectionIdOf(incoming);
+  const index = states.findIndex((s) => connectionIdOf(s) === id);
   if (index === -1) return [...states, incoming];
 
   const preferred = preferQuotaState(states[index]!, incoming);
@@ -42,13 +54,12 @@ export function upsertQuotaState(states: readonly QuotaState[], incoming: QuotaS
 }
 
 /**
- * Merge two QuotaState lists keyed by service using freshest-wins.
- * Services only present on one side are kept. Empty inputs are valid.
+ * Merge two QuotaState lists keyed by connection id using freshest-wins.
+ * Connections only present on one side are kept. Empty inputs are valid.
  * Returns a new array; does not mutate either argument.
- * Order: services from `base` first (in base order), then any services only in `incoming` (incoming order).
+ * Order: connections from `base` first (in base order), then any only in `incoming` (incoming order).
  *
- * Precondition: each list should have at most one row per service. Duplicate
- * services within a single list are reduced with preferQuotaState as well.
+ * Duplicate connections within a single list are reduced with preferQuotaState as well.
  */
 export function mergeQuotaStates(
   base: readonly QuotaState[],
@@ -57,27 +68,12 @@ export function mergeQuotaStates(
   if (base.length === 0) return [...incoming];
   if (incoming.length === 0) return [...base];
 
-  const byService = new Map<ServiceId, QuotaState>();
-  for (const s of base) {
-    const prev = byService.get(s.service);
-    byService.set(s.service, prev ? preferQuotaState(prev, s) : s);
+  const byConnection = new Map<string, QuotaState>();
+  for (const s of [...base, ...incoming]) {
+    const id = connectionIdOf(s);
+    const prev = byConnection.get(id);
+    byConnection.set(id, prev ? preferQuotaState(prev, s) : s);
   }
-  for (const s of incoming) {
-    const prev = byService.get(s.service);
-    byService.set(s.service, prev ? preferQuotaState(prev, s) : s);
-  }
-
-  const seen = new Set<ServiceId>();
-  const result: QuotaState[] = [];
-  for (const s of base) {
-    if (seen.has(s.service)) continue;
-    seen.add(s.service);
-    result.push(byService.get(s.service)!);
-  }
-  for (const s of incoming) {
-    if (seen.has(s.service)) continue;
-    seen.add(s.service);
-    result.push(byService.get(s.service)!);
-  }
-  return result;
+  // Map keeps first-insertion order: base connections first, then incoming-only ones.
+  return [...byConnection.values()];
 }
