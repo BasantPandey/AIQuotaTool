@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CONNECTION_INTERVAL_MS, QuotaPoller } from './quota-poller.js';
 
-const calls: string[] = [];
+const calls = vi.hoisted((): string[] => []);
 vi.mock('./session-fetch.js', () => {
   const reading = (service: string) => async () => {
     calls.push(service);
@@ -17,8 +18,6 @@ vi.mock('./session-fetch.js', () => {
     },
   };
 });
-
-const { QuotaPoller, CONNECTION_INTERVAL_MS } = await import('./quota-poller.js');
 
 function sources(focused: { value: boolean }) {
   return {
