@@ -13,7 +13,7 @@ import {
   SERVICE_LABELS,
   type ServiceId,
 } from '@ai-quota-tool/core';
-import { BROWSER_PROVIDERS, perplexityFromPaste, windsurfFromPaste } from './browser-providers.js';
+import { BROWSER_PROVIDERS, geminiFromPaste, perplexityFromPaste, windsurfFromPaste } from './browser-providers.js';
 import { browserSignIn, findBrowser } from './browser-signin.js';
 import type { CopilotAuth } from './copilot-auth.js';
 import type { CookieAccount, CredentialManager } from './credentials.js';
@@ -29,6 +29,7 @@ import {
   validateKey,
   validatePerplexitySession,
   validateWindsurfSession,
+  validateGeminiSession,
 } from './session-fetch.js';
 import type {
   AccountRow,
@@ -45,6 +46,7 @@ const ACCOUNT_SERVICES: readonly AccountService[] = SERVICE_IDS.filter(
     id === 'copilot' ||
     id === 'codex' ||
     id === 'grok' ||
+    id === 'gemini' ||
     id === 'cursor' ||
     id === 'perplexity' ||
     id === 'windsurf',
@@ -80,6 +82,7 @@ function userFacingSessionError(service: CookieAccount, e: unknown): string {
     if (service === 'cursor') return 'Cursor session invalid or expired - sign in again';
     if (service === 'perplexity') return 'Perplexity session invalid or expired - sign in again';
     if (service === 'windsurf') return 'Windsurf session invalid or expired - sign in again';
+    if (service === 'gemini') return 'Google session invalid or expired - sign in again';
   }
   return msg;
 }
@@ -245,7 +248,9 @@ export class PanelController {
           ? (perplexityFromPaste(raw) ?? '')
           : service === 'windsurf'
             ? (windsurfFromPaste(raw) ?? '')
-            : raw.trim();
+            : service === 'gemini'
+              ? (geminiFromPaste(raw) ?? '')
+              : raw.trim();
     if (!value || (service === 'codex' && !normalizeCodexSessionToken(value))) {
       this.form({ target: service, status: 'error', detail: 'The value is empty. Paste it again.' });
       return false;
@@ -269,9 +274,12 @@ export class PanelController {
       } else if (service === 'perplexity') {
         await validatePerplexitySession(value);
         await this.credentials.set('perplexity', value);
-      } else {
+      } else if (service === 'windsurf') {
         await validateWindsurfSession(value);
         await this.credentials.set('windsurf', value);
+      } else {
+        await validateGeminiSession(value);
+        await this.credentials.set('gemini', value);
       }
     } catch (e) {
       this.form({ target: service, status: 'error', detail: userFacingSessionError(service, e) });

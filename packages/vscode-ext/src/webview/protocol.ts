@@ -3,7 +3,7 @@ import type { KeyRecord, QuotaState, ServiceId } from '@ai-quota-tool/core';
 
 export type PanelTab = 'usage' | 'accounts' | 'keys';
 
-export type AccountService = 'claude' | 'copilot' | 'codex' | 'grok' | 'cursor' | 'perplexity' | 'windsurf';
+export type AccountService = 'claude' | 'copilot' | 'codex' | 'grok' | 'gemini' | 'cursor' | 'perplexity' | 'windsurf';
 
 export type AccountStatus = 'connected' | 'ended' | 'none';
 

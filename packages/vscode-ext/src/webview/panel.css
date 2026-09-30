@@ -86,3 +86,4 @@ textarea.input { resize: vertical; }
 .cell-actions { text-align: right; white-space: nowrap; }
 .cell-actions .btn + .btn { margin-left: 6px; }
 .chip .sub { white-space: normal; }
+.sub.risk { color: var(--aq-low); }

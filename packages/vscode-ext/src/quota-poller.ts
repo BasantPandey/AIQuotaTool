@@ -12,6 +12,7 @@ import {
   fetchKeyReading,
   fetchPerplexityCredits,
   fetchWindsurfPlanStatus,
+  fetchGeminiUsage,
 } from './session-fetch.js';
 
 export interface PollSources {
@@ -140,6 +141,7 @@ export class QuotaPoller {
           ...accountJob('copilot', githubToken, fetchCopilotUsage),
           ...accountJob('codex', creds.codex, fetchCodexUsage),
           ...accountJob('grok', creds.grok, fetchGrokUsage),
+          ...accountJob('gemini', creds.gemini, fetchGeminiUsage),
           ...accountJob('cursor', creds.cursor, fetchCursorUsage),
           ...accountJob('perplexity', creds.perplexity, fetchPerplexityCredits),
           ...accountJob('windsurf', creds.windsurf, fetchWindsurfPlanStatus),

@@ -32,19 +32,39 @@ function cookieHeader(names: readonly string[], cookies: Record<string, string>)
 }
 
 /**
- * A pasted Perplexity value: a full Cookie header, or one bare token. Keeps only the session cookies,
- * so no other cookie from the paste is stored or sent.
+ * A pasted Cookie header keeps only the named cookies, so no other cookie from the paste is stored or sent.
+ * `bareName` names a single value with no "name=" part.
  */
-export function perplexityFromPaste(raw: string): string | undefined {
+export function cookiesFromPaste(names: readonly string[], raw: string, bareName?: string): string | undefined {
   const text = raw.trim().replace(/^cookie:\s*/i, '');
   if (!text) return undefined;
-  if (!text.includes('=')) return `__Secure-next-auth.session-token=${text}`;
+  if (!text.includes('=')) return bareName ? `${bareName}=${text}` : undefined;
   const cookies: Record<string, string> = {};
   for (const part of text.split(/;\s*/)) {
     const i = part.indexOf('=');
     if (i > 0) cookies[part.slice(0, i).trim()] = part.slice(i + 1).trim();
   }
-  return cookieHeader(PERPLEXITY_COOKIES, cookies);
+  return cookieHeader(names, cookies);
+}
+
+export function perplexityFromPaste(raw: string): string | undefined {
+  return cookiesFromPaste(PERPLEXITY_COOKIES, raw, '__Secure-next-auth.session-token');
+}
+
+/**
+ * Google session cookies for Gemini. High risk: Chrome DBSC can bind them to the browser, so a copy can
+ * end within hours (spec section 12).
+ */
+export const GEMINI_COOKIES = ['__Secure-1PSID', '__Secure-1PSIDTS', '__Secure-1PSIDCC'] as const;
+
+/** Gemini needs at least __Secure-1PSID. */
+export function geminiSecret(cookies: Record<string, string>): string | undefined {
+  return cookies['__Secure-1PSID'] ? cookieHeader(GEMINI_COOKIES, cookies) : undefined;
+}
+
+export function geminiFromPaste(raw: string): string | undefined {
+  const header = cookiesFromPaste(GEMINI_COOKIES, raw);
+  return header?.includes('__Secure-1PSID=') ? header : undefined;
 }
 
 /** Windsurf keeps its session in these localStorage values, not in a cookie. */
@@ -87,6 +107,12 @@ export const BROWSER_PROVIDERS: Partial<Record<AccountService, BrowserProvider>>
     terms: 'https://x.ai/legal/terms-of-service',
     // The poller sends the same value as sso and sso-rw.
     toSecret: (c) => c.sso ?? c['sso-rw'],
+  },
+  gemini: {
+    startUrl: 'https://gemini.google.com/app',
+    target: { host: 'google.com', names: GEMINI_COOKIES },
+    terms: 'https://policies.google.com/terms',
+    toSecret: (c) => geminiSecret(c),
   },
   cursor: {
     // The sign-in page goes through accounts.x.ai, then back to cursor.com. The cookie is on cursor.com.

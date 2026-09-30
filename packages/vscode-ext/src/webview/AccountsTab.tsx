@@ -13,6 +13,7 @@ const HOST: Record<PasteService, string> = {
   cursor: 'cursor.com',
   perplexity: 'www.perplexity.ai',
   windsurf: 'windsurf.com',
+  gemini: 'gemini.google.com',
 };
 
 const FIELD: Record<Exclude<PasteService, 'codex'>, { label: string; placeholder: string }> = {
@@ -20,6 +21,7 @@ const FIELD: Record<Exclude<PasteService, 'codex'>, { label: string; placeholder
   grok: { label: 'sso cookie', placeholder: 'eyJ…' },
   cursor: { label: 'WorkosCursorSessionToken cookie', placeholder: 'user_…' },
   perplexity: { label: 'Cookie header', placeholder: '__Secure-next-auth.session-token=…' },
+  gemini: { label: 'Cookie header', placeholder: '__Secure-1PSID=…; __Secure-1PSIDTS=…' },
   windsurf: { label: 'Session values (JSON)', placeholder: '{"devin_session_token":"…", …}' },
 };
 
@@ -116,6 +118,13 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
           <li>
             Run <code>copy(JSON.stringify(Object.fromEntries(['devin_session_token','devin_auth1_token','devin_account_id','devin_primary_org_id'].map(k=&gt;[k,localStorage[k]]))))</code>. It copies the four session values.
           </li>
+        </ol>
+      )}
+      {service === 'gemini' && (
+        <ol className="steps">
+          <li>Open <strong>gemini.google.com</strong> in your browser and sign in.</li>
+          <li>Press <code>F12</code>. Open <strong>Network</strong> and reload the page. Click a request to <code>gemini.google.com</code>.</li>
+          <li>Under <strong>Request Headers</strong>, copy the full value of <strong>Cookie</strong>. The extension keeps only the Google session cookies.</li>
         </ol>
       )}
       {service === 'codex' && (
@@ -235,6 +244,9 @@ function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; on
         <span className="grow">
           {label}
           <span className="sub">{methodText(row)}</span>
+          {row.service === 'gemini' && (
+            <span className="sub risk">High risk: Google can bind this session to the browser, so it can end within hours.</span>
+          )}
         </span>
         <StatusPill row={row} />
         {action}
