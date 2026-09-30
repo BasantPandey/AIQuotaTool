@@ -219,9 +219,9 @@ One row for each Account provider in catalog order:
 | Column | Values |
 | --- | --- |
 | Name and logo | Provider name |
-| Method | "Opens Chrome or Edge" or "VS Code GitHub sign-in" |
-| Status | "Connected - <plan>", "Session ended", "Not signed in" |
-| Action | "Sign in", "Sign in again", "Sign in with GitHub", "Sign out" |
+| Method | "Opens Chrome or Edge", "VS Code GitHub sign-in", or "Paste the <host> session cookie" (browser sign-in off, or no browser found). Gemini adds a high-risk note. |
+| Status | "Connected" (Claude: "Connected as <org>"), "Session ended", "Not signed in" |
+| Action | "Sign in", "Sign in again", "Sign in with GitHub", "Sign out". A browser-window row also has "Paste instead". |
 
 ### 7.3 Keys
 
@@ -249,11 +249,13 @@ Perplexity, Windsurf, OpenRouter, Anthropic, OpenAI, Mistral, xAI, and Z.ai need
 ### 9.1 Readings
 
 - Today there is one `QuotaState` for each `ServiceId`. Many Keys need one reading for each Key.
-- Add `connectionId: string` to `QuotaState`. An Account uses its `ServiceId` as the id. A Key uses its Key id.
-- `upsertQuotaState`, `preferQuotaState`, and `mergeQuotaStates` match on `connectionId`, not on `service`. Freshest wins, as today.
-- Add `kind: 'account' | 'key'` so the UI and the status bar can split them.
-- Key readings add `spend?: { amount: number; currency: string; limit?: number; budget?: number; resetsAt?: number; scope: 'key' | 'account' | 'org' }`. `balance` stays as it is.
-- New `ServiceId` values: `perplexity`, `windsurf`, `openrouter`, `anthropic`, `openai`, `mistral`, and after [Check xAI and Z.ai key numbers](https://github.com/BasantPandey/AIQuotaTool/issues/92), `xai` and `zai`. Each gets a row in `SERVICES` with `auth: 'session' | 'oauth' | 'api_key'`.
+- `QuotaState` has an optional `connectionId` and an optional `kind: 'account' | 'key'`. Read them with `connectionIdOf` (default: the `ServiceId`) and `connectionKindOf` (default: `'account'`). They are optional because readings from 0.9.x have neither.
+- An Account uses its `ServiceId` as the id. A Key uses its Key id.
+- `upsertQuotaState`, `preferQuotaState`, and `mergeQuotaStates` match on the connection id, not on `service`. Freshest wins, as today.
+- Key readings add `spend?: { amount: number; currency: string; limit?: number; budget?: number; resetsAt?: number; scope: 'key' | 'account' | 'org' }`. `balance` stays as it is. The budget is user data in the Key list. `applyKeyBudgets` copies it into the reading before the panel and the status bar read it.
+- Other new optional fields: `sessionLabel` and `monthlyLabel` (bar names, for example "Daily" or "Premium requests"), and `creditsUsed` (Copilot credits from a pool with no limit, never a percent).
+- New `ServiceId` values in this release: `openrouter`, `anthropic`, `openai`. Each gets a row in `SERVICES` with `auth: 'session' | 'oauth' | 'api_key'`.
+- A row with `vscodeOnly: true` is not in the Chrome extension. Chrome reads `CHROME_SERVICES` and `ChromeServiceId`. A row with `adminKey: true` takes only an Admin key.
 
 ### 9.2 Storage
 
@@ -261,18 +263,20 @@ Perplexity, Windsurf, OpenRouter, Anthropic, OpenAI, Mistral, xAI, and Z.ai need
 | --- | --- | --- |
 | Account secret | SecretStorage | `aiQuotaTool.account.<serviceId>` |
 | Key secret | SecretStorage | `aiQuotaTool.key.<keyId>` |
-| Key list: id, provider, name, admin flag, budget, last 4 | `globalState` | `aiQuotaTool.keys` |
+| Key list: id, provider, name, budget, last 4 (the Admin flag comes from the catalog) | `globalState` | `aiQuotaTool.keys` |
+| Copilot connected (VS Code keeps the GitHub token) | `globalState` | `aiQuotaTool.copilotSignedIn` |
 | First-sign-in notice seen | `globalState` | `aiQuotaTool.noticeSeen.<serviceId>` |
 
 `keyId` is a random UUID. Nothing secret goes in `globalState`.
 
 ### 9.3 Pure seams in core (with tests)
 
-- New mappers: `mapCopilotUser`, `mapPerplexityCredits`, `mapWindsurfPlanStatus`, `mapOpenRouterKey`, `mapAnthropicCost`, `mapOpenAICost`, `mapMistralUsage`.
+- Mappers: `mapCopilotUser`, `mapOpenRouterKey`, `mapAnthropicCost`, `mapOpenAICost`. (`mapPerplexityCredits` and `mapWindsurfPlanStatus` stay on their closed branches, see section 2.1.)
 - `keyCardType(reading)` returns `balance`, `limit`, or `spend`.
 - `keyPercent(reading)` returns a percent only for a provider limit or a user budget.
-- `defaultKeyName(provider, existing)` and `isUniqueKeyName`.
-- `lowestPressureAmong` takes Key readings that have a real percent.
+- `applyKeyBudgets(readings, keys)` and `describeKey(reading)` (the words that the panel and the status bar tooltip share).
+- `defaultKeyName(provider, existing)`, `isUniqueKeyName`, `parseKeyRecords`, `isValidBudget`.
+- `pressureRemaining` counts the Key percent, so `lowestPressureAmong` and `deriveBadge` take Key readings that have a real percent.
 
 ---
 
