@@ -13,7 +13,7 @@ import {
   SERVICE_LABELS,
   type ServiceId,
 } from '@ai-quota-tool/core';
-import { BROWSER_PROVIDERS } from './browser-providers.js';
+import { BROWSER_PROVIDERS, geminiFromPaste } from './browser-providers.js';
 import { browserSignIn, findBrowser } from './browser-signin.js';
 import type { CopilotAuth } from './copilot-auth.js';
 import type { CookieAccount, CredentialManager } from './credentials.js';
@@ -25,6 +25,7 @@ import {
   validateClaudeSession,
   validateCodexSession,
   validateCursorSession,
+  validateGeminiSession,
   validateGrokSession,
   validateKey,
 } from './session-fetch.js';
@@ -39,7 +40,7 @@ import type {
 
 const ACCOUNT_SERVICES: readonly AccountService[] = SERVICE_IDS.filter(
   (id): id is AccountService =>
-    id === 'claude' || id === 'copilot' || id === 'codex' || id === 'grok' || id === 'cursor',
+    id === 'claude' || id === 'copilot' || id === 'codex' || id === 'grok' || id === 'gemini' || id === 'cursor',
 );
 
 function settings() {
@@ -70,6 +71,7 @@ function userFacingSessionError(service: CookieAccount, e: unknown): string {
     if (service === 'claude') return 'Session key invalid or expired - paste a fresh sessionKey cookie';
     if (service === 'grok') return 'sso cookie invalid or expired - paste a fresh sso cookie from grok.com';
     if (service === 'cursor') return 'Cursor session invalid or expired - sign in again';
+    if (service === 'gemini') return 'Google session invalid or expired - sign in again';
   }
   return msg;
 }
@@ -228,7 +230,7 @@ export class PanelController {
   /** Test the value with one usage call, then store it. Returns true when it is stored. */
   private async saveAccount(service: AccountService, raw: string): Promise<boolean> {
     if (service === 'copilot') return false;
-    const value = service === 'grok' ? grokSsoValue(raw) : raw.trim();
+    const value = service === 'grok' ? grokSsoValue(raw) : service === 'gemini' ? (geminiFromPaste(raw) ?? '') : raw.trim();
     if (!value || (service === 'codex' && !normalizeCodexSessionToken(value))) {
       this.form({ target: service, status: 'error', detail: 'The value is empty. Paste it again.' });
       return false;
@@ -246,9 +248,12 @@ export class PanelController {
       } else if (service === 'grok') {
         await validateGrokSession(value);
         await this.credentials.set('grok', value);
-      } else {
+      } else if (service === 'cursor') {
         await validateCursorSession(value);
         await this.credentials.set('cursor', value);
+      } else {
+        await validateGeminiSession(value);
+        await this.credentials.set('gemini', value);
       }
     } catch (e) {
       this.form({ target: service, status: 'error', detail: userFacingSessionError(service, e) });

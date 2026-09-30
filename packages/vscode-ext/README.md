@@ -2,7 +2,7 @@
 
 Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus the balance or spend of your **DeepSeek**, **Kimi**, **OpenRouter**, **Anthropic**, and **OpenAI** API keys - live in VS Code.
 
-**How sign-in works (Claude, ChatGPT / Codex, Grok, Cursor):**
+**How sign-in works (Claude, ChatGPT / Codex, Grok, Gemini, Cursor):**
 
 - To sign in, this extension opens Chrome or Edge in a new, separate profile. You sign in on the real site. The extension never sees your password.
 - After you sign in, it reads one session cookie from that profile, stores it in VS Code SecretStorage, and deletes the profile.
@@ -14,9 +14,10 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 | Claude | cookie `sessionKey` | claude.ai |
 | ChatGPT / Codex | cookie `__Secure-next-auth.session-token` (or its parts `.0` and `.1`) | chatgpt.com |
 | Grok | cookies `sso` and `sso-rw` | grok.com |
+| Gemini (high risk) | Google cookies `__Secure-1PSID`, `__Secure-1PSIDTS`, `__Secure-1PSIDCC` | gemini.google.com |
 | Cursor | cookie `WorkosCursorSessionToken` | cursor.com |
 
-Copilot uses the VS Code GitHub sign-in. API keys that you add go only to their own provider. Your use of each service follows that service's terms: [Anthropic](https://www.anthropic.com/legal/consumer-terms), [OpenAI](https://openai.com/policies/terms-of-use/), [xAI](https://x.ai/legal/terms-of-service), [Cursor](https://cursor.com/terms-of-service). Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html) and the [source on GitHub](https://github.com/BasantPandey/AIQuotaTool).
+Copilot uses the VS Code GitHub sign-in. API keys that you add go only to their own provider. Your use of each service follows that service's terms: [Anthropic](https://www.anthropic.com/legal/consumer-terms), [OpenAI](https://openai.com/policies/terms-of-use/), [xAI](https://x.ai/legal/terms-of-service), [Google](https://policies.google.com/terms), [Cursor](https://cursor.com/terms-of-service). Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html) and the [source on GitHub](https://github.com/BasantPandey/AIQuotaTool).
 
 ![AI Quota dashboard beside the code editor. The status bar shows Claude 9% in amber.](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-dark.png)
 
@@ -30,6 +31,7 @@ Copilot uses the VS Code GitHub sign-in. API keys that you add go only to their 
 - **Account cards** - one card for each signed-in Account, with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
 - **Fits your theme** - the panel uses the colors and fonts of your VS Code theme: dark, light and high contrast. In a wide tab the cards show as a grid.
 - **Grok** - sign in on the Accounts tab.
+- **Gemini (high risk)** - sign in on the Accounts tab to see the 5-hour and weekly windows. Google can bind its session cookies to the browser, so this session can end within hours.
 - **Cursor** - sign in on the Accounts tab to see the monthly usage (the lowest pool). You see short-window rate limits, plus the SuperGrok weekly pool when available.
 - **Named Keys** - add many API keys on the Keys tab, each with its own name. After you save a Key, the panel shows only its last 4 characters.
   - **DeepSeek and Kimi** show the account balance (money left, not a percent).

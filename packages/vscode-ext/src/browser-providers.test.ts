@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BROWSER_PROVIDERS } from './browser-providers.js';
+import { BROWSER_PROVIDERS, geminiFromPaste } from './browser-providers.js';
 import { codexCookieHeader } from './session-fetch.js';
 
 describe('BROWSER_PROVIDERS', () => {
@@ -22,6 +22,13 @@ describe('BROWSER_PROVIDERS', () => {
     expect(BROWSER_PROVIDERS.grok!.toSecret({ 'sso-rw': 'b' })).toBe('b');
   });
 
+  it('Gemini needs __Secure-1PSID and keeps only the named Google cookies', () => {
+    expect(BROWSER_PROVIDERS.gemini!.toSecret({ '__Secure-1PSID': 'a', '__Secure-1PSIDTS': 'b', SID: 'x' })).toBe('__Secure-1PSID=a; __Secure-1PSIDTS=b');
+    expect(BROWSER_PROVIDERS.gemini!.toSecret({ '__Secure-1PSIDTS': 'b' })).toBeUndefined();
+    expect(geminiFromPaste('SID=x; __Secure-1PSID=a; NID=n')).toBe('__Secure-1PSID=a');
+    expect(geminiFromPaste('NID=n')).toBeUndefined();
+  });
+
   it('a missing cookie gives no secret', () => {
     for (const provider of Object.values(BROWSER_PROVIDERS)) expect(provider.toSecret({})).toBeUndefined();
   });
@@ -31,6 +38,7 @@ describe('BROWSER_PROVIDERS', () => {
       claude: 'claude.ai',
       codex: 'chatgpt.com',
       grok: 'grok.com',
+      gemini: 'google.com',
       cursor: 'cursor.com',
     });
   });

@@ -9,6 +9,7 @@ import {
   fetchCopilotUsage,
   fetchCursorUsage,
   fetchGrokUsage,
+  fetchGeminiUsage,
   fetchKeyReading,
 } from './session-fetch.js';
 
@@ -138,6 +139,7 @@ export class QuotaPoller {
           ...accountJob('copilot', githubToken, fetchCopilotUsage),
           ...accountJob('codex', creds.codex, fetchCodexUsage),
           ...accountJob('grok', creds.grok, fetchGrokUsage),
+          ...accountJob('gemini', creds.gemini, fetchGeminiUsage),
           ...accountJob('cursor', creds.cursor, fetchCursorUsage),
         ]
       : [];

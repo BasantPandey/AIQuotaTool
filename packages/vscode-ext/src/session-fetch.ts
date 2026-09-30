@@ -2,12 +2,17 @@
  * Shared Node fetch helpers for VS Code host (poller + Save & Test).
  * Remaining % math stays in @ai-quota-tool/core pure mappers only.
  */
+import { request as httpsRequest } from 'node:https';
 import {
   apiKeyInvalid,
   combineGrokQuotaState,
   copilotAuthUnavailable,
   cursorUsageUnknown,
   mapCursorUsageSummary,
+  extractBatchexecutePayload,
+  GEMINI_USAGE_RPC,
+  geminiUsageUnknown,
+  mapGeminiUsage,
   mapCopilotUser,
   deepseekApiKeyInvalid,
   deepseekBalanceUnreadable,
@@ -278,6 +283,62 @@ export async function fetchCursorUsage(sessionToken: string): Promise<QuotaState
 /** Test a Cursor session with the same call as the poller. */
 export async function validateCursorSession(sessionToken: string): Promise<void> {
   await fetchCursorUsage(sessionToken);
+}
+
+/**
+ * Google sends response headers larger than the 16 KB limit of Node fetch ("Headers Overflow Error").
+ * node:https accepts a larger limit. Redirects are not followed: a redirect to sign-in means no session.
+ */
+function googleRequest(
+  url: string,
+  options: { method?: 'GET' | 'POST'; headers: Record<string, string>; body?: string },
+): Promise<{ status: number; text: string }> {
+  return new Promise((resolve, reject) => {
+    const req = httpsRequest(url, { method: options.method ?? 'GET', headers: options.headers, maxHeaderSize: 256 * 1024 }, (res) => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk: string) => (text += chunk));
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, text }));
+      res.on('error', reject);
+    });
+    req.setTimeout(30_000, () => req.destroy(new Error('Gemini request timed out')));
+    req.on('error', reject);
+    req.end(options.body);
+  });
+}
+
+function pageToken(html: string, key: string): string | undefined {
+  return new RegExp(`"${key}":"([^"]+)"`).exec(html)?.[1];
+}
+
+/**
+ * Gemini 5-hour and weekly windows: private batchexecute RPC behind gemini.google.com/usage (#66).
+ * The page tokens (at = SNlM0e, bl = cfb2h) come from the app HTML. The secret is a Cookie header.
+ */
+export async function fetchGeminiUsage(cookieHeader: string): Promise<QuotaState> {
+  const origin = 'https://gemini.google.com';
+  const headers = { Cookie: cookieHeader, 'User-Agent': BROWSER_UA };
+  const page = await googleRequest(`${origin}/app`, { headers });
+  // A redirect to the Google sign-in page, or no XSRF token, means the session is not signed in.
+  if (page.status >= 300 && page.status < 400) throw new Error('Gemini page: 401 invalid or expired session');
+  if (page.status !== 200) throw new Error(`Gemini page: ${page.status}`);
+  const at = pageToken(page.text, 'SNlM0e');
+  const bl = pageToken(page.text, 'cfb2h');
+  if (!at || !bl) throw new Error('Gemini page: 401 invalid or expired session');
+  const body = new URLSearchParams({ 'f.req': JSON.stringify([[[GEMINI_USAGE_RPC, '[]', null, 'generic']]]), at }).toString();
+  const res = await googleRequest(
+    `${origin}/_/BardChatUi/data/batchexecute?rpcids=${GEMINI_USAGE_RPC}&source-path=%2Fusage&bl=${encodeURIComponent(bl)}&rt=c`,
+    { method: 'POST', headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body },
+  );
+  if (res.status === 401 || res.status === 403) throw new Error(`Gemini usage RPC: ${res.status} invalid or expired session`);
+  if (res.status !== 200) throw new Error(`Gemini usage RPC: ${res.status}`);
+  const payload = extractBatchexecutePayload(res.text, GEMINI_USAGE_RPC);
+  return payload === undefined ? geminiUsageUnknown() : mapGeminiUsage(payload, Date.now());
+}
+
+/** Test a Gemini session with the same calls as the poller. */
+export async function validateGeminiSession(cookieHeader: string): Promise<void> {
+  await fetchGeminiUsage(cookieHeader);
 }
 
 /** Copilot seat status → honest QuotaState (never invents remaining %). */
