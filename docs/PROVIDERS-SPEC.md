@@ -1,6 +1,6 @@
 # Providers, Accounts, and Keys - AI Quota Tool for VS Code
 
-**Status:** **Draft.** Four tickets are still open. Section 14 lists them. Each open point in this file says **Open** and links its ticket.  
+**Status:** **Built, except two open points.** Section 14 lists them. Each open point in this file says **Open** and links its ticket. Real-account results from 2026-09-30 are in section 15.  
 **Path:** `docs/PROVIDERS-SPEC.md`  
 **Map:** [Wayfinder: VS Code Accounts and Keys for all providers](https://github.com/BasantPandey/AIQuotaTool/issues/84)  
 **Product:** `packages/vscode-ext` only. Pure logic goes in `packages/core`. Display parts go in `packages/ui`.
@@ -61,10 +61,10 @@ Verdict words: **Ship**, **Ship (high risk)**, **Opt-in** (Admin key only), **Bl
 | ChatGPT / Codex | Browser window | Cookie `__Secure-next-auth.session-token` (can be split in `.0` and `.1`) on `chatgpt.com` | Session (5 h), weekly | **Ship** |
 | Copilot | VS Code built-in GitHub sign-in | `vscode.authentication.getSession('github', ['read:user'])` | Premium requests, chat, completions (monthly) | **Ship** |
 | Cursor | Browser window (sign-in goes through `accounts.x.ai`) | Cookie `WorkosCursorSessionToken` on `cursor.com` | Monthly, per pool | **Ship** |
-| Perplexity | Browser window | Cookie `__Secure-next-auth.session-token` or `__Secure-authjs.session-token` on `www.perplexity.ai` | Monthly credits | **Ship** (credits only) |
+| Perplexity | Browser window | Cookie `__Secure-next-auth.session-token` or `__Secure-authjs.session-token` on `www.perplexity.ai` | Monthly credits | **No-ship** (for now): Cloudflare blocks every Node request, and the credits endpoint gives 404 ([#112](https://github.com/BasantPandey/AIQuotaTool/issues/112)) |
 | Grok | Browser window | Cookies `sso` and `sso-rw` on `grok.com` | Short rolling window | **Ship** (session window only) |
-| Windsurf | Browser window | `localStorage` on `windsurf.com`: `devin_session_token`, `devin_auth1_token`, `devin_account_id`, `devin_primary_org_id` | Daily, weekly | **Ship** |
-| Gemini | Browser window | Google cookies `__Secure-1PSID`, `__Secure-1PSIDTS` | Session (5 h), weekly | **Ship (high risk)** - see section 12 |
+| Windsurf | Browser window | The sign-in moved to Devin (`app.devin.ai`, `auth1_session`). The research values no longer exist. | Daily, weekly | **No-ship** (for now): no working auth for GetPlanStatus ([#113](https://github.com/BasantPandey/AIQuotaTool/issues/113)) |
+| Gemini | Browser window | Google cookies `__Secure-1PSID`, `__Secure-1PSIDTS`, `__Secure-1PSIDCC` | Session (5 h), weekly | **Ship (high risk)** - see section 12 |
 | Kiro | - | Only known auth reads CLI credential files | - | **No-ship** |
 
 ### 2.2 Keys
@@ -76,7 +76,7 @@ Verdict words: **Ship**, **Ship (high risk)**, **Opt-in** (Admin key only), **Bl
 | Kimi (Moonshot) | Normal key | Balance | "account balance" | **Ship** (built) |
 | Anthropic | Admin key only | Spend only | "org spend" | **Opt-in** |
 | OpenAI | Admin key only | Spend only | "org spend" | **Opt-in** |
-| Mistral | Admin key only | Spend with a limit (spend limit) | "org spend" | **Opt-in** |
+| Mistral | Admin key only | - | - | **No-ship** (for now): the documented Admin API gives no limit amount and no total cost ([#108](https://github.com/BasantPandey/AIQuotaTool/issues/108)) |
 | xAI | Management key only | Balance | "team balance" | **Blocked** - [Check xAI and Z.ai key numbers](https://github.com/BasantPandey/AIQuotaTool/issues/92) |
 | Z.ai (GLM Coding Plan) | Normal key | Percent (5 h tokens, monthly MCP) | Account | **Blocked** - [Check xAI and Z.ai key numbers](https://github.com/BasantPandey/AIQuotaTool/issues/92) |
 | Groq | - | - | - | **No-ship** (headers only on paid calls) |
@@ -120,7 +120,7 @@ Every debug flag sets `navigator.webdriver` to true. Google then blocks sign-in 
 
 ### 3.5 Paste fallback
 
-The paste path stays for every browser-window provider. It uses the same test call and the same disclosure. **Open:** which providers show the paste path by default (map fog).
+The paste path stays for every browser-window provider, as **Paste instead** on the Accounts tab. It uses the same test call and the same disclosure. A pasted Cookie header keeps only the named cookies. When `aiQuotaTool.browserSignIn` is `false`, or no Chrome or Edge is found, the paste path is the only path.
 
 ### 3.6 Copilot
 
@@ -135,12 +135,12 @@ The paste path stays for every browser-window provider. It uses the same test ca
 | --- | --- | --- | --- |
 | Claude | `GET /api/organizations`, then `GET /api/organizations/{orgId}/usage` | `claude.ai` | `mapClaudeUsage`. `five_hour`, `seven_day`, and `resets_at` can be null (fixed in PR #95). |
 | ChatGPT / Codex | `GET /api/auth/session` (gets `accessToken`), then `GET /backend-api/wham/usage` with Bearer | `chatgpt.com` | `mapCodexUsage`. `reset_at` is Unix seconds. A window of one day or more is weekly (fixed in PR #95). |
-| Copilot | `GET /copilot_internal/user` with Bearer | `api.github.com` | New mapper. Read `quota_snapshots.{premium_interactions, chat, completions}`: `percent_remaining`, `unlimited`, `entitlement` (number or string), `quota_reset_at` (Unix seconds). Unlimited: show "N AI credits used". 404 or unknown shape: fall back to the seat check. |
+| Copilot | `GET /copilot_internal/user` with Bearer | `api.github.com` | `mapCopilotUser`. Read `quota_snapshots.{premium_interactions, chat, completions}`: `percent_remaining`, `unlimited`, `entitlement` (number or string), `quota_reset_at` (Unix seconds; **0 means not set**, then use `quota_reset_date_utc`). Unlimited: show "N AI credits used". 404 or unknown shape: fall back to the seat check. |
 | Cursor | `GET /api/usage-summary` | `cursor.com` | Existing mapper. Lowest pool wins. |
 | Perplexity | `GET /rest/billing/credits?version=2.18&source=default` with `Origin` and `Referer` headers | `www.perplexity.ai` | New mapper. Monthly percent = recurring used / recurring grant. No percent for query limits. |
 | Grok | `POST /rest/rate-limits` | `grok.com` | `mapGrokRateLimits`. Test `modelName` values `fast`, `thinking`, `heavy` and the older `grok-3` before the build. No weekly pool on cookie only. |
 | Windsurf | `POST /_backend/exa.seat_management_pb.SeatManagementService/GetPlanStatus` (Connect RPC, protobuf) | `windsurf.com` | New mapper. `daily_quota_remaining_percent`, `weekly_quota_remaining_percent`, reset times in Unix seconds. Protobuf field numbers are not official. |
-| Gemini | `POST /_/BardChatUi/data/batchexecute?rpcids=jSf9Qc` with page tokens `SNlM0e` and `cfb2h` | `gemini.google.com` | Existing mapper. Capture again with non-zero use to prove the field order. |
+| Gemini | `POST /_/BardChatUi/data/batchexecute?rpcids=jSf9Qc` with page tokens `SNlM0e` and `cfb2h` | `gemini.google.com` | Existing mapper. Google response headers are larger than the 16 KB limit of Node `fetch`: use `node:https` with a larger `maxHeaderSize`. A redirect to sign-in, or no page token, is an ended session. |
 
 A Cloudflare challenge is a network problem, not an ended session. Keep the secret and the last reading.
 
@@ -148,14 +148,13 @@ A Cloudflare challenge is a network problem, not an ended session. Keep the secr
 
 ## 5. Session lifetime
 
-**Open:** [Session lifetime and sign-in again](https://github.com/BasantPandey/AIQuotaTool/issues/88). It waits for [Test sign-in cookies with real accounts](https://github.com/BasantPandey/AIQuotaTool/issues/94).
+Decided in [Session lifetime and sign-in again](https://github.com/BasantPandey/AIQuotaTool/issues/88):
 
-Known facts:
-
-- The profile is deleted after the read (section 3.1). So there is no silent refresh. The user signs in again when a session ends.
-- A graceful browser close deletes cookies with no expiry date. If a target cookie has no expiry date, phase 2 finds nothing. The real-account test checks each cookie.
-- Chrome DBSC can bind Google cookies to the device. A copied Gemini cookie can end in hours.
-- A 401 or 403 follows `sessionAuthFailureAction`: drop the reading, keep the secret, show "Session ended" and **Sign in again**.
+- The profile is deleted after the read (section 3.1). There is no silent refresh. The user signs in again when a session ends.
+- A 401 or 403 follows `sessionAuthFailureAction`: drop the reading, keep the secret. The card, the status bar ("<Provider> session ended"), and the Accounts tab show "Session ended" with **Sign in again**. There is no pop-up.
+- A Cloudflare challenge is a network problem, not an ended session. Keep the secret and the last reading.
+- A graceful browser close deletes cookies with no expiry date. Every target cookie in section 15 has an expiry date, so none is lost.
+- **Open:** Chrome DBSC can bind Google cookies to the device. A 4-hour check of a copied Gemini session runs in [Gemini browser sign-in](https://github.com/BasantPandey/AIQuotaTool/issues/114).
 
 ---
 
@@ -282,8 +281,8 @@ Perplexity, Windsurf, OpenRouter, Anthropic, OpenAI, Mistral, xAI, and Z.ai need
 | Connection | Interval | Status |
 | --- | --- | --- |
 | Copilot Account | 5 min or longer | Decided ([Copilot usage endpoint](https://github.com/BasantPandey/AIQuotaTool/issues/96)) |
-| Other Accounts | 60 s today | **Open:** [Provider terms risk for Account polling](https://github.com/BasantPandey/AIQuotaTool/issues/99). **Proposal:** 5 min, only while the VS Code window has focus. |
-| Keys | - | **Proposal:** 5 min. Spend data from Admin APIs changes slowly. |
+| Other Accounts | 5 min or longer, only while the VS Code window has focus | Decided ([Provider terms risk for Account polling](https://github.com/BasantPandey/AIQuotaTool/issues/99)) |
+| Keys | 5 min or longer | Built. Spend data from Admin APIs changes slowly. |
 
 Back off on HTTP 429.
 
@@ -339,22 +338,24 @@ The README, the `description`, the privacy policy, and the panel text must say t
 
 | Risk | Effect | What we do |
 | --- | --- | --- |
-| **Provider terms.** Anthropic, OpenAI, xAI, Perplexity, and Cursor forbid automated access to the consumer site. | A provider can complain. Microsoft can then remove the extension. | **Open:** [Provider terms risk for Account polling](https://github.com/BasantPandey/AIQuotaTool/issues/99). The paste path in 0.9.x has the same risk today. The user connects each provider by choice. |
+| **Provider terms.** Anthropic, OpenAI, xAI, Perplexity, and Cursor forbid automated access to the consumer site. | A provider can complain. Microsoft can then remove the extension. | Decided on [#99](https://github.com/BasantPandey/AIQuotaTool/issues/99): ship with the risk. Poll every 5 minutes, only with focus. Show a notice with a terms link before the first sign-in for each provider. |
 | **Undocumented endpoints.** No Account source in section 4 is in official docs. | A shape change breaks a card. | Defensive mappers. Unknown shape gives "usage unknown", never 100%. |
 | **Copilot shape changes.** `copilot_internal/user` changed 7 times in 2026. | Wrong numbers. | Accept number or string for `entitlement`. Fall back to the seat check. |
 | **Gemini DBSC.** Google can bind cookies to the device. | The Gemini session can end in hours. | Label Gemini as high risk in the Accounts tab. Measure in [Test sign-in cookies with real accounts](https://github.com/BasantPandey/AIQuotaTool/issues/94). |
-| **Session-only cookies.** A graceful close deletes cookies with no expiry date. | Phase 2 finds nothing for that provider. | Measure each cookie in [Test sign-in cookies with real accounts](https://github.com/BasantPandey/AIQuotaTool/issues/94). Keep paste. |
+| **Session-only cookies.** A graceful close deletes cookies with no expiry date. | Phase 2 finds nothing for that provider. | Measured on 2026-09-30: every target cookie has an expiry date (section 15). Paste stays. |
+| **Research goes out of date.** Perplexity and Windsurf changed after the research. | A provider stops working. | Test each provider with a real account before it ships. |
 | **Admin keys.** An Admin key can manage the whole org. | High damage if leaked. | Separate tick box. SecretStorage only. Only the last 4 characters show. |
 
 ---
 
 ## 13. Move from 0.9.x
 
-**Proposal - not decided** (map fog):
+Built (0.9.x to this release):
 
 - Existing Claude, Codex, and Grok secrets move to `aiQuotaTool.account.<serviceId>` on first start. They stay connected. No sign-in is needed.
 - The existing DeepSeek and Kimi keys become named Keys "DeepSeek key 1" and "Kimi key 1".
 - The old GitHub device-flow token is deleted. Copilot asks for the VS Code GitHub sign-in once.
+- Each move keeps a newer value at the new name.
 - The move runs once and is safe to run again.
 
 ---
@@ -363,10 +364,26 @@ The README, the `description`, the privacy policy, and the panel text must say t
 
 | Ticket | What it decides | Sections |
 | --- | --- | --- |
-| [Provider terms risk for Account polling](https://github.com/BasantPandey/AIQuotaTool/issues/99) | Ship with the risk or not; poll interval; notice text | 10, 12 |
-| [Test sign-in cookies with real accounts](https://github.com/BasantPandey/AIQuotaTool/issues/94) | Does each cookie survive phase 2; Copilot JSON capture | 3, 4, 5 |
-| [Session lifetime and sign-in again](https://github.com/BasantPandey/AIQuotaTool/issues/88) | Expiry, profile reuse, prompts | 5 |
+| [Gemini browser sign-in](https://github.com/BasantPandey/AIQuotaTool/issues/114) and [Test sign-in cookies with real accounts](https://github.com/BasantPandey/AIQuotaTool/issues/94) | Does DBSC end a copied Gemini session within hours | 5, 12 |
 | [Check xAI and Z.ai key numbers](https://github.com/BasantPandey/AIQuotaTool/issues/92) | xAI balance unit; Z.ai percent meaning | 2.2, 9.1 |
-| Map fog | Paste fallback by provider; move from 0.9.x; Admin key breakdown | 3.5, 6.4, 13 |
+
+Not in this release: a breakdown by key for Admin keys (section 6.4).
 
 When all open items close, [Write PROVIDERS-SPEC.md](https://github.com/BasantPandey/AIQuotaTool/issues/91) removes the **Draft** status.
+
+---
+
+## 15. Real-account results (2026-09-30)
+
+Windows 10, Chrome, the two-phase flow. Only names, expiry, and value lengths were recorded. Each profile was deleted.
+
+| Provider | Value | Expiry | Phase 2 reads it | Usage call |
+| --- | --- | --- | --- | --- |
+| Claude | `sessionKey` | 2026-10-28 | yes | works |
+| ChatGPT / Codex | `__Secure-next-auth.session-token.0` and `.1` | 2026-12-29 | yes | works |
+| Grok | `sso`, `sso-rw` | 2027-03-29 | yes | works |
+| Cursor | `WorkosCursorSessionToken` | 2026-11-29 | yes | works |
+| Gemini | `__Secure-1PSID`, `__Secure-1PSIDTS`, `__Secure-1PSIDCC` | 2027-09-30 or later | yes | works (DBSC check open) |
+| Perplexity | `__Secure-next-auth.session-token` | 2026-10-30 | yes | blocked by Cloudflare; credits endpoint 404 |
+| Windsurf | `devin_*` localStorage | - | not present | sign-in moved to Devin |
+| Copilot | VS Code GitHub token (tested with the GitHub CLI token) | - | - | works; `quota_reset_at` is 0 on a Free plan |
