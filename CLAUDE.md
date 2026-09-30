@@ -113,3 +113,9 @@ Build: esbuild bundles `extension.ts` → `dist/extension.js`; Vite builds webvi
 - **`@ai-quota-tool/core`** must remain importable in browser, service worker, and Node.js
 - **`calcPct(used, limit)`** returns percentage **REMAINING** (not used)
 - TanStack Query v5: side panel uses `useSuspenseQuery`; VS Code webview uses `queryClient.setQueryData` (push pattern)
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub Issues on this repo (`BasantPandey/AIQuotaTool`), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
