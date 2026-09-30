@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 
-const KEY_CLAUDE_COOKIE = 'aiQuotaTool.claudeSessionKey';
+const KEY_CLAUDE_COOKIE = 'aiQuotaTool.account.claude';
+/** Old storage names of Account secrets (0.9.x). `moveLegacy` moves them to the new names. */
+const LEGACY_ACCOUNT_SECRETS: readonly [newName: string, oldName: string][] = [
+  [KEY_CLAUDE_COOKIE, 'aiQuotaTool.claudeSessionKey'],
+];
 const KEY_CODEX_COOKIE = 'aiQuotaTool.codexSessionToken';
 /** grok.com `sso` session cookie (JWT). Also sent as sso-rw for host parity. */
 const KEY_GROK_SSO = 'aiQuotaTool.grokSsoCookie';
@@ -35,6 +39,16 @@ export class CredentialManager {
   async hasAny(): Promise<boolean> {
     const creds = await this.get();
     return !!(creds.claudeSessionKey || creds.codexSessionToken || creds.grokSsoCookie);
+  }
+
+  /** Move 0.9.x Account secrets to the new names. A value at the new name wins. Safe to run again. */
+  async moveLegacy(): Promise<void> {
+    for (const [newName, oldName] of LEGACY_ACCOUNT_SECRETS) {
+      const old = await this.secrets.get(oldName);
+      if (!old) continue;
+      if (!(await this.secrets.get(newName))) await this.secrets.store(newName, old);
+      await this.secrets.delete(oldName);
+    }
   }
 
   /** Delete the 0.9.x device-flow token. Safe to run on each start. */

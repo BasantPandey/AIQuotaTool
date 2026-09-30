@@ -43,7 +43,9 @@ All data stays on your device in local extension storage. Nothing is synced.
 
 The VS Code extension shows your remaining quota for Claude, Codex, Copilot, and Grok. It also shows the balance or the spend of API keys that you add (Keys).
 
-- It reads your own quota from claude.ai, chatgpt.com, and grok.com. It uses a session cookie that you paste.
+- It reads your own quota from claude.ai, chatgpt.com, and grok.com. It uses a session cookie.
+- Claude sign-in: the extension opens Chrome or Edge with a new, temporary profile in the VS Code extension storage folder. You sign in on claude.ai. Then the extension reads only the `sessionKey` cookie for claude.ai from that profile. It does not read other cookies, your browsing history, your chats, your prompts, your passwords, or your own browser profile. It deletes the temporary profile after the read, and also on an error or a cancel.
+- For ChatGPT (chatgpt.com) and Grok (grok.com), you paste the session cookie.
 - It reads your GitHub Copilot quota from api.github.com (`copilot_internal/user`, the same source that VS Code uses). If that fails, it reads your Copilot seat status. It uses the VS Code built-in GitHub sign-in. VS Code keeps that token. The extension keeps only a flag that says you connected Copilot.
 - It reads the balance or the spend of each Key from its own provider: api.deepseek.com (DeepSeek), api.moonshot.ai (Kimi), openrouter.ai (OpenRouter), api.anthropic.com (Anthropic Admin key), and api.openai.com (OpenAI Admin key). It uses the API key that you add.
 - An Admin key can manage your whole org. The extension uses it only to read the cost report of the current month. You confirm that it is an Admin key before the extension saves it.
@@ -53,6 +55,7 @@ The VS Code extension shows your remaining quota for Claude, Codex, Copilot, and
 - It does not read your chats, your prompts, or your files.
 - It does not use analytics, tracking, ads, or remote code.
 - It does not sell or share your data.
+- The extension keeps each secret until you remove it, sign in again, or uninstall the extension.
 - To remove an Account secret, click Sign out on the Accounts tab. To remove a Key, click Remove on the Keys tab. To delete everything, uninstall the extension.
 - An optional local connection on 127.0.0.1 can receive quota readings. Any program on your device can send to it.
 

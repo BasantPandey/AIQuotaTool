@@ -95,10 +95,10 @@
       const SNAPSHOT = {
         readings: STATES,
         accounts: [
-          { service: 'claude', status: 'connected', detail: 'Connected as Personal' },
-          { service: 'copilot', status: 'connected' },
-          { service: 'codex', status: 'connected' },
-          { service: 'grok', status: 'connected' },
+          { service: 'claude', status: 'connected', method: 'browser', detail: 'Connected as Personal' },
+          { service: 'copilot', status: 'connected', method: 'github' },
+          { service: 'codex', status: 'connected', method: 'paste' },
+          { service: 'grok', status: 'connected', method: 'paste' },
         ],
         keys: [
           { id: 'deepseek', service: 'deepseek', name: 'DeepSeek key 1', last4: '9f2c' },

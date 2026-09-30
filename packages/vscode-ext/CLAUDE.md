@@ -11,6 +11,7 @@ VS Code extension. **V1 product surface** - first-class standalone quota monitor
 | `src/credentials.ts` | SecretStorage Account secrets: Claude sessionKey / Codex token / Grok sso / GitHub token |
 | `src/key-store.ts` | Named Keys: list in `globalState` (`aiQuotaTool.keys`, no secrets), value in SecretStorage (`aiQuotaTool.key.<id>`). Moves 0.9.x DeepSeek and Kimi secrets on start. Tested with vitest |
 | `src/panel-controller.ts` | Panel actions (sign in, sign out, add and remove Keys) and the snapshot that the panel shows. Copilot sign-in goes through `copilot-auth.ts` |
+| `src/browser-signin.ts` | Two-phase browser sign-in (research #85). Phase 1: Chrome or Edge, new profile, no debug flag. Phase 2: same profile, headless, `--remote-debugging-pipe`, `Storage.getCookies`, only the named cookies. The profile is deleted in a `finally`. No new dependency. Settings `aiQuotaTool.browserPath`, `aiQuotaTool.browserSignIn` |
 | `src/copilot-auth.ts` | Copilot uses the VS Code built-in GitHub session (`vscode.authentication.getSession("github", ["read:user"])`). Our device-flow token fails on `copilot_internal/user`. Keeps only a flag in `globalState`. The 0.9.x token is deleted on start |
 | `src/ws-server.ts` | WebSocket server `127.0.0.1:54321` — optional Chrome sink |
 | `src/quota-panel.ts` | The one WebviewPanel: Usage, Accounts, and Keys tabs. `open(tab)` shows a tab |
