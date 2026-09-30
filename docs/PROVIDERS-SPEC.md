@@ -1,6 +1,6 @@
 # Providers, Accounts, and Keys - AI Quota Tool for VS Code
 
-**Status:** **Built, except two open points.** Section 14 lists them. Each open point in this file says **Open** and links its ticket. Real-account results from 2026-09-30 are in section 15.  
+**Status:** **Built, except one open point.** Section 14 lists them. Each open point in this file says **Open** and links its ticket. Real-account results from 2026-09-30 are in section 15.  
 **Path:** `docs/PROVIDERS-SPEC.md`  
 **Map:** [Wayfinder: VS Code Accounts and Keys for all providers](https://github.com/BasantPandey/AIQuotaTool/issues/84)  
 **Product:** `packages/vscode-ext` only. Pure logic goes in `packages/core`. Display parts go in `packages/ui`.
@@ -77,8 +77,8 @@ Verdict words: **Ship**, **Ship (high risk)**, **Opt-in** (Admin key only), **Bl
 | Anthropic | Admin key only | Spend only | "org spend" | **Opt-in** |
 | OpenAI | Admin key only | Spend only | "org spend" | **Opt-in** |
 | Mistral | Admin key only | - | - | **No-ship** (for now): the documented Admin API gives no limit amount and no total cost ([#108](https://github.com/BasantPandey/AIQuotaTool/issues/108)) |
-| xAI | Management key only | Balance | "team balance" | **Blocked** - [Check xAI and Z.ai key numbers](https://github.com/BasantPandey/AIQuotaTool/issues/92) |
-| Z.ai (GLM Coding Plan) | Normal key | Percent (5 h tokens, monthly MCP) | Account | **Blocked** - [Check xAI and Z.ai key numbers](https://github.com/BasantPandey/AIQuotaTool/issues/92) |
+| xAI | Management key only | Balance | "team balance" | **No-ship** (for now): the balance unit is not checked ([#92](https://github.com/BasantPandey/AIQuotaTool/issues/92)) |
+| Z.ai (GLM Coding Plan) | Normal key | Percent (5 h tokens, monthly MCP) | Account | **No-ship** (for now): the percent meaning is not checked ([#92](https://github.com/BasantPandey/AIQuotaTool/issues/92)) |
 | Groq | - | - | - | **No-ship** (headers only on paid calls) |
 | Google AI Studio | - | - | - | **No-ship** (no API) |
 
@@ -365,7 +365,6 @@ Built (0.9.x to this release):
 | Ticket | What it decides | Sections |
 | --- | --- | --- |
 | [Gemini browser sign-in](https://github.com/BasantPandey/AIQuotaTool/issues/114) and [Test sign-in cookies with real accounts](https://github.com/BasantPandey/AIQuotaTool/issues/94) | Does DBSC end a copied Gemini session within hours | 5, 12 |
-| [Check xAI and Z.ai key numbers](https://github.com/BasantPandey/AIQuotaTool/issues/92) | xAI balance unit; Z.ai percent meaning | 2.2, 9.1 |
 
 Not in this release: a breakdown by key for Admin keys (section 6.4).
 
