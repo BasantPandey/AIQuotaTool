@@ -54,7 +54,7 @@ export function ProviderCard({ service, state, hint, pendingText, action }: Prop
   const bars = state == null
     ? []
     : [
-        { label: 'Session', pct: state.sessionPct, resetsAt: state.sessionResetsAt },
+        { label: state.sessionLabel ?? 'Session', pct: state.sessionPct, resetsAt: state.sessionResetsAt },
         { label: 'Weekly', pct: state.weeklyPct, resetsAt: state.weeklyResetsAt },
         { label: state.monthlyLabel ?? 'Monthly', pct: state.monthlyPct, resetsAt: state.monthlyResetsAt },
       ].filter((bar): bar is { label: string; pct: number; resetsAt: number | undefined } => bar.pct != null);

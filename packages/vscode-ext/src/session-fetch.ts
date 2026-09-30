@@ -26,6 +26,8 @@ import {
   mapOpenAICost,
   mapOpenRouterKey,
   mapPerplexityCredits,
+  mapWindsurfPlanStatus,
+  encodeWindsurfPlanStatusRequest,
   monthStartUtc,
   type ClaudeUsageResponse,
   type GrokRateLimitsResponse,
@@ -311,6 +313,40 @@ export async function fetchPerplexityCredits(cookieHeader: string): Promise<Quot
 /** Test a Perplexity session with the same call as the poller. */
 export async function validatePerplexitySession(cookieHeader: string): Promise<void> {
   await fetchPerplexityCredits(cookieHeader);
+}
+
+/**
+ * Windsurf daily and weekly quota (GetPlanStatus, a Connect RPC in protobuf; not documented).
+ * The secret is JSON with the four Devin localStorage values. Headers follow CodexBar (windsurf.md).
+ */
+export async function fetchWindsurfPlanStatus(secret: string): Promise<QuotaState> {
+  const v = JSON.parse(secret) as Record<string, string>;
+  const res = await fetch('https://windsurf.com/_backend/exa.seat_management_pb.SeatManagementService/GetPlanStatus', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/proto',
+      'Connect-Protocol-Version': '1',
+      'User-Agent': BROWSER_UA,
+      Origin: 'https://windsurf.com',
+      Referer: 'https://windsurf.com/profile',
+      'x-auth-token': v.devin_session_token ?? '',
+      'x-devin-session-token': v.devin_session_token ?? '',
+      'x-devin-auth1-token': v.devin_auth1_token ?? '',
+      'x-devin-account-id': v.devin_account_id ?? '',
+      'x-devin-primary-org-id': v.devin_primary_org_id ?? '',
+    },
+    body: encodeWindsurfPlanStatusRequest(v.devin_session_token ?? ''),
+  });
+  if (res.status === 401 || res.status === 403) throw new Error(`Windsurf plan API: ${res.status} invalid or expired session`);
+  if (!res.ok) throw new Error(`Windsurf plan API: ${res.status}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (isHtmlBody(new TextDecoder().decode(bytes.subarray(0, 200)))) throw new Error('Windsurf plan API blocked (HTML/Cloudflare)');
+  return mapWindsurfPlanStatus(bytes, Date.now());
+}
+
+/** Test a Windsurf session with the same call as the poller. */
+export async function validateWindsurfSession(secret: string): Promise<void> {
+  await fetchWindsurfPlanStatus(secret);
 }
 
 /** Copilot seat status → honest QuotaState (never invents remaining %). */

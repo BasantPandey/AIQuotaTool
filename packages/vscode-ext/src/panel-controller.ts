@@ -13,7 +13,7 @@ import {
   SERVICE_LABELS,
   type ServiceId,
 } from '@ai-quota-tool/core';
-import { BROWSER_PROVIDERS, perplexityFromPaste } from './browser-providers.js';
+import { BROWSER_PROVIDERS, perplexityFromPaste, windsurfFromPaste } from './browser-providers.js';
 import { browserSignIn, findBrowser } from './browser-signin.js';
 import type { CopilotAuth } from './copilot-auth.js';
 import type { CookieAccount, CredentialManager } from './credentials.js';
@@ -28,6 +28,7 @@ import {
   validateGrokSession,
   validateKey,
   validatePerplexitySession,
+  validateWindsurfSession,
 } from './session-fetch.js';
 import type {
   AccountRow,
@@ -40,7 +41,13 @@ import type {
 
 const ACCOUNT_SERVICES: readonly AccountService[] = SERVICE_IDS.filter(
   (id): id is AccountService =>
-    id === 'claude' || id === 'copilot' || id === 'codex' || id === 'grok' || id === 'cursor' || id === 'perplexity',
+    id === 'claude' ||
+    id === 'copilot' ||
+    id === 'codex' ||
+    id === 'grok' ||
+    id === 'cursor' ||
+    id === 'perplexity' ||
+    id === 'windsurf',
 );
 
 function settings() {
@@ -72,6 +79,7 @@ function userFacingSessionError(service: CookieAccount, e: unknown): string {
     if (service === 'grok') return 'sso cookie invalid or expired - paste a fresh sso cookie from grok.com';
     if (service === 'cursor') return 'Cursor session invalid or expired - sign in again';
     if (service === 'perplexity') return 'Perplexity session invalid or expired - sign in again';
+    if (service === 'windsurf') return 'Windsurf session invalid or expired - sign in again';
   }
   return msg;
 }
@@ -163,7 +171,7 @@ export class PanelController {
     if (service === 'copilot' || provider == null) return;
     const label = SERVICE_LABELS[service];
     const host = provider.target.host;
-    const cookie = provider.target.names.join(' and ');
+    const cookie = provider.target.localStorage ? 'session' : provider.target.names.join(' and ');
     const browser = findBrowser(settings().browserPath);
     if (browser == null) {
       this.form({ target: service, status: 'error', detail: 'No Chrome or Edge found. Set aiQuotaTool.browserPath, or paste the cookie.' });
@@ -230,7 +238,14 @@ export class PanelController {
   /** Test the value with one usage call, then store it. Returns true when it is stored. */
   private async saveAccount(service: AccountService, raw: string): Promise<boolean> {
     if (service === 'copilot') return false;
-    const value = service === 'grok' ? grokSsoValue(raw) : service === 'perplexity' ? (perplexityFromPaste(raw) ?? '') : raw.trim();
+    const value =
+      service === 'grok'
+        ? grokSsoValue(raw)
+        : service === 'perplexity'
+          ? (perplexityFromPaste(raw) ?? '')
+          : service === 'windsurf'
+            ? (windsurfFromPaste(raw) ?? '')
+            : raw.trim();
     if (!value || (service === 'codex' && !normalizeCodexSessionToken(value))) {
       this.form({ target: service, status: 'error', detail: 'The value is empty. Paste it again.' });
       return false;
@@ -251,9 +266,12 @@ export class PanelController {
       } else if (service === 'cursor') {
         await validateCursorSession(value);
         await this.credentials.set('cursor', value);
-      } else {
+      } else if (service === 'perplexity') {
         await validatePerplexitySession(value);
         await this.credentials.set('perplexity', value);
+      } else {
+        await validateWindsurfSession(value);
+        await this.credentials.set('windsurf', value);
       }
     } catch (e) {
       this.form({ target: service, status: 'error', detail: userFacingSessionError(service, e) });

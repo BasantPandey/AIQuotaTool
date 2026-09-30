@@ -74,6 +74,14 @@ export const SERVICES = [
     vscodeOnly: true,
   },
   {
+    id: 'windsurf',
+    label: 'Windsurf',
+    color: '#0b3b33',
+    host: 'windsurf.com',
+    auth: 'session',
+    vscodeOnly: true,
+  },
+  {
     id: 'openrouter',
     label: 'OpenRouter',
     color: '#1e2140',

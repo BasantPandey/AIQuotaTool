@@ -13,6 +13,8 @@ export interface CookieTarget {
   host: string;
   /** Cookie names to read. Nothing else leaves the profile. */
   names: readonly string[];
+  /** localStorage keys to read instead of cookies (Windsurf). Phase 2 still makes no network request. */
+  localStorage?: { origin: string; keys: readonly string[] };
 }
 
 export interface CdpCookie {
@@ -110,20 +112,26 @@ async function readCookies(browser: string, profile: string, target: CookieTarge
   );
   const write = child.stdio[3] as NodeJS.WritableStream;
   const read = child.stdio[4] as NodeJS.ReadableStream;
-  const pending = new Map<number, (msg: { result?: unknown; error?: { message: string } }) => void>();
+  type Message = { id?: number; method?: string; params?: Record<string, unknown>; result?: unknown; error?: unknown };
+  const pending = new Map<number, (msg: Message) => void>();
+  const events: ((msg: Message) => void)[] = [];
   let buffer = '';
   read.setEncoding('utf8');
   read.on('data', (chunk: string) => {
     const { frames, rest } = splitFrames(buffer + chunk);
     buffer = rest;
     for (const frame of frames) {
-      const msg = JSON.parse(frame) as { id?: number; result?: unknown; error?: { message: string } };
-      if (msg.id != null) pending.get(msg.id)?.(msg);
-      if (msg.id != null) pending.delete(msg.id);
+      const msg = JSON.parse(frame) as Message;
+      if (msg.id != null) {
+        pending.get(msg.id)?.(msg);
+        pending.delete(msg.id);
+      } else {
+        for (const listener of events) listener(msg);
+      }
     }
   });
   let id = 0;
-  const call = (method: string) =>
+  const call = (method: string, params: Record<string, unknown> = {}, sessionId?: string) =>
     new Promise<unknown>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`The browser did not answer ${method}.`)), 15_000);
       pending.set(++id, (msg) => {
@@ -131,15 +139,55 @@ async function readCookies(browser: string, profile: string, target: CookieTarge
         if (msg.error) reject(new Error(`The browser refused ${method}.`));
         else resolve(msg.result);
       });
-      write.write(`${JSON.stringify({ id, method, params: {} })}\0`);
+      write.write(`${JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })}\0`);
     });
   try {
+    if (target.localStorage) return await readLocalStorage(call, events, target.localStorage);
     const result = (await call('Storage.getCookies')) as { cookies?: CdpCookie[] };
     return pickCookies(result.cookies ?? [], target);
   } finally {
     await call('Browser.close').catch(() => undefined);
     if (!(await exited(child, 5_000))) child.kill();
   }
+}
+
+type CdpCall = (method: string, params?: Record<string, unknown>, sessionId?: string) => Promise<unknown>;
+type CdpEvent = { method?: string; params?: Record<string, unknown>; sessionId?: string };
+
+/**
+ * localStorage needs a page at the origin. The browser answers the page request itself with an empty
+ * page (Fetch.fulfillRequest), so the site gets no request and none of its scripts run (research #85).
+ */
+async function readLocalStorage(
+  call: CdpCall,
+  events: ((msg: CdpEvent) => void)[],
+  source: { origin: string; keys: readonly string[] },
+): Promise<Record<string, string>> {
+  const { targetId } = (await call('Target.createTarget', { url: 'about:blank' })) as { targetId: string };
+  const { sessionId } = (await call('Target.attachToTarget', { targetId, flatten: true })) as { sessionId: string };
+  const loaded = new Promise<void>((resolve) => {
+    events.push((msg) => {
+      if (msg.sessionId !== sessionId) return;
+      if (msg.method === 'Fetch.requestPaused') {
+        void call(
+          'Fetch.fulfillRequest',
+          { requestId: msg.params?.requestId, responseCode: 200, body: Buffer.from('<!doctype html><title></title>').toString('base64') },
+          sessionId,
+        ).catch(() => undefined);
+      }
+      if (msg.method === 'Page.loadEventFired') resolve();
+    });
+  });
+  await call('Page.enable', {}, sessionId);
+  await call('Fetch.enable', { patterns: [{ urlPattern: `${source.origin}/*` }] }, sessionId);
+  await call('Page.navigate', { url: `${source.origin}/__aiq_stub` }, sessionId);
+  await Promise.race([loaded, new Promise((_, reject) => setTimeout(() => reject(new Error('The stub page did not load.')), 15_000))]);
+  const { entries } = (await call(
+    'DOMStorage.getDOMStorageItems',
+    { storageId: { storageKey: `${source.origin}/`, isLocalStorage: true } },
+    sessionId,
+  )) as { entries: [string, string][] };
+  return Object.fromEntries(entries.filter(([key, value]) => source.keys.includes(key) && value));
 }
 
 /** Windows keeps file locks for a moment after the browser exits. Try again a few times. */

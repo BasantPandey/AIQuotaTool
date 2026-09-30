@@ -11,6 +11,7 @@ import {
   fetchGrokUsage,
   fetchKeyReading,
   fetchPerplexityCredits,
+  fetchWindsurfPlanStatus,
 } from './session-fetch.js';
 
 export interface PollSources {
@@ -141,6 +142,7 @@ export class QuotaPoller {
           ...accountJob('grok', creds.grok, fetchGrokUsage),
           ...accountJob('cursor', creds.cursor, fetchCursorUsage),
           ...accountJob('perplexity', creds.perplexity, fetchPerplexityCredits),
+          ...accountJob('windsurf', creds.windsurf, fetchWindsurfPlanStatus),
         ]
       : [];
     const keyJobs = keys.map(({ key, secret }): Job => ({

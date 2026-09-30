@@ -110,6 +110,8 @@ export interface QuotaState {
   monthlyPct?: number;
   /** Unix timestamp (ms) when the billing month resets. Omit when monthlyPct is absent. */
   monthlyResetsAt?: number;
+  /** Name of the session bar when the window is not a 5-hour session, for example "Daily". Default: "Session". */
+  sessionLabel?: string;
   /** Name of the monthly bar when it is one named quota, for example "Premium requests". Default: "Monthly". */
   monthlyLabel?: string;
   /** AI credits used from a pool with no limit (Copilot). A count, never a percent. */

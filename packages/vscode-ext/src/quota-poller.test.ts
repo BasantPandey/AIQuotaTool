@@ -14,6 +14,7 @@ vi.mock('./session-fetch.js', () => {
     fetchGrokUsage: reading('grok'),
     fetchCursorUsage: reading('cursor'),
     fetchPerplexityCredits: reading('perplexity'),
+    fetchWindsurfPlanStatus: reading('windsurf'),
     fetchKeyReading: async (service: string) => {
       calls.push(`key:${service}`);
       return { service, spend: { amount: 1, currency: 'USD', scope: 'key' }, lastUpdated: Date.now() };
@@ -23,7 +24,7 @@ vi.mock('./session-fetch.js', () => {
 
 function sources(focused: { value: boolean }) {
   return {
-    credentials: async () => ({ claude: 'sk', codex: undefined, grok: undefined, cursor: undefined, perplexity: undefined }),
+    credentials: async () => ({ claude: 'sk', codex: undefined, grok: undefined, cursor: undefined, perplexity: undefined, windsurf: undefined }),
     githubToken: async () => 'gh',
     keys: async () => [{ key: { id: 'k1', service: 'openrouter' as const, name: 'K', last4: 'abcd' }, secret: 's' }],
     focused: () => focused.value,

@@ -47,6 +47,25 @@ export function perplexityFromPaste(raw: string): string | undefined {
   return cookieHeader(PERPLEXITY_COOKIES, cookies);
 }
 
+/** Windsurf keeps its session in these localStorage values, not in a cookie. */
+export const WINDSURF_KEYS = ['devin_session_token', 'devin_auth1_token', 'devin_account_id', 'devin_primary_org_id'] as const;
+
+/** The Windsurf secret is JSON with all four values. Undefined when one is missing or empty. */
+export function windsurfSecret(values: Record<string, unknown>): string | undefined {
+  const picked = WINDSURF_KEYS.map((key) => [key, values[key]] as const);
+  if (!picked.every(([, v]) => typeof v === 'string' && v.length > 0)) return undefined;
+  return JSON.stringify(Object.fromEntries(picked));
+}
+
+/** A pasted Windsurf value: the JSON that the console snippet copies. */
+export function windsurfFromPaste(raw: string): string | undefined {
+  try {
+    return windsurfSecret(JSON.parse(raw.trim()) as Record<string, unknown>);
+  } catch {
+    return undefined;
+  }
+}
+
 /** Account providers with browser sign-in. Each value goes only to its own host (spec section 4). */
 export const BROWSER_PROVIDERS: Partial<Record<AccountService, BrowserProvider>> = {
   claude: {
@@ -81,5 +100,11 @@ export const BROWSER_PROVIDERS: Partial<Record<AccountService, BrowserProvider>>
     target: { host: 'perplexity.ai', names: PERPLEXITY_COOKIES },
     terms: 'https://www.perplexity.ai/hub/legal/terms-of-service',
     toSecret: (c) => cookieHeader(PERPLEXITY_COOKIES, c),
+  },
+  windsurf: {
+    startUrl: 'https://windsurf.com/profile',
+    target: { host: 'windsurf.com', names: [], localStorage: { origin: 'https://windsurf.com', keys: WINDSURF_KEYS } },
+    terms: 'https://windsurf.com/terms-of-service-individual',
+    toSecret: (values) => windsurfSecret(values),
   },
 };

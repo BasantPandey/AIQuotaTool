@@ -15,7 +15,7 @@ function tightest(states: QuotaState[]): Tightest | undefined {
   let best: Tightest | undefined;
   for (const state of states) {
     for (const w of [
-      { label: 'Session', pct: state.sessionPct, resetsAt: state.sessionResetsAt },
+      { label: state.sessionLabel ?? 'Session', pct: state.sessionPct, resetsAt: state.sessionResetsAt },
       { label: 'Weekly', pct: state.weeklyPct, resetsAt: state.weeklyResetsAt },
       { label: state.monthlyLabel ?? 'Monthly', pct: state.monthlyPct, resetsAt: state.monthlyResetsAt },
     ]) {

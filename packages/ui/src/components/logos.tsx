@@ -188,3 +188,13 @@ export function PerplexityLogo({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+/** Simple original wave mark for Windsurf (not an official brand asset). */
+export function WindsurfLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 15.5c2.2-4.5 4.4-4.5 6.6 0s4.4 4.5 6.6 0 2.9-4.1 4.8-1.5" stroke="#3be0b8" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M3 9.5c2.2-4.5 4.4-4.5 6.6 0s4.4 4.5 6.6 0 2.9-4.1 4.8-1.5" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}

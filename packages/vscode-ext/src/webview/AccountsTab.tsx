@@ -12,6 +12,7 @@ const HOST: Record<PasteService, string> = {
   grok: 'grok.com',
   cursor: 'cursor.com',
   perplexity: 'www.perplexity.ai',
+  windsurf: 'windsurf.com',
 };
 
 const FIELD: Record<Exclude<PasteService, 'codex'>, { label: string; placeholder: string }> = {
@@ -19,6 +20,7 @@ const FIELD: Record<Exclude<PasteService, 'codex'>, { label: string; placeholder
   grok: { label: 'sso cookie', placeholder: 'eyJ…' },
   cursor: { label: 'WorkosCursorSessionToken cookie', placeholder: 'user_…' },
   perplexity: { label: 'Cookie header', placeholder: '__Secure-next-auth.session-token=…' },
+  windsurf: { label: 'Session values (JSON)', placeholder: '{"devin_session_token":"…", …}' },
 };
 
 function methodText(row: AccountRow): string {
@@ -105,6 +107,15 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
           <li>Open <strong>www.perplexity.ai</strong> in your browser and sign in.</li>
           <li>Press <code>F12</code>. Open <strong>Network</strong> and reload the page. Click a request to <code>www.perplexity.ai</code>.</li>
           <li>Under <strong>Request Headers</strong>, copy the full value of <strong>Cookie</strong>. The extension keeps only the session cookie.</li>
+        </ol>
+      )}
+      {service === 'windsurf' && (
+        <ol className="steps">
+          <li>Open <strong>windsurf.com/profile</strong> in your browser and sign in.</li>
+          <li>Press <code>F12</code> and open <strong>Console</strong>.</li>
+          <li>
+            Run <code>copy(JSON.stringify(Object.fromEntries(['devin_session_token','devin_auth1_token','devin_account_id','devin_primary_org_id'].map(k=&gt;[k,localStorage[k]]))))</code>. It copies the four session values.
+          </li>
         </ol>
       )}
       {service === 'codex' && (

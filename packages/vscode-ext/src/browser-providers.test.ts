@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BROWSER_PROVIDERS, perplexityFromPaste } from './browser-providers.js';
+import { BROWSER_PROVIDERS, perplexityFromPaste, windsurfFromPaste } from './browser-providers.js';
 import { codexCookieHeader } from './session-fetch.js';
 
 describe('BROWSER_PROVIDERS', () => {
@@ -35,6 +35,20 @@ describe('BROWSER_PROVIDERS', () => {
     expect(perplexityFromPaste('  ')).toBeUndefined();
   });
 
+  it('Windsurf needs all four localStorage values', () => {
+    const all = { devin_session_token: 's', devin_auth1_token: 'a', devin_account_id: 'i', devin_primary_org_id: 'o', other: 'x' };
+    expect(JSON.parse(BROWSER_PROVIDERS.windsurf!.toSecret(all)!)).toEqual({
+      devin_session_token: 's',
+      devin_auth1_token: 'a',
+      devin_account_id: 'i',
+      devin_primary_org_id: 'o',
+    });
+    expect(BROWSER_PROVIDERS.windsurf!.toSecret({ devin_session_token: 's' })).toBeUndefined();
+    expect(BROWSER_PROVIDERS.windsurf!.target.localStorage?.origin).toBe('https://windsurf.com');
+    expect(windsurfFromPaste(JSON.stringify(all))).toBeDefined();
+    expect(windsurfFromPaste('not json')).toBeUndefined();
+  });
+
   it('a missing cookie gives no secret', () => {
     for (const provider of Object.values(BROWSER_PROVIDERS)) expect(provider.toSecret({})).toBeUndefined();
   });
@@ -46,6 +60,7 @@ describe('BROWSER_PROVIDERS', () => {
       grok: 'grok.com',
       cursor: 'cursor.com',
       perplexity: 'perplexity.ai',
+      windsurf: 'windsurf.com',
     });
   });
 });
