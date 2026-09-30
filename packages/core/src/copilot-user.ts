@@ -67,7 +67,8 @@ export function mapCopilotUser(body: unknown, lastUpdated: number = Date.now()):
     limited.push({
       label,
       pct: Math.round(Math.max(0, Math.min(100, pct))),
-      resetsAt: resetSeconds != null ? resetSeconds * 1000 : planReset,
+      // A real Free plan response sends quota_reset_at: 0 on each snapshot. 0 means "not set".
+      resetsAt: resetSeconds != null && resetSeconds > 0 ? resetSeconds * 1000 : planReset,
     });
   }
   if (!known) return null;
@@ -77,7 +78,8 @@ export function mapCopilotUser(body: unknown, lastUpdated: number = Date.now()):
     const lowest = limited.reduce((a, b) => (b.pct < a.pct ? b : a));
     state.monthlyPct = lowest.pct;
     if (lowest.resetsAt != null) state.monthlyResetsAt = lowest.resetsAt;
-    state.monthlyLabel = limited.length === 1 ? lowest.label : `${lowest.label} (lowest)`;
+    const allEqual = limited.every((q) => q.pct === lowest.pct);
+    state.monthlyLabel = limited.length === 1 ? lowest.label : allEqual ? 'Monthly' : `${lowest.label} (lowest)`;
     if (limited.length > 1) {
       state.subcategories = limited.map(
         (q): ClaudeSubcategory => ({ name: q.label, usedPct: 100 - q.pct, label: `${q.pct}% left` }),
