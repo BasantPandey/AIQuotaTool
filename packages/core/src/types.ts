@@ -139,7 +139,7 @@ export const QUOTA_HONESTY_LABELS: Record<QuotaHonesty, string> = {
   auth_unavailable: 'Could not verify Copilot access - sign in to GitHub',
   usage_unknown: 'Connected - remaining usage % not available',
   not_connected: 'Not signed in - open grok.com while signed in',
-  session_expired: 'Session expired - sign in again on the service website',
+  session_expired: 'Session ended - sign in again',
   browser_session_required:
     'Set up a grok.com sso cookie in Set Up Accounts (or use Chrome on grok.com)',
   api_key_required: 'Add an API key to see your balance',

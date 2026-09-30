@@ -11,6 +11,7 @@ describe('isSessionCookieService', () => {
     expect(isSessionCookieService('claude')).toBe(true);
     expect(isSessionCookieService('codex')).toBe(true);
     expect(isSessionCookieService('grok')).toBe(true);
+    expect(isSessionCookieService('cursor')).toBe(true);
     expect(isSessionCookieService('copilot')).toBe(false);
   });
 });

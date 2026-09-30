@@ -6,6 +6,8 @@ import {
   apiKeyInvalid,
   combineGrokQuotaState,
   copilotAuthUnavailable,
+  cursorUsageUnknown,
+  mapCursorUsageSummary,
   mapCopilotUser,
   deepseekApiKeyInvalid,
   deepseekBalanceUnreadable,
@@ -248,6 +250,34 @@ export async function fetchCopilotUsage(token: string): Promise<QuotaState> {
     if (state != null) return state;
   }
   return fetchCopilotSeat(token);
+}
+
+/**
+ * Cursor monthly usage from the dashboard endpoint with the WorkosCursorSessionToken cookie. Not documented.
+ * 401 is an ended session. 403 is often a bot check, so it throws and the last reading stays.
+ */
+export async function fetchCursorUsage(sessionToken: string): Promise<QuotaState> {
+  const res = await fetch('https://cursor.com/api/usage-summary', {
+    headers: {
+      Accept: 'application/json',
+      Cookie: `WorkosCursorSessionToken=${sessionToken}`,
+      'User-Agent': BROWSER_UA,
+      Referer: 'https://cursor.com/dashboard',
+      Origin: 'https://cursor.com',
+    },
+  });
+  if (res.status === 401) throw new Error('Cursor usage API: 401 invalid or expired session');
+  if (!res.ok) throw new Error(`Cursor usage API: ${res.status}`);
+  try {
+    return mapCursorUsageSummary(await res.json(), Date.now());
+  } catch {
+    return cursorUsageUnknown();
+  }
+}
+
+/** Test a Cursor session with the same call as the poller. */
+export async function validateCursorSession(sessionToken: string): Promise<void> {
+  await fetchCursorUsage(sessionToken);
 }
 
 /** Copilot seat status → honest QuotaState (never invents remaining %). */

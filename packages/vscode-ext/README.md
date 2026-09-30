@@ -2,7 +2,7 @@
 
 Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus the balance or spend of your **DeepSeek**, **Kimi**, **OpenRouter**, **Anthropic**, and **OpenAI** API keys - live in VS Code.
 
-**How sign-in works (Claude):**
+**How sign-in works (Claude, ChatGPT / Codex, Grok, Cursor):**
 
 - To sign in, this extension opens Chrome or Edge in a new, separate profile. You sign in on the real site. The extension never sees your password.
 - After you sign in, it reads one session cookie from that profile, stores it in VS Code SecretStorage, and deletes the profile.
@@ -12,8 +12,11 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 | Provider | Value that the extension reads | Only host that receives it |
 |---|---|---|
 | Claude | cookie `sessionKey` | claude.ai |
+| ChatGPT / Codex | cookie `__Secure-next-auth.session-token` (or its parts `.0` and `.1`) | chatgpt.com |
+| Grok | cookies `sso` and `sso-rw` | grok.com |
+| Cursor | cookie `WorkosCursorSessionToken` | cursor.com |
 
-Other Accounts use a pasted cookie or the VS Code GitHub sign-in. API keys that you add go only to their own provider. Your use of each service follows that service's terms, for example the [Anthropic consumer terms](https://www.anthropic.com/legal/consumer-terms). Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html) and the [source on GitHub](https://github.com/BasantPandey/AIQuotaTool).
+Copilot uses the VS Code GitHub sign-in. API keys that you add go only to their own provider. Your use of each service follows that service's terms: [Anthropic](https://www.anthropic.com/legal/consumer-terms), [OpenAI](https://openai.com/policies/terms-of-use/), [xAI](https://x.ai/legal/terms-of-service), [Cursor](https://cursor.com/terms-of-service). Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html) and the [source on GitHub](https://github.com/BasantPandey/AIQuotaTool).
 
 ![AI Quota dashboard beside the code editor. The status bar shows Claude 9% in amber.](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-dark.png)
 
@@ -26,7 +29,8 @@ Other Accounts use a pasted cookie or the VS Code GitHub sign-in. API keys that 
 - **Lowest remaining** - the Usage tab starts with the one limit that has the least left, and when it resets.
 - **Account cards** - one card for each signed-in Account, with segmented session, weekly and monthly gauges. Copilot and Grok show an honest status when a percent is not available.
 - **Fits your theme** - the panel uses the colors and fonts of your VS Code theme: dark, light and high contrast. In a wide tab the cards show as a grid.
-- **Grok** - paste a grok.com `sso` cookie on the Accounts tab. You see short-window rate limits, plus the SuperGrok weekly pool when available.
+- **Grok** - sign in on the Accounts tab.
+- **Cursor** - sign in on the Accounts tab to see the monthly usage (the lowest pool). You see short-window rate limits, plus the SuperGrok weekly pool when available.
 - **Named Keys** - add many API keys on the Keys tab, each with its own name. After you save a Key, the panel shows only its last 4 characters.
   - **DeepSeek and Kimi** show the account balance (money left, not a percent).
   - **OpenRouter** shows the spend of that one key. If the key has a limit, it shows the spend against the limit and the real percent left. If not, it shows the spend this month.
@@ -47,7 +51,7 @@ Other Accounts use a pasted cookie or the VS Code GitHub sign-in. API keys that 
 1. Install the extension
 2. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
 3. Run **"AI Quota Tool: Set Up Accounts"**. The panel opens on the Accounts tab.
-4. Click **Sign in** for each service that you use. For Claude, a new Chrome or Edge window opens. Sign in there, then click **Done** in VS Code. For the other services, paste the session credential. Each service is optional.
+4. Click **Sign in** for each service that you use. A new Chrome or Edge window opens. Sign in there, then click **Done** in VS Code. Each service is optional. To paste a cookie yourself, click **Paste instead**.
 5. To add a DeepSeek or Kimi API key, open the **Keys** tab and click **Add key**.
 
 ![The Accounts tab, with one row for each Account and a Sign in or Sign out button](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/setup-accounts.png)

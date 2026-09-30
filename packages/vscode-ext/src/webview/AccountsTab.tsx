@@ -6,7 +6,13 @@ import { send, useForm } from './store.js';
 
 type PasteService = Exclude<AccountService, 'copilot'>;
 
-const HOST: Record<PasteService, string> = { claude: 'claude.ai', codex: 'chatgpt.com', grok: 'grok.com' };
+const HOST: Record<PasteService, string> = { claude: 'claude.ai', codex: 'chatgpt.com', grok: 'grok.com', cursor: 'cursor.com' };
+
+const FIELD: Record<Exclude<PasteService, 'codex'>, { label: string; placeholder: string }> = {
+  claude: { label: 'Session key', placeholder: 'sk-ant-sid02-…' },
+  grok: { label: 'sso cookie', placeholder: 'eyJ…' },
+  cursor: { label: 'WorkosCursorSessionToken cookie', placeholder: 'user_…' },
+};
 
 function methodText(row: AccountRow): string {
   if (row.method === 'github') return 'VS Code GitHub sign-in';
@@ -80,6 +86,13 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
           <li>Copy the value of <code>sso</code>. It often starts with <code>eyJ</code>.</li>
         </ol>
       )}
+      {service === 'cursor' && (
+        <ol className="steps">
+          <li>Open <strong>cursor.com/dashboard</strong> in your browser and sign in.</li>
+          <li>Press <code>F12</code>. Open <strong>Application</strong>, then <strong>Cookies</strong>, then <code>https://cursor.com</code>.</li>
+          <li>Copy the value of <code>WorkosCursorSessionToken</code>.</li>
+        </ol>
+      )}
       {service === 'codex' && (
         <ol className="steps">
           <li>Open <strong>chatgpt.com</strong> in your browser and sign in.</li>
@@ -112,11 +125,11 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
         </>
       ) : (
         <label className="field">
-          {service === 'claude' ? 'Session key' : 'sso cookie'}
+          {FIELD[service].label}
           <input
             className="input mono"
             type="password"
-            placeholder={service === 'claude' ? 'sk-ant-sid02-…' : 'eyJ…'}
+            placeholder={FIELD[service].placeholder}
             value={value}
             onChange={(e) => setValue(e.target.value)}
           />
@@ -127,7 +140,7 @@ function PasteForm({ service, onClose }: { service: PasteService; onClose: () =>
         <button className="btn btn-primary" disabled={!value.trim() || testing} onClick={save}>
           Test and save
         </button>
-        <OpenSite host={service === 'codex' ? 'chatgpt.com' : service === 'claude' ? 'claude.ai' : 'grok.com'} />
+        <OpenSite host={HOST[service]} />
         <button className="btn btn-ghost" onClick={onClose}>
           Cancel
         </button>

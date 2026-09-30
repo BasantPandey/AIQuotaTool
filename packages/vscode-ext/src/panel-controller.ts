@@ -13,9 +13,10 @@ import {
   SERVICE_LABELS,
   type ServiceId,
 } from '@ai-quota-tool/core';
-import { browserSignIn, type CookieTarget, findBrowser } from './browser-signin.js';
+import { BROWSER_PROVIDERS } from './browser-providers.js';
+import { browserSignIn, findBrowser } from './browser-signin.js';
 import type { CopilotAuth } from './copilot-auth.js';
-import type { CredentialManager } from './credentials.js';
+import type { CookieAccount, CredentialManager } from './credentials.js';
 import type { KeyStore } from './key-store.js';
 import type { QuotaPanel } from './quota-panel.js';
 import type { QuotaPoller } from './quota-poller.js';
@@ -23,6 +24,7 @@ import {
   normalizeCodexSessionToken,
   validateClaudeSession,
   validateCodexSession,
+  validateCursorSession,
   validateGrokSession,
   validateKey,
 } from './session-fetch.js';
@@ -36,24 +38,9 @@ import type {
 } from './webview/protocol.js';
 
 const ACCOUNT_SERVICES: readonly AccountService[] = SERVICE_IDS.filter(
-  (id): id is AccountService => id === 'claude' || id === 'copilot' || id === 'codex' || id === 'grok',
+  (id): id is AccountService =>
+    id === 'claude' || id === 'copilot' || id === 'codex' || id === 'grok' || id === 'cursor',
 );
-
-interface BrowserProvider {
-  startUrl: string;
-  target: CookieTarget;
-  /** The provider terms, shown before the first sign-in (decision on #99). */
-  terms: string;
-}
-
-/** Account providers with browser sign-in. Each value goes only to its own host (spec section 4). */
-const BROWSER_PROVIDERS: Partial<Record<AccountService, BrowserProvider>> = {
-  claude: {
-    startUrl: 'https://claude.ai/login',
-    target: { host: 'claude.ai', names: ['sessionKey'] },
-    terms: 'https://www.anthropic.com/legal/consumer-terms',
-  },
-};
 
 function settings() {
   const config = vscode.workspace.getConfiguration('aiQuotaTool');
@@ -64,7 +51,7 @@ function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown): string {
+function userFacingSessionError(service: CookieAccount, e: unknown): string {
   const msg = errorText(e);
   if (service === 'codex') {
     // Prefer detailed Codex/ChatGPT guidance (accessToken / chunk cookies / Cloudflare).
@@ -82,6 +69,7 @@ function userFacingSessionError(service: 'claude' | 'codex' | 'grok', e: unknown
   if (/\b401\b|\b403\b|invalid or expired/i.test(msg)) {
     if (service === 'claude') return 'Session key invalid or expired - paste a fresh sessionKey cookie';
     if (service === 'grok') return 'sso cookie invalid or expired - paste a fresh sso cookie from grok.com';
+    if (service === 'cursor') return 'Cursor session invalid or expired - sign in again';
   }
   return msg;
 }
@@ -144,12 +132,7 @@ export class PanelController {
 
   private async snapshot(): Promise<PanelSnapshot> {
     const [creds, githubToken] = await Promise.all([this.credentials.get(), this.copilot.token()]);
-    const secrets: Record<AccountService, string | undefined> = {
-      claude: creds.claudeSessionKey,
-      copilot: githubToken,
-      codex: creds.codexSessionToken,
-      grok: creds.grokSsoCookie,
-    };
+    const secrets: Record<AccountService, string | undefined> = { ...creds, copilot: githubToken };
     const reauth = this.poller.getReauthNeeded();
     // Copilot is connected but the VS Code GitHub session is gone: the user signs in again.
     const ended = (service: AccountService) =>
@@ -228,7 +211,7 @@ export class PanelController {
       this.form({ target: service, status: 'idle' });
       return;
     }
-    const value = cookies[provider.target.names[0]!];
+    const value = provider.toSecret(cookies);
     if (!value) {
       this.form({ target: service, status: 'error', detail: `No ${cookie} cookie found. Sign in fully on ${host}, then click Done. Or paste the cookie.` });
       return;
@@ -254,15 +237,18 @@ export class PanelController {
     try {
       if (service === 'claude') {
         const name = await validateClaudeSession(value);
-        await this.credentials.setClaudeKey(value);
+        await this.credentials.set('claude', value);
         this.details.set(service, `Connected as ${name}`);
       } else if (service === 'codex') {
         await validateCodexSession(value);
         // Keep the multi-line form (.0 on line 1, .1 on line 2) so the Cookie header keeps both parts.
-        await this.credentials.setCodexToken(value);
-      } else {
+        await this.credentials.set('codex', value);
+      } else if (service === 'grok') {
         await validateGrokSession(value);
-        await this.credentials.setGrokSso(value);
+        await this.credentials.set('grok', value);
+      } else {
+        await validateCursorSession(value);
+        await this.credentials.set('cursor', value);
       }
     } catch (e) {
       this.form({ target: service, status: 'error', detail: userFacingSessionError(service, e) });
@@ -277,10 +263,8 @@ export class PanelController {
   }
 
   private async signOut(service: AccountService): Promise<void> {
-    if (service === 'claude') await this.credentials.clearClaudeKey();
-    else if (service === 'codex') await this.credentials.clearCodexToken();
-    else if (service === 'grok') await this.credentials.clearGrokSso();
-    else await this.copilot.signOut();
+    if (service === 'copilot') await this.copilot.signOut();
+    else await this.credentials.clear(service);
     this.details.delete(service);
     this.form({ target: service, status: 'idle' });
     this.poller.dropConnection(service);

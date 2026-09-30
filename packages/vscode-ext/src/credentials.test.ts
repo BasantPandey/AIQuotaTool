@@ -1,8 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type * as vscode from 'vscode';
 import { CredentialManager } from './credentials.js';
-
-vi.mock('vscode', () => ({}));
 
 function fakeSecrets(initial: Record<string, string>) {
   const map = new Map(Object.entries(initial));
@@ -15,12 +13,20 @@ function fakeSecrets(initial: Record<string, string>) {
 }
 
 describe('CredentialManager.moveLegacy', () => {
-  it('moves the 0.9.x Claude secret to the new name, and is safe to run again', async () => {
-    const { map, manager } = fakeSecrets({ 'aiQuotaTool.claudeSessionKey': 'sk-ant-old' });
+  it('moves the 0.9.x Claude, Codex, and Grok secrets to the new names, and is safe to run again', async () => {
+    const { map, manager } = fakeSecrets({
+      'aiQuotaTool.claudeSessionKey': 'sk-ant-old',
+      'aiQuotaTool.codexSessionToken': 'part0\npart1',
+      'aiQuotaTool.grokSsoCookie': 'eyJ-old',
+    });
     await manager.moveLegacy();
     await manager.moveLegacy();
-    expect([...map]).toEqual([['aiQuotaTool.account.claude', 'sk-ant-old']]);
-    expect((await manager.get()).claudeSessionKey).toBe('sk-ant-old');
+    expect(Object.fromEntries(map)).toEqual({
+      'aiQuotaTool.account.claude': 'sk-ant-old',
+      'aiQuotaTool.account.codex': 'part0\npart1',
+      'aiQuotaTool.account.grok': 'eyJ-old',
+    });
+    expect(await manager.get()).toEqual({ claude: 'sk-ant-old', codex: 'part0\npart1', grok: 'eyJ-old', cursor: undefined });
   });
 
   it('keeps a newer value at the new name', async () => {
