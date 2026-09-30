@@ -6,12 +6,13 @@ import { send, useForm } from './store.js';
 
 type PasteService = Exclude<AccountService, 'copilot'>;
 
-const METHOD: Record<AccountService, string> = {
-  claude: 'Paste the claude.ai session cookie',
-  copilot: 'VS Code GitHub sign-in',
-  codex: 'Paste the chatgpt.com session cookie',
-  grok: 'Paste the grok.com session cookie',
-};
+const HOST: Record<PasteService, string> = { claude: 'claude.ai', codex: 'chatgpt.com', grok: 'grok.com' };
+
+function methodText(row: AccountRow): string {
+  if (row.method === 'github') return 'VS Code GitHub sign-in';
+  if (row.method === 'browser') return 'Opens Chrome or Edge';
+  return `Paste the ${HOST[row.service as PasteService]} session cookie`;
+}
 
 function StatusPill({ row }: { row: AccountRow }) {
   if (row.status === 'connected') {
@@ -39,7 +40,7 @@ function StatusPill({ row }: { row: AccountRow }) {
 }
 
 function FormNote({ form }: { form: FormStatus }) {
-  if (form.status === 'testing') return <p className="form-note">Testing…</p>;
+  if (form.status === 'testing') return <p className="form-note" role="status">{form.detail ?? 'Testing…'}</p>;
   if (form.status === 'error') return <p className="form-note error" role="alert">{form.detail}</p>;
   return null;
 }
@@ -161,6 +162,26 @@ function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; on
         {row.status === 'ended' ? 'Sign in again' : 'Sign in with GitHub'}
       </button>
     );
+  } else if (row.method === 'browser') {
+    action = (
+      <>
+        {!open && (
+          <button className="btn btn-ghost" aria-expanded={false} onClick={() => onOpen(true)}>
+            Paste instead
+          </button>
+        )}
+        <button
+          className="btn btn-primary"
+          disabled={form.status === 'testing'}
+          onClick={() => {
+            onOpen(false);
+            send({ type: 'account_browser_sign_in', service: row.service });
+          }}
+        >
+          {row.status === 'ended' ? 'Sign in again' : 'Sign in'}
+        </button>
+      </>
+    );
   } else if (!open) {
     action = (
       <button className="btn btn-primary" aria-expanded={false} onClick={() => onOpen(true)}>
@@ -175,7 +196,7 @@ function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; on
         <ProviderLogo service={row.service} size={26} />
         <span className="grow">
           {label}
-          <span className="sub">{METHOD[row.service]}</span>
+          <span className="sub">{methodText(row)}</span>
         </span>
         <StatusPill row={row} />
         {action}
@@ -183,7 +204,7 @@ function AccountItem({ row, open, onOpen }: { row: AccountRow; open: boolean; on
       {row.service !== 'copilot' && open && row.status !== 'connected' && (
         <PasteForm service={row.service} onClose={() => onOpen(false)} />
       )}
-      {row.service === 'copilot' && form.status === 'error' && (
+      {(row.service === 'copilot' || (row.method === 'browser' && !open)) && (form.status === 'error' || form.status === 'testing') && (
         <div className="row-form">
           <FormNote form={form} />
         </div>
@@ -199,7 +220,8 @@ export function AccountsTab({ accounts }: { accounts: AccountRow[] }) {
       <p className="tab-intro">
         An Account is a plan on the provider website, for example Claude Max. It shows plan limits. The extension keeps
         each secret only in VS Code SecretStorage on this computer. It sends the secret only to the same provider, to
-        read your usage.
+        read your usage. To sign in, the extension opens Chrome or Edge with a new, separate profile. After you sign in,
+        it reads one session cookie and deletes the profile. It never reads your own browser profile.
       </p>
       <ul className="list">
         {accounts.map((row) => (

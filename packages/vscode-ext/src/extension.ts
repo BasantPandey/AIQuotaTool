@@ -20,7 +20,10 @@ export function activate(context: vscode.ExtensionContext): void {
   const wsServer = new QuotaWsServer();
   const panel = new QuotaPanel(context.extensionUri);
   const statusBar = new QuotaStatusBar(OPEN_PANEL_COMMAND, CONFIGURE_COMMAND);
-  const controller = new PanelController(panel, credentials, copilot, keys, poller);
+  const controller = new PanelController(panel, credentials, copilot, keys, poller, {
+    state: context.globalState,
+    dir: context.globalStorageUri.fsPath,
+  });
   panel.onMessage((msg) => controller.handle(msg));
 
   const applyStates = (states: QuotaState[]): void => {
@@ -36,7 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   poller.onUpdate(applyStates);
   // Move 0.9.x API keys to named Keys before the first poll reads the Key list. Delete the old GitHub token.
-  void Promise.all([keys.moveLegacy(), credentials.deleteLegacyGithubToken()])
+  void Promise.all([keys.moveLegacy(), credentials.moveLegacy(), credentials.deleteLegacyGithubToken()])
     .catch((e: unknown) => console.error('[ai-quota-tool] key move:', e instanceof Error ? e.message : e))
     .then(async () => {
       if (!(await credentials.hasAny()) && !copilot.isSignedIn() && keys.list().length === 0) statusBar.showSetupPrompt();
@@ -52,6 +55,11 @@ export function activate(context: vscode.ExtensionContext): void {
   // Accounts poll only while VS Code has focus. Catch up when the window gets focus again.
   const focusWatch = vscode.window.onDidChangeWindowState((state) => {
     if (state.focused) void poller.pollNow();
+  });
+
+  // The sign-in method on the Accounts tab follows the browser settings.
+  const settingsWatch = vscode.workspace.onDidChangeConfiguration((event) => {
+    if (event.affectsConfiguration('aiQuotaTool') && panel.isOpen) void controller.refresh();
   });
 
   // Chrome extension push — merges into polled state (both sources coexist).
@@ -74,6 +82,7 @@ export function activate(context: vscode.ExtensionContext): void {
     openCmd,
     configureCmd,
     focusWatch,
+    settingsWatch,
     { dispose: () => wsServer.stop() },
     { dispose: () => poller.stop() },
     { dispose: () => statusBar.dispose() },

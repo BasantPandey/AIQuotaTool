@@ -13,6 +13,7 @@ import {
   SERVICE_LABELS,
   type ServiceId,
 } from '@ai-quota-tool/core';
+import { browserSignIn, type CookieTarget, findBrowser } from './browser-signin.js';
 import type { CopilotAuth } from './copilot-auth.js';
 import type { CredentialManager } from './credentials.js';
 import type { KeyStore } from './key-store.js';
@@ -29,6 +30,7 @@ import type {
   AccountRow,
   AccountService,
   FormStatus,
+  SignInMethod,
   PanelSnapshot,
   WebviewMessage,
 } from './webview/protocol.js';
@@ -36,6 +38,27 @@ import type {
 const ACCOUNT_SERVICES: readonly AccountService[] = SERVICE_IDS.filter(
   (id): id is AccountService => id === 'claude' || id === 'copilot' || id === 'codex' || id === 'grok',
 );
+
+interface BrowserProvider {
+  startUrl: string;
+  target: CookieTarget;
+  /** The provider terms, shown before the first sign-in (decision on #99). */
+  terms: string;
+}
+
+/** Account providers with browser sign-in. Each value goes only to its own host (spec section 4). */
+const BROWSER_PROVIDERS: Partial<Record<AccountService, BrowserProvider>> = {
+  claude: {
+    startUrl: 'https://claude.ai/login',
+    target: { host: 'claude.ai', names: ['sessionKey'] },
+    terms: 'https://www.anthropic.com/legal/consumer-terms',
+  },
+};
+
+function settings() {
+  const config = vscode.workspace.getConfiguration('aiQuotaTool');
+  return { browserPath: config.get<string>('browserPath', 'auto'), browserSignIn: config.get<boolean>('browserSignIn', true) };
+}
 
 function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -79,6 +102,8 @@ export class PanelController {
     private readonly copilot: CopilotAuth,
     private readonly keys: KeyStore,
     private readonly poller: QuotaPoller,
+    /** Non-secret extension storage (the notice flags) and a folder for the temporary browser profile. */
+    private readonly storage: { state: vscode.Memento; dir: string },
   ) {}
 
   async refresh(): Promise<void> {
@@ -95,6 +120,9 @@ export class PanelController {
         break;
       case 'account_sign_out':
         await this.signOut(msg.service);
+        break;
+      case 'account_browser_sign_in':
+        await this.browserSignIn(msg.service);
         break;
       case 'github_sign_in':
         await this.githubSignIn();
@@ -129,22 +157,98 @@ export class PanelController {
     const accounts = ACCOUNT_SERVICES.map((service): AccountRow => {
       const status = ended(service) ? 'ended' : !secrets[service] ? 'none' : 'connected';
       const detail = status === 'connected' ? this.details.get(service) : undefined;
-      return { service, status, ...(detail != null ? { detail } : {}) };
+      return { service, status, method: this.method(service), ...(detail != null ? { detail } : {}) };
     });
     const keys = this.keys.list();
     return { readings: applyKeyBudgets(this.poller.getLatestStates(), keys), accounts, keys };
+  }
+
+  private method(service: AccountService): SignInMethod {
+    if (service === 'copilot') return 'github';
+    const { browserPath, browserSignIn: on } = settings();
+    return on && BROWSER_PROVIDERS[service] != null && findBrowser(browserPath) != null ? 'browser' : 'paste';
+  }
+
+  /**
+   * Open a new browser profile, wait for the user, read only the named cookie, and delete the profile.
+   * Before the first sign-in for a provider, a modal says what happens and links to the provider terms.
+   */
+  private async browserSignIn(service: AccountService): Promise<void> {
+    const provider = BROWSER_PROVIDERS[service];
+    if (service === 'copilot' || provider == null) return;
+    const label = SERVICE_LABELS[service];
+    const host = provider.target.host;
+    const cookie = provider.target.names.join(' and ');
+    const browser = findBrowser(settings().browserPath);
+    if (browser == null) {
+      this.form({ target: service, status: 'error', detail: 'No Chrome or Edge found. Set aiQuotaTool.browserPath, or paste the cookie.' });
+      return;
+    }
+    const noticeKey = `aiQuotaTool.noticeSeen.${service}`;
+    if (!this.storage.state.get<boolean>(noticeKey)) {
+      const answer = await vscode.window.showInformationMessage(
+        `Sign in to ${label} in a new browser window`,
+        {
+          modal: true,
+          detail:
+            `The extension opens Chrome or Edge with a new, separate profile. You sign in on the real ${host} site. The extension never sees your password.\n\n` +
+            `After you click Done, it reads only the ${cookie} cookie, stores it in VS Code SecretStorage, and deletes the profile. ` +
+            `It sends the cookie only to ${host}, to read your usage every 5 minutes while VS Code has focus.\n\n` +
+            `Your use of ${label} follows its terms: ${provider.terms}`,
+        },
+        'Open browser',
+      );
+      if (answer !== 'Open browser') return;
+      await this.storage.state.update(noticeKey, true);
+    }
+
+    this.form({ target: service, status: 'testing', detail: `Sign in to ${label} in the browser window. Then click Done in VS Code.` });
+    let cookies: Record<string, string> | null;
+    try {
+      cookies = await browserSignIn({
+        browser,
+        storageDir: this.storage.dir,
+        startUrl: provider.startUrl,
+        target: provider.target,
+        waitForUser: async (browserClosed) => {
+          const choice = vscode.window.showInformationMessage(
+            `Sign in to ${label} in the browser window. Then click Done.`,
+            'Done',
+            'Cancel',
+          );
+          const answer = await Promise.race([choice, browserClosed.then(() => 'Done' as const)]);
+          return answer === 'Done' ? 'done' : 'cancel';
+        },
+      });
+    } catch (e) {
+      this.form({ target: service, status: 'error', detail: errorText(e) });
+      return;
+    }
+    if (cookies == null) {
+      this.form({ target: service, status: 'idle' });
+      return;
+    }
+    const value = cookies[provider.target.names[0]!];
+    if (!value) {
+      this.form({ target: service, status: 'error', detail: `No ${cookie} cookie found. Sign in fully on ${host}, then click Done. Or paste the cookie.` });
+      return;
+    }
+    if (await this.saveAccount(service, value)) {
+      void vscode.window.showInformationMessage(`Stored the ${label} session cookie in VS Code SecretStorage. The browser profile is deleted.`);
+    }
   }
 
   private form(form: FormStatus): void {
     this.panel.post({ type: 'form_status', form });
   }
 
-  private async saveAccount(service: AccountService, raw: string): Promise<void> {
-    if (service === 'copilot') return;
+  /** Test the value with one usage call, then store it. Returns true when it is stored. */
+  private async saveAccount(service: AccountService, raw: string): Promise<boolean> {
+    if (service === 'copilot') return false;
     const value = service === 'grok' ? grokSsoValue(raw) : raw.trim();
     if (!value || (service === 'codex' && !normalizeCodexSessionToken(value))) {
       this.form({ target: service, status: 'error', detail: 'The value is empty. Paste it again.' });
-      return;
+      return false;
     }
     this.form({ target: service, status: 'testing' });
     try {
@@ -162,13 +266,14 @@ export class PanelController {
       }
     } catch (e) {
       this.form({ target: service, status: 'error', detail: userFacingSessionError(service, e) });
-      return;
+      return false;
     }
     this.form({ target: service, status: 'ok' });
     this.poller.clearReauth(service);
     this.poller.pollSoon(service);
     await this.refresh();
     await this.poller.pollNow();
+    return true;
   }
 
   private async signOut(service: AccountService): Promise<void> {

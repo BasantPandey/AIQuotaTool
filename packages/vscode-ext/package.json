@@ -1,7 +1,7 @@
 {
   "name": "ai-quota-tool-vscode",
   "displayName": "AI Quota Tool",
-  "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus API key balance or spend for DeepSeek, Kimi, OpenRouter, Anthropic and OpenAI, in VS Code.",
+  "description": "See remaining AI quota for Claude, Copilot, Codex and Grok, plus API key spend. Claude sign-in opens Chrome or Edge in a new profile and reads one session cookie.",
   "version": "0.9.1",
   "publisher": "BasantPandey",
   "license": "Apache-2.0",
@@ -29,6 +29,10 @@
     "monitoring"
   ],
   "icon": "icons/icon128.png",
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -43,7 +47,22 @@
         "command": "aiQuotaTool.configure",
         "title": "AI Quota Tool: Set Up Accounts"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "AI Quota Tool",
+      "properties": {
+        "aiQuotaTool.browserPath": {
+          "type": "string",
+          "default": "auto",
+          "markdownDescription": "Browser for Account sign-in. `auto` finds Chrome, then Edge. Or type the full path to a Chrome or Edge program file."
+        },
+        "aiQuotaTool.browserSignIn": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Sign in to Accounts in a separate Chrome or Edge window. The extension reads one session cookie, then deletes the browser profile. Turn off to paste the cookie yourself."
+        }
+      }
+    }
   },
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --platform=node --external:vscode --outfile=dist/extension.js --format=cjs && vite build --config vite.webview.config.ts",

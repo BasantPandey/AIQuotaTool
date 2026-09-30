@@ -2,7 +2,18 @@
 
 Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Codex**, and **Grok**, plus the balance or spend of your **DeepSeek**, **Kimi**, **OpenRouter**, **Anthropic**, and **OpenAI** API keys - live in VS Code.
 
-**Privacy:** the extension stores the session cookies and API keys that you paste in VS Code SecretStorage on this machine. It sends each one only to its own service. Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html).
+**How sign-in works (Claude):**
+
+- To sign in, this extension opens Chrome or Edge in a new, separate profile. You sign in on the real site. The extension never sees your password.
+- After you sign in, it reads one session cookie from that profile, stores it in VS Code SecretStorage, and deletes the profile.
+- It sends the cookie only to the same provider, to read your usage. There is no server of ours.
+- It never reads your own browser profile.
+
+| Provider | Value that the extension reads | Only host that receives it |
+|---|---|---|
+| Claude | cookie `sessionKey` | claude.ai |
+
+Other Accounts use a pasted cookie or the VS Code GitHub sign-in. API keys that you add go only to their own provider. Your use of each service follows that service's terms, for example the [Anthropic consumer terms](https://www.anthropic.com/legal/consumer-terms). Read the [privacy policy](https://basantpandey.github.io/AIQuotaTool/privacy.html) and the [source on GitHub](https://github.com/BasantPandey/AIQuotaTool).
 
 ![AI Quota dashboard beside the code editor. The status bar shows Claude 9% in amber.](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/dashboard-dark.png)
 
@@ -36,14 +47,14 @@ Monitor your remaining AI quota for **Claude**, **GitHub Copilot**, **OpenAI Cod
 1. Install the extension
 2. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
 3. Run **"AI Quota Tool: Set Up Accounts"**. The panel opens on the Accounts tab.
-4. Click **Sign in** for each service that you use, and paste its session credential. Each service is optional.
+4. Click **Sign in** for each service that you use. For Claude, a new Chrome or Edge window opens. Sign in there, then click **Done** in VS Code. For the other services, paste the session credential. Each service is optional.
 5. To add a DeepSeek or Kimi API key, open the **Keys** tab and click **Add key**.
 
 ![The Accounts tab, with one row for each Account and a Sign in or Sign out button](https://raw.githubusercontent.com/BasantPandey/AIQuotaTool/main/packages/vscode-ext/docs/setup-accounts.png)
 
 ### How to get each credential
 
-**Claude session key** (claude.ai usage bars - **not** an Anthropic Console API key)
+**Claude session key** (claude.ai usage bars - **not** an Anthropic Console API key). **Sign in** opens a browser window and reads the key for you. To paste it yourself, click **Paste instead**, or set `aiQuotaTool.browserSignIn` to `false`:
 1. Open [claude.ai](https://claude.ai) in Chrome and sign in
 2. Open DevTools (`F12`) → **Application** tab → **Cookies** → `https://claude.ai`
 3. Copy the value of `sessionKey` (starts with `sk-ant-sid`)
@@ -85,6 +96,11 @@ If you saved a DeepSeek or Kimi key in version 0.9, it becomes the Key "DeepSeek
 |---|---|
 | `AI Quota Tool: Open Dashboard` | Opens the panel on the Usage tab |
 | `AI Quota Tool: Set Up Accounts` | Opens the panel on the Accounts tab |
+
+| Setting | Default | Description |
+|---|---|---|
+| `aiQuotaTool.browserPath` | `auto` | Browser for sign-in. `auto` finds Chrome, then Edge. Or the full path to a Chrome or Edge program file. |
+| `aiQuotaTool.browserSignIn` | `true` | `false` hides the browser sign-in. Then you paste the cookie. |
 
 Click the status bar item (`$(pulse) AI Quota`) to open the Usage tab.
 

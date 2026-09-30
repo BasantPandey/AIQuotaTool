@@ -7,9 +7,13 @@ export type AccountService = 'claude' | 'copilot' | 'codex' | 'grok';
 
 export type AccountStatus = 'connected' | 'ended' | 'none';
 
+/** How the user signs in: a browser window, a pasted cookie, or the VS Code GitHub sign-in. */
+export type SignInMethod = 'browser' | 'paste' | 'github';
+
 export interface AccountRow {
   service: AccountService;
   status: AccountStatus;
+  method: SignInMethod;
   /** For example "Connected as Jane". */
   detail?: string;
 }
@@ -39,6 +43,7 @@ export type WebviewMessage =
   | { type: 'ready' }
   | { type: 'account_save'; service: AccountService; value: string }
   | { type: 'account_sign_out'; service: AccountService }
+  | { type: 'account_browser_sign_in'; service: AccountService }
   | { type: 'github_sign_in' }
   /** `adminConfirmed`: the user ticked "This is an Admin key" (needed for an Admin key provider). */
   | { type: 'key_add'; service: ServiceId; name: string; value: string; adminConfirmed: boolean }
