@@ -71,17 +71,15 @@ export class QuotaStatusBar {
   }
 
   /**
-   * Session cookie invalid/expired — secret still stored; user must replace or clear.
-   * Click opens Set Up Accounts (not the dashboard alone).
+   * An Account session ended (401 or 403). The secret stays. A click opens the Accounts tab,
+   * where the row shows "Sign in again" (decision on #88: no pop-up).
    */
   showReauthPrompt(services: ServiceId[]): void {
     const labels = services.map((s) => SERVICE_LABELS[s]).join(', ');
     this.item.text =
-      services.length === 1
-        ? `$(key) AI Quota: ${labels} session expired`
-        : `$(key) AI Quota: sessions expired`;
+      services.length === 1 ? `$(key) AI Quota: ${labels} session ended` : `$(key) AI Quota: ${services.length} sessions ended`;
     this.item.command = this.configureCommand;
-    this.item.tooltip = `${labels}: session invalid or expired. Open Set Up Accounts to replace or clear the saved cookie.`;
+    this.item.tooltip = `Session ended: ${labels}. Click to open the Accounts tab and sign in again.`;
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
