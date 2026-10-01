@@ -1,10 +1,11 @@
 /**
- * Records the VS Code promo video: install, sign in, see the quota.
- * Opens packages/vscode-ext/docs/shots/promo.html in headless Chrome, renders each frame, and pipes it to ffmpeg.
- * Writes packages/vscode-ext/docs/promo.mp4 (1920x1080, 30 fps).
+ * Records a VS Code promo video. Opens a page in packages/vscode-ext/docs/shots/ in headless Chrome,
+ * renders each frame, and pipes it to ffmpeg (1920x1080, 30 fps).
+ *   (default)     promo.html      -> docs/promo.mp4: install, sign in, add a key, see the quota.
+ *   --video keys  promo-keys.html -> docs/promo-keys.mp4: add API keys, set a budget, see the keys.
  *
- * Run: pnpm --filter ai-quota-tool-vscode build && node scripts/vscode-video.mjs
- * Check single frames first: node scripts/vscode-video.mjs --stills 2,9.5,20 (writes promo-<t>.png to the OS temp folder).
+ * Run: pnpm --filter ai-quota-tool-vscode build && node scripts/vscode-video.mjs [--video keys]
+ * Check single frames first: add --stills 2,9.5,20 (writes <name>-<t>.png to the OS temp folder).
  * Needs Google Chrome and ffmpeg on the PATH.
  */
 
@@ -16,15 +17,19 @@ import { join } from 'node:path';
 import { launchChrome, MARK_SVG, root, serve } from './asset-kit.mjs';
 
 const FPS = 30;
-const out = join(root, 'packages/vscode-ext/docs/promo.mp4');
-const stillsArg = process.argv.indexOf('--stills');
-const stills = stillsArg > 0 ? process.argv[stillsArg + 1].split(',').map(Number) : null;
+const arg = (flag) => {
+  const i = process.argv.indexOf(flag);
+  return i > 0 ? process.argv[i + 1] : undefined;
+};
+const name = arg('--video') === 'keys' ? 'promo-keys' : 'promo';
+const out = join(root, `packages/vscode-ext/docs/${name}.mp4`);
+const stills = arg('--stills')?.split(',').map(Number) ?? null;
 
 const server = await serve();
 const chrome = await launchChrome();
 try {
   await chrome.view(1920, 1080, 1, true);
-  await chrome.open(`http://127.0.0.1:${server.address().port}/packages/vscode-ext/docs/shots/promo.html`);
+  await chrome.open(`http://127.0.0.1:${server.address().port}/packages/vscode-ext/docs/shots/${name}.html`);
   const duration = await chrome.evaluate(`(async () => {
     setMark(${JSON.stringify(MARK_SVG(128))});
     await document.fonts.ready;
@@ -39,7 +44,7 @@ try {
     for (const t of stills.sort((a, b) => a - b)) {
       for (; f / FPS < t; f++) await chrome.evaluate(`render(${f / FPS})`);
       await chrome.evaluate(`render(${t})`);
-      const path = join(tmpdir(), `promo-${t}.png`);
+      const path = join(tmpdir(), `${name}-${t}.png`);
       writeFileSync(path, await chrome.frame());
       console.log('wrote', path);
     }

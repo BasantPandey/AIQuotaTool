@@ -1,0 +1,187 @@
+<!doctype html>
+<!--
+  The Keys promo video: add API keys for Kimi and other providers, set a budget, see the keys. 1920x1080.
+  The panel is the real built webview (webview.html). promo-kit.js drives it with host messages and real clicks.
+  Record: node scripts/vscode-video.mjs --video keys
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="promo.css" />
+  </head>
+  <body>
+    <section class="scene" id="hook">
+      <h1 id="hook1">You pay for AI APIs by the dollar.</h1>
+      <div class="limit" id="limit">
+        <div class="bang">!</div>
+        <div><b>Error 402: Insufficient balance.</b><span>Your API key has no credit left.</span></div>
+      </div>
+      <h1 id="hook2">See each <span class="grad">balance</span> before it runs out.</h1>
+    </section>
+
+    <section class="scene center" id="brand">
+      <div class="mark" id="b-mark"></div>
+      <h1 id="b-title">AI Quota Tool</h1>
+      <p id="b-tag">API key balance and spend. Live in VS Code.</p>
+      <div class="chips" id="chips">
+        <span>Kimi</span><span>DeepSeek</span><span>OpenRouter</span><span>Anthropic</span><span>OpenAI</span>
+      </div>
+    </section>
+
+    <div id="cap"><span class="step" id="cap-step"></span><h2 id="cap-title"></h2><p id="cap-sub"></p></div>
+    <div id="view"></div>
+
+    <section class="scene center" id="cta">
+      <div class="mark"></div>
+      <h1>AI Quota Tool</h1>
+      <p>Free on the VS Code Marketplace</p>
+      <div class="cmd"><i>ext install</i> BasantPandey.ai-quota-tool-vscode</div>
+      <div class="url">github.com/BasantPandey/AIQuotaTool</div>
+    </section>
+
+    <script src="promo-kit.js"></script>
+    <script>
+      const { $, ICON, editorTab, inPanel, button, setValue, point, FULL } = Promo;
+      const S1 = 6.6, S2 = 16.6, S3 = 27.6, S4 = 33.6, END = 40.0;
+      const SELECT = inPanel('.key-form select');
+      const NAME = inPanel('.key-form input:not([type])');
+      const SECRET = inPanel('.key-form input[type=password]');
+      const ADMIN = inPanel('.key-form input[type=checkbox]');
+      const BUDGET = inPanel('input[type=number]');
+      const ADD = button('Add key');
+      const SAVE = button('Test and save');
+
+      const NOW = Date.now();
+      const usd = (amount, extra) => ({ amount, currency: 'USD', ...extra });
+      const reading = (key, data) => ({ service: key.service, kind: 'key', connectionId: key.id, lastUpdated: NOW, ...data });
+      const balance = (currency, total) => ({ balance: { available: true, infos: [{ currency, total, granted: '0.00', toppedUp: total }] } });
+      // Each key, the time its save finishes, and its reading.
+      const KEYS = [
+        { at: S1 + 6.8, key: { id: 'kimi-main', service: 'kimi', name: 'Kimi main', last4: '7f3a' }, data: balance('CNY', '42.10') },
+        { at: S2 + 2.6, key: { id: 'deepseek-1', service: 'deepseek', name: 'DeepSeek key 1', last4: '9f2c' }, data: balance('USD', '18.40') },
+        { at: S2 + 5.7, key: { id: 'openrouter-1', service: 'openrouter', name: 'OpenRouter key 1', last4: 'b51d' }, data: { spend: usd(3.2, { limit: 10, scope: 'key' }) } },
+        { at: S2 + 9.7, key: { id: 'anthropic-1', service: 'anthropic', name: 'Anthropic key 1', last4: 'c9e1' }, data: { spend: usd(42.3, { scope: 'org' }) } },
+      ];
+      const BUDGET_AT = S3 + 3.4;
+      const CHIPS = { x: 110, y: 60, w: 1110, h: 240 };
+      const TOOLTIP = [
+        'Click to open the AI Quota Tool panel', '', 'Keys:',
+        'Kimi main (Kimi): CN¥42.10', 'DeepSeek key 1 (DeepSeek): $18.40',
+        'OpenRouter key 1 (OpenRouter): 68% left', 'Anthropic key 1 (Anthropic): 58% left',
+      ].join('\n');
+
+      Promo.start({
+        duration: 44.6,
+        hookEnd: 3.4,
+        start: S1,
+        end: END,
+        caps: [
+          { at: S1, step: 'STEP 1', title: 'Add a key', subs: [
+            [S1, 'Open the <b>Keys</b> tab. Click <b>Add key</b>.'],
+            [S1 + 1.9, 'Pick the provider. Type a name. Paste the API key.'],
+            [S1 + 5.4, 'Click <b>Test and save</b>. The extension makes one free call to test the key.'],
+            [S1 + 6.9, 'The new key shows its balance. The panel keeps only the last 4 characters.'],
+          ] },
+          { at: S2, step: 'STEP 2', title: 'Add keys for other providers', subs: [
+            [S2, 'DeepSeek and Kimi show the account balance.'],
+            [S2 + 2.9, 'OpenRouter shows the spend against the key limit.'],
+            [S2 + 6.3, 'Anthropic and OpenAI need an Admin key. Tick the box to confirm.'],
+          ] },
+          { at: S3, step: 'STEP 3', title: 'Set a monthly budget', subs: [
+            [S3, 'A spend-only key has no percent. Click <b>Edit</b> and type a budget.'],
+            [S3 + 3.3, 'Now the key shows the spend against your budget.'],
+          ] },
+          { at: S4, step: 'STEP 4', title: 'See your keys at a glance', subs: [
+            [S4, 'The Usage tab shows each key with its balance or the percent left.'],
+            [S4 + 3.2, 'The status bar tooltip lists each key. Keys stay in VS Code SecretStorage.'],
+          ] },
+        ],
+        camera: [[S4 + 1.0, FULL], [S4 + 1.8, CHIPS], [S4 + 2.6, CHIPS], [S4 + 3.2, FULL]],
+        cursor: [
+          [S1 + 0.6, point(640, 400)], [S1 + 1.2, ADD],
+          [S1 + 1.6, ADD], [S1 + 2.1, SELECT],
+          [S1 + 2.6, SELECT], [S1 + 3.1, NAME],
+          [S1 + 4.4, NAME], [S1 + 4.9, SECRET],
+          [S1 + 5.4, SECRET], [S1 + 5.9, SAVE],
+          [S1 + 6.4, SAVE], [S1 + 7.2, point(800, 520)],
+          // DeepSeek
+          [S2 + 0.0, point(800, 520)], [S2 + 0.5, ADD],
+          [S2 + 0.8, ADD], [S2 + 1.2, SECRET],
+          [S2 + 1.5, SECRET], [S2 + 1.9, SAVE],
+          // OpenRouter
+          [S2 + 2.6, SAVE], [S2 + 3.0, ADD],
+          [S2 + 3.2, ADD], [S2 + 3.6, SELECT],
+          [S2 + 3.9, SELECT], [S2 + 4.3, SECRET],
+          [S2 + 4.6, SECRET], [S2 + 5.0, SAVE],
+          // Anthropic
+          [S2 + 5.9, SAVE], [S2 + 6.4, ADD],
+          [S2 + 6.6, ADD], [S2 + 7.0, SELECT],
+          [S2 + 7.3, SELECT], [S2 + 7.7, SECRET],
+          [S2 + 8.0, SECRET], [S2 + 8.4, ADMIN],
+          [S2 + 8.6, ADMIN], [S2 + 9.0, SAVE],
+          [S2 + 9.6, SAVE], [S2 + 10.2, point(820, 560)],
+          // Budget
+          [S3 + 0.2, point(820, 560)], [S3 + 0.8, button('Edit Anthropic key 1')],
+          [S3 + 1.0, button('Edit Anthropic key 1')], [S3 + 1.5, BUDGET],
+          [S3 + 2.3, BUDGET], [S3 + 2.8, button('Save')],
+          [S3 + 3.4, button('Save')], [S3 + 4.2, point(900, 560)],
+          // Usage tab
+          [S4 + 0.2, point(900, 560)], [S4 + 0.7, inPanel('#tab-usage')],
+          [S4 + 1.6, inPanel('#tab-usage')], [S4 + 2.4, point(1000, 600)],
+        ],
+        clicks: [
+          [S1 + 1.3, ADD, true], [S1 + 2.2], [S1 + 3.2], [S1 + 5.0], [S1 + 6.0, SAVE, true],
+          [S2 + 0.6, ADD, true], [S2 + 1.3], [S2 + 2.0, SAVE, true],
+          [S2 + 3.1, ADD, true], [S2 + 3.7], [S2 + 4.4], [S2 + 5.1, SAVE, true],
+          [S2 + 6.5, ADD, true], [S2 + 7.1], [S2 + 7.8], [S2 + 8.5, ADMIN, true], [S2 + 9.1, SAVE, true],
+          [S3 + 0.9, button('Edit Anthropic key 1'), true], [S3 + 1.6], [S3 + 2.9, button('Save'), true],
+          [S4 + 0.8, inPanel('#tab-usage'), true],
+        ],
+        actions: [
+          [S1 + 2.4, () => setValue(SELECT(), 'kimi')],
+          [S1 + 5.1, () => setValue(SECRET(), 'sk-kimi-4Qx9TzP2cVb8Lm7f3a')],
+          [S2 + 0.9, () => setValue(SELECT(), 'deepseek')],
+          [S2 + 1.4, () => setValue(SECRET(), 'sk-ds-81c0e5a7d24b49f29f2c')],
+          [S2 + 3.8, () => setValue(SELECT(), 'openrouter')],
+          [S2 + 4.5, () => setValue(SECRET(), 'sk-or-v1-3e9d0c7a5f12b51d')],
+          [S2 + 7.2, () => setValue(SELECT(), 'anthropic')],
+          [S2 + 7.9, () => setValue(SECRET(), 'sk-ant-admin01-x8Rk2Wc9e1')],
+        ],
+        typing: [
+          [S1 + 3.3, S1 + 4.1, NAME, 'Kimi main'],
+          [S3 + 1.7, S3 + 2.1, BUDGET, '100'],
+        ],
+        panel(t) {
+          const added = KEYS.filter((k) => t >= k.at);
+          const budget = t >= BUDGET_AT ? 100 : undefined;
+          const keys = added.map(({ key }) => (key.service === 'anthropic' && budget ? { ...key, budget } : key));
+          const readings = added.map(({ key, data }) =>
+            reading(key, data.spend && budget && key.service === 'anthropic' ? { spend: { ...data.spend, budget } } : data),
+          );
+          const accounts = ['claude', 'copilot', 'codex', 'grok'].map((service) => ({
+            service, method: service === 'copilot' ? 'github' : 'browser', status: 'none',
+          }));
+          return {
+            tab: 'keys',
+            snapshot: { readings, accounts, keys },
+            forms: [
+              { target: 'add_key', status: added.length ? 'ok' : 'idle', detail: `${added.length}` },
+              { target: 'edit:anthropic-1', status: budget ? 'ok' : 'idle' },
+            ],
+          };
+        },
+        statusFrom: S1,
+        status(t) {
+          return t >= KEYS[0].at
+            ? { html: `${ICON.pulse}AI Quota`, warn: false }
+            : { html: `${ICON.key}AI Quota: Set up accounts`, warn: false };
+        },
+        callouts: [[S4 + 3.2, END + 0.2, 'Hover the item to see each key.', TOOLTIP]],
+        frame() {
+          $('panel-pane').style.opacity = 1;
+          editorTab('AI Quota Tool');
+        },
+      });
+    </script>
+  </body>
+</html>

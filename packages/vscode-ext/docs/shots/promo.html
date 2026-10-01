@@ -1,166 +1,13 @@
 <!doctype html>
 <!--
-  The promo video: install, sign in, see the quota. 1920x1080.
-  The panel is the real built webview (webview.html). This page drives it with host messages.
-  scripts/vscode-video.mjs calls render(t) for each frame and records it.
+  The main promo video: install, sign in, add a key, see the quota. 1920x1080.
+  The panel is the real built webview (webview.html). promo-kit.js drives it with host messages and real clicks.
+  Record: node scripts/vscode-video.mjs
 -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <style>
-      :root {
-        --title: #181818; --side: #181818; --editor: #1f1f1f; --line: #2b2b2b; --fg: #cccccc; --dim: #9d9d9d;
-        --icon: #868686; --icon-active: #d7d7d7; --blue: #0078d4; --warn-bg: #7a6400;
-        --brand-a: #6d7dff; --brand-b: #22d3ee; --amber: #f2b33d;
-      }
-      * { box-sizing: border-box; }
-      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
-      body {
-        font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; color: #fff;
-        background: radial-gradient(1200px 700px at 15% 0%, #1d2350 0%, transparent 60%),
-          radial-gradient(1000px 700px at 100% 100%, #0f3a4a 0%, transparent 60%), #0a0c1a;
-      }
-      svg { display: block; }
-      .scene { position: absolute; inset: 0; opacity: 0; }
-      .grad { background: linear-gradient(90deg, var(--brand-a), var(--brand-b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .mark svg { width: 100%; height: 100%; }
-
-      /* Hook */
-      #hook { display: grid; place-content: center; justify-items: center; gap: 44px; text-align: center; }
-      #hook h1 { margin: 0; font-size: 76px; font-weight: 600; letter-spacing: -0.02em; }
-      .limit { display: flex; gap: 22px; align-items: center; padding: 26px 34px; border-radius: 16px; background: #1b1d2b; border: 1px solid #3a2a30; box-shadow: 0 30px 80px #0008; text-align: left; }
-      .limit .bang { width: 54px; height: 54px; border-radius: 50%; background: #f14c4c22; color: #f14c4c; display: grid; place-items: center; font: 700 32px/1 'Segoe UI', sans-serif; }
-      .limit b { display: block; font-size: 32px; font-weight: 600; }
-      .limit span { font-size: 24px; color: #a8abbd; }
-
-      /* Brand and end card */
-      .center { display: grid; place-content: center; justify-items: center; text-align: center; }
-      .center .mark { width: 168px; height: 168px; filter: drop-shadow(0 20px 50px #22d3ee40); }
-      .center h1 { margin: 34px 0 0; font-size: 104px; font-weight: 700; letter-spacing: -0.03em; }
-      .center p { margin: 10px 0 0; font-size: 40px; color: #b9bdd6; }
-      .chips { display: flex; gap: 14px; margin-top: 44px; }
-      .chips span { padding: 10px 22px; border-radius: 999px; border: 1px solid #ffffff26; background: #ffffff0d; font-size: 26px; color: #dfe2f5; }
-      .cmd { margin-top: 44px; padding: 18px 30px; border-radius: 12px; background: #000a; border: 1px solid #ffffff22; font: 30px/1 Consolas, monospace; color: #e8e8e8; }
-      .cmd i { font-style: normal; color: var(--brand-b); }
-      .url { margin-top: 26px; font-size: 26px; color: #8d91ab; }
-
-      /* Step caption */
-      #cap { position: absolute; left: 0; right: 0; top: 34px; text-align: center; opacity: 0; }
-      #cap .step { display: inline-block; padding: 5px 16px; border-radius: 999px; font: 700 18px/1.2 'Segoe UI', sans-serif; letter-spacing: 0.12em; color: #0a0c1a; background: linear-gradient(90deg, var(--brand-a), var(--brand-b)); }
-      #cap h2 { margin: 10px 0 0; font-size: 52px; line-height: 1.1; font-weight: 650; letter-spacing: -0.02em; }
-      #cap p { position: relative; height: 34px; margin: 10px 0 0; font-size: 26px; color: #b9bdd6; }
-      #cap p span { position: absolute; left: 0; right: 0; opacity: 0; }
-      #cap kbd { font: 600 21px/1 'Segoe UI', sans-serif; padding: 3px 9px; border-radius: 6px; background: #ffffff1a; border: 1px solid #ffffff33; border-bottom-width: 2px; color: #fff; }
-      #cap code { font: 24px Consolas, monospace; color: #e8e8e8; }
-
-      /* The VS Code window. The camera moves #win inside #view. */
-      #view { position: absolute; left: 288px; top: 204px; width: 1344px; height: 840px; border-radius: 12px; overflow: hidden; opacity: 0; box-shadow: 0 40px 120px #000c, 0 0 0 1px #ffffff1f; background: var(--editor); }
-      #win { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; transform-origin: 0 0; display: flex; flex-direction: column; font: 13px/1.4 'Segoe WPC', 'Segoe UI', sans-serif; color: var(--fg); background: var(--editor); }
-      .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
-      .titlebar { height: 35px; flex-shrink: 0; display: flex; align-items: center; background: var(--title); border-bottom: 1px solid var(--line); }
-      .menu { display: flex; gap: 2px; padding-left: 10px; flex: 1; }
-      .menu span { padding: 3px 7px; }
-      .search { width: 400px; height: 24px; border: 1px solid var(--line); border-radius: 6px; background: #2a2a2a; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--dim); }
-      .winctl { flex: 1; display: flex; justify-content: flex-end; }
-      .winctl span { width: 46px; height: 35px; display: grid; place-items: center; }
-      .main { flex: 1; display: flex; min-height: 0; }
-      .activity { width: 48px; flex-shrink: 0; background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
-      .activity span { width: 48px; height: 48px; display: grid; place-items: center; color: var(--icon); position: relative; }
-      .activity span.on { color: var(--icon-active); }
-      .activity span.on::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--blue); }
-      .activity .icon { width: 24px; height: 24px; stroke-width: 1.2; }
-      .activity .grow { flex: 1; }
-
-      #side { width: 300px; flex-shrink: 0; background: var(--side); border-right: 1px solid var(--line); }
-      .side-head { height: 35px; display: flex; align-items: center; padding: 0 20px; font-size: 11px; letter-spacing: 0.04em; color: var(--dim); }
-      .ext-search { margin: 0 12px 8px; height: 26px; border: 1px solid var(--blue); background: #313131; border-radius: 2px; padding: 0 6px; display: flex; align-items: center; color: var(--fg); }
-      .ext-search .ph { color: #8b8b8b; }
-      .caret { display: inline-block; width: 1px; height: 15px; background: var(--fg); margin-left: 1px; }
-      #result { display: flex; gap: 10px; padding: 8px 12px 8px 16px; opacity: 0; }
-      #result.sel { background: #04395e; outline: 1px solid var(--blue); outline-offset: -1px; }
-      #result .mark { width: 42px; height: 42px; flex-shrink: 0; }
-      #result .txt { min-width: 0; flex: 1; }
-      #result b { display: block; font-weight: 600; }
-      #result .desc { color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      #result .pub { display: flex; justify-content: space-between; align-items: center; margin-top: 3px; color: var(--dim); }
-      .btn { background: var(--blue); color: #fff; border-radius: 2px; padding: 1px 7px; font-size: 12px; }
-
-      .group { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-      .tabs { height: 35px; flex-shrink: 0; display: flex; background: var(--title); border-bottom: 1px solid var(--line); }
-      .tab { display: flex; align-items: center; gap: 6px; padding: 0 12px 0 10px; border-right: 1px solid var(--line); background: var(--editor); color: var(--fg); box-shadow: inset 0 1px 0 var(--blue); margin-bottom: -1px; white-space: nowrap; }
-      .tab .x { opacity: 0.8; margin-left: 4px; }
-      .tab .mark { width: 16px; height: 16px; }
-      .pane { position: absolute; top: 35px; left: 0; right: 0; bottom: 0; opacity: 0; }
-      #panel { border: 0; width: 100%; height: 100%; background: var(--editor); }
-      #welcome { display: grid; place-content: center; justify-items: center; gap: 16px; color: #ffffff12; }
-      #welcome svg { width: 220px; height: 220px; }
-      #welcome div { color: #6e6e6e; font-size: 13px; }
-
-      #details { padding: 28px 36px; overflow: hidden; }
-      .d-head { display: flex; gap: 22px; }
-      .d-head .mark { width: 128px; height: 128px; flex-shrink: 0; }
-      .d-head h1 { margin: 2px 0 6px; font-size: 26px; font-weight: 600; color: #e7e7e7; }
-      .d-head .pub { color: #4daafc; font-size: 14px; }
-      .d-head .desc { margin: 10px 0 14px; font-size: 14px; color: var(--fg); max-width: 760px; }
-      .d-btns { display: flex; gap: 8px; height: 28px; }
-      .d-btns span { display: grid; place-items: center; padding: 0 14px; font-size: 13px; border-radius: 2px; }
-      #install { background: var(--blue); color: #fff; min-width: 76px; }
-      .ghost { background: #313131; color: var(--fg); }
-      .d-tabs { display: flex; gap: 22px; margin-top: 22px; border-bottom: 1px solid var(--line); font-size: 11px; letter-spacing: 0.06em; }
-      .d-tabs span { padding: 8px 0; color: var(--dim); }
-      .d-tabs span.on { color: var(--fg); border-bottom: 1px solid var(--blue); }
-      .d-body { display: flex; gap: 30px; margin-top: 18px; }
-      .d-body h2 { margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #e7e7e7; }
-      .d-body p { margin: 0 0 14px; font-size: 14px; max-width: 520px; }
-      .d-body > div { flex: 1; }
-
-      #dim { position: absolute; left: 0; top: 0; right: 0; bottom: 22px; background: #000; opacity: 0; }
-      #callout { position: absolute; right: 0; bottom: 30px; opacity: 0; display: flex; flex-direction: column; align-items: flex-end; }
-      #callout .note { margin-bottom: 10px; font: 600 18px/1.2 'Segoe UI', sans-serif; color: #fff; }
-      #callout .big { display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 8px; font-size: 30px; color: #fff; background: #2b2b2b; box-shadow: 0 12px 40px #000c, 0 0 0 1px #ffffff2a; }
-      #callout .big.warn { background: var(--warn-bg); }
-      #callout .big .icon { width: 30px; height: 30px; }
-      #callout .arrow { width: 0; height: 0; border: 12px solid transparent; border-top-color: #ffffffb0; border-bottom: 0; margin-top: 8px; }
-
-      .status { height: 22px; flex-shrink: 0; display: flex; align-items: stretch; background: var(--title); border-top: 1px solid var(--line); font-size: 12px; }
-      .status > span { display: flex; align-items: center; gap: 4px; padding: 0 7px; white-space: nowrap; }
-      .status .remote { background: var(--blue); color: #fff; padding: 0 10px; }
-      .status .grow { flex: 1; }
-      .status .icon { width: 14px; height: 14px; }
-      #quota { opacity: 0; }
-      #quota.warn { background: var(--warn-bg); color: #fff; }
-
-      /* Overlays inside the window */
-      #palette { position: absolute; left: 340px; top: 4px; width: 600px; border-radius: 8px; background: #222; border: 1px solid #454545; box-shadow: 0 8px 30px #000a; padding: 6px; opacity: 0; }
-      #palette .in { height: 26px; border: 1px solid var(--blue); border-radius: 3px; background: #313131; display: flex; align-items: center; padding: 0 6px; }
-      #palette ul { list-style: none; margin: 6px 0 0; padding: 0; }
-      #palette li { height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-radius: 3px; }
-      #palette li.sel { background: #04395e; outline: 1px solid var(--blue); }
-      #palette li i { font-style: normal; color: var(--dim); font-size: 12px; }
-      #palette mark { background: none; color: #2aaaff; font-weight: 600; }
-
-      #browser { position: absolute; left: 150px; top: 120px; width: 600px; height: 430px; border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 20px 60px #000c, 0 0 0 1px #0006; opacity: 0; transform-origin: 50% 60%; color: #1f1f1f; }
-      .b-top { height: 38px; background: #dee1e6; display: flex; align-items: center; gap: 8px; padding: 0 10px; }
-      .b-top .dot { width: 11px; height: 11px; border-radius: 50%; background: #c4c7cc; }
-      .b-url { flex: 1; height: 26px; border-radius: 13px; background: #fff; display: flex; align-items: center; gap: 6px; padding: 0 12px; font-size: 13px; color: #444; }
-      .b-tag { font-size: 11px; color: #5f6368; padding: 2px 8px; border-radius: 10px; background: #fff; }
-      .b-page { position: absolute; top: 38px; left: 0; right: 0; bottom: 0; display: grid; place-content: center; justify-items: center; text-align: center; gap: 14px; }
-      .b-page h3 { margin: 0; font: 600 26px/1.2 'Segoe UI', sans-serif; }
-      .b-page p { margin: 0; color: #5f6368; font-size: 14px; }
-      .b-field { width: 300px; height: 40px; border: 1px solid #c4c7cc; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; font-size: 15px; text-align: left; }
-      .b-btn { width: 300px; height: 40px; border-radius: 8px; background: #1f1f1f; color: #fff; display: grid; place-items: center; font-size: 15px; }
-      .b-ok { width: 64px; height: 64px; border-radius: 50%; background: #e6f4ea; color: #188038; display: grid; place-items: center; font-size: 34px; }
-
-      .toast { position: absolute; right: 12px; bottom: 34px; width: 450px; background: #202020; border: 1px solid #2b2b2b; border-radius: 6px; box-shadow: 0 6px 24px #000a; padding: 12px 14px; opacity: 0; }
-      .toast .row { display: flex; gap: 10px; align-items: flex-start; }
-      .toast .info { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #3794ff; color: #3794ff; display: grid; place-items: center; font: 700 10px/1 'Segoe UI'; flex-shrink: 0; margin-top: 1px; }
-      .toast .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-      .toast .acts span { padding: 3px 12px; border-radius: 2px; }
-      #done { background: var(--blue); color: #fff; }
-
-      #cursor { position: absolute; left: 0; top: 0; width: 26px; height: 26px; opacity: 0; transform-origin: 0 0; filter: drop-shadow(0 2px 3px #0009); }
-      #ripple { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 2px solid #ffffffcc; opacity: 0; }
-    </style>
+    <link rel="stylesheet" href="promo.css" />
   </head>
   <body>
     <section class="scene" id="hook">
@@ -181,133 +28,8 @@
       </div>
     </section>
 
-    <div id="cap">
-      <span class="step" id="cap-step">STEP 1</span>
-      <h2 id="cap-title"></h2>
-      <p id="cap-sub"></p>
-    </div>
-
-    <div id="view">
-      <div id="win">
-        <div class="titlebar">
-          <div class="menu"><span>File</span><span>Edit</span><span>Selection</span><span>View</span><span>Go</span><span>Run</span><span>Terminal</span><span>Help</span></div>
-          <div class="search"><svg class="icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>my-project</div>
-          <div class="winctl">
-            <span><svg class="icon" viewBox="0 0 16 16"><path d="M3 8h10" /></svg></span>
-            <span><svg class="icon" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" /></svg></span>
-            <span><svg class="icon" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg></span>
-          </div>
-        </div>
-        <div class="main">
-          <nav class="activity">
-            <span><svg class="icon" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v11h2M14 3l5 5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5M14 3v5h5" /></svg></span>
-            <span><svg class="icon" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5.5 5.5" /></svg></span>
-            <span><svg class="icon" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2" /><circle cx="6" cy="19" r="2" /><circle cx="18" cy="8" r="2" /><path d="M6 7v10M18 10c0 4-5 4-11 7" /></svg></span>
-            <span><svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /><path d="M4 19h2" /></svg></span>
-            <span id="act-ext"><svg class="icon" viewBox="0 0 24 24"><rect x="3.5" y="12.5" width="8" height="8" /><rect x="12.5" y="12.5" width="8" height="8" /><rect x="3.5" y="3.5" width="8" height="8" /><rect x="14" y="2" width="8" height="8" transform="rotate(10 18 6)" /></svg></span>
-            <div class="grow"></div>
-            <span><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5" /></svg></span>
-            <span><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" /></svg></span>
-          </nav>
-
-          <aside id="side">
-            <div class="side-head">EXTENSIONS: MARKETPLACE</div>
-            <div class="ext-search"><span id="ext-q"></span><span class="caret" id="ext-caret"></span><span class="ph" id="ext-ph">Search Extensions in Marketplace</span></div>
-            <div id="result">
-              <div class="mark"></div>
-              <div class="txt">
-                <b>AI Quota Tool</b>
-                <div class="desc">See remaining AI quota for Claude, Copilot, Codex, Grok and Cursor</div>
-                <div class="pub">BasantPandey<span class="btn" id="r-install">Install</span></div>
-              </div>
-            </div>
-          </aside>
-
-          <section class="group">
-            <div class="tabs"><div class="tab" id="tab"></div></div>
-            <div class="pane" id="welcome">
-              <svg viewBox="0 0 100 100" fill="currentColor"><path d="M71 6 37 37 16 21l-8 4v50l8 4 21-16 34 31 21-10V16zM16 62V38l12 12zm55 6L48 50l23-18z" /></svg>
-              <div>Show All Commands  Ctrl + Shift + P</div>
-            </div>
-            <div class="pane" id="details">
-              <div class="d-head">
-                <div class="mark"></div>
-                <div>
-                  <h1>AI Quota Tool</h1>
-                  <div class="pub">BasantPandey</div>
-                  <div class="desc">See remaining AI quota for Claude, Copilot, Codex, Grok and Cursor, plus API key spend.</div>
-                  <div class="d-btns" id="d-btns"><span id="install">Install</span></div>
-                </div>
-              </div>
-              <div class="d-tabs"><span class="on">DETAILS</span><span>FEATURES</span><span>CHANGELOG</span></div>
-              <div class="d-body">
-                <div>
-                  <h2>AI Quota Tool</h2>
-                  <p>Monitor your remaining AI quota for Claude, GitHub Copilot, OpenAI Codex, and Grok, plus the balance or spend of your API keys - live in VS Code.</p>
-                  <p>Sign-in opens Chrome or Edge in a new profile. The extension never sees your password.</p>
-                </div>
-                <div>
-                  <h2>Features</h2>
-                  <p>Status bar item - remaining quota at a glance for each Account.</p>
-                  <p>One panel, three tabs - Usage, Accounts, and Keys.</p>
-                  <p>Lowest remaining - the one limit with the least left, and when it resets.</p>
-                </div>
-              </div>
-            </div>
-            <div class="pane" id="panel-pane"><iframe id="panel" title="AI Quota Tool" src="webview.html?tab=accounts&amp;theme=dark"></iframe></div>
-          </section>
-        </div>
-        <footer class="status">
-          <span class="remote"><svg class="icon" viewBox="0 0 16 16"><path d="M2 6l3-3 3 3M14 10l-3 3-3-3M5 3v6M11 13V7" /></svg></span>
-          <span><svg class="icon" viewBox="0 0 16 16"><circle cx="4.5" cy="3.5" r="1.5" /><circle cx="4.5" cy="12.5" r="1.5" /><circle cx="11.5" cy="5.5" r="1.5" /><path d="M4.5 5v6M11.5 7c0 3-4 2.5-7 4" /></svg>main</span>
-          <span>⊗ 0&nbsp;&nbsp;⚠ 0</span>
-          <span class="grow"></span>
-          <span id="quota"></span>
-          <span><svg class="icon" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3zM6.5 14h3" /></svg></span>
-        </footer>
-
-        <div id="palette">
-          <div class="in"><span id="pal-q"></span><span class="caret"></span></div>
-          <ul>
-            <li class="sel" id="pal-1"><span id="pal-1t"></span><i>recently used</i></li>
-            <li id="pal-2"><span>AI Quota Tool: Open Dashboard</span><i></i></li>
-          </ul>
-        </div>
-
-        <div id="browser">
-          <div class="b-top">
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-            <div class="b-url"><svg class="icon" viewBox="0 0 16 16"><rect x="4" y="7" width="8" height="6" rx="1" /><path d="M6 7V5a2 2 0 0 1 4 0v2" /></svg>claude.ai/login</div>
-            <span class="b-tag">New profile</span>
-          </div>
-          <div class="b-page" id="b-login">
-            <h3>Sign in</h3>
-            <p>Sign in on the real site. VS Code never sees your password.</p>
-            <div class="b-field" id="b-email"></div>
-            <div class="b-btn">Continue</div>
-          </div>
-          <div class="b-page" id="b-ok" style="opacity: 0">
-            <div class="b-ok">✓</div>
-            <h3>You are signed in</h3>
-            <p>Go back to VS Code and click Done.</p>
-          </div>
-        </div>
-
-        <div class="toast" id="toast-wait">
-          <div class="row"><span class="info">i</span><span>Sign in to Claude in the browser window. Then click Done.</span></div>
-          <div class="acts"><span id="done">Done</span><span class="ghost">Cancel</span></div>
-        </div>
-        <div class="toast" id="toast-ok">
-          <div class="row"><span class="info">i</span><span>Stored the Claude session cookie in VS Code SecretStorage. The browser profile is deleted.</span></div>
-        </div>
-
-        <div id="dim"></div>
-        <div id="callout"><div class="note" id="co-note"></div><div class="big" id="co-big"></div><div class="arrow" id="co-arrow"></div></div>
-
-        <div id="ripple"></div>
-        <svg id="cursor" viewBox="0 0 26 26"><path d="M3 2v19l5-5 3.5 8 3-1.3L11 15h7z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round" /></svg>
-      </div>
-    </div>
+    <div id="cap"><span class="step" id="cap-step"></span><h2 id="cap-title"></h2><p id="cap-sub"></p></div>
+    <div id="view"></div>
 
     <section class="scene center" id="cta">
       <div class="mark"></div>
@@ -317,137 +39,18 @@
       <div class="url">github.com/BasantPandey/AIQuotaTool</div>
     </section>
 
+    <script src="promo-kit.js"></script>
     <script>
-      const DURATION = 36;
-      const STEP1 = 6.4, STEP2 = 13.4, STEP3 = 24.4, END = 31.4;
-
-      const $ = (id) => document.getElementById(id);
-      const clamp01 = (x) => Math.min(1, Math.max(0, x));
-      const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
-      const prog = (t, a, b) => ease(clamp01((t - a) / (b - a)));
-      const lerp = (a, b, k) => a + (b - a) * k;
-      // 0 before a, fades in over `f`, holds, fades out before b.
-      const span = (t, a, b, f = 0.35) => Math.min(prog(t, a, a + f), 1 - prog(t, b - f, b));
-      const typed = (text, t, a, b) => text.slice(0, Math.round(text.length * clamp01((t - a) / (b - a))));
-      const show = (el, o, dy = 0) => {
-        el.style.opacity = o;
-        el.style.transform = dy ? `translateY(${(1 - o) * dy}px)` : '';
-      };
-
-      window.setMark = (svg) => {
-        for (const el of document.querySelectorAll('.mark')) el.innerHTML = svg;
-        $('tab').dataset.mark = svg;
-      };
-
-      // Caption for each step. Subtitles switch at the given time.
-      const CAPS = [
-        { at: STEP1, step: 'STEP 1', title: 'Install the extension', subs: [
-          [STEP1, 'Open <b>Extensions</b>. Search <b>AI Quota Tool</b>. Click <b>Install</b>.'],
-          [STEP1 + 4.9, 'Or press <kbd>Ctrl</kbd> <kbd>P</kbd> and run <code>ext install BasantPandey.ai-quota-tool-vscode</code>'],
-        ] },
-        { at: STEP2, step: 'STEP 2', title: 'Sign in to your AI accounts', subs: [
-          [STEP2, 'Press <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>P</kbd> and run <b>AI Quota Tool: Set Up Accounts</b>.'],
-          [STEP2 + 2.3, 'Click <b>Sign in</b>. Sign in on the real site in a new browser window.'],
-          [STEP2 + 6.3, 'The cookie stays in VS Code SecretStorage. Copilot uses your GitHub sign-in.'],
-        ] },
-        { at: STEP3, step: 'STEP 3', title: 'See your AI quota', subs: [
-          [STEP3, 'Session and weekly limits, with reset times, for each account.'],
-          [STEP3 + 4.3, 'The status bar shows each quota. It turns amber below 10%.'],
-        ] },
-      ];
-      $('cap-sub').innerHTML = CAPS.flatMap((c) => c.subs.map(([, html]) => `<span>${html}</span>`)).join('');
-      const subEls = [...$('cap-sub').children];
-
-      function caption(t) {
-        show($('cap'), span(t, STEP1, END));
-        const cap = [...CAPS].reverse().find((c) => t >= c.at) ?? CAPS[0];
-        const k = prog(t, cap.at, cap.at + 0.45);
-        $('cap-step').textContent = cap.step;
-        $('cap-title').textContent = cap.title;
-        show($('cap-title'), cap.at === STEP1 ? 1 : k, 14);
-        const subs = CAPS.flatMap((c) => c.subs.map(([at], i) => [at, c.subs[i + 1]?.[0] ?? (CAPS[CAPS.indexOf(c) + 1]?.at ?? END)]));
-        subs.forEach(([a, b], i) => show(subEls[i], span(t, a, b, 0.3), 10));
-      }
-
-      // Camera: fit a rectangle of the 1280x800 window into the 1344x840 view.
-      const VW = 1344, VH = 840, WW = 1280, WH = 800;
-      const FULL = { x: 0, y: 0, w: WW, h: WH };
+      const { $, prog, span, typed, show, ICON, editorTab, inPanel, button, setValue, point, FULL } = Promo;
+      const S1 = 6.4, S2 = 13.4, S3 = 24.4, S4 = 32.8, END = 39.8;
+      const SIGN_IN = { claude: S2 + 5.9, copilot: S2 + 7.5, codex: S2 + 8.8, grok: S2 + 10.0 };
+      const KIMI_AT = S3 + 5.0;
       const HERO = { x: 120, y: 100, w: 1120, h: 200 };
-      let cam = { s: 1, tx: 0, ty: 0 };
-      function camera(t) {
-        const keys = [[STEP3 + 2.4, FULL], [STEP3 + 3.2, HERO], [STEP3 + 3.9, HERO], [STEP3 + 4.6, FULL]];
-        let r = FULL;
-        for (let i = 0; i < keys.length; i++) {
-          const [a, ra] = keys[i];
-          const [b, rb] = keys[i + 1] ?? keys[i];
-          if (t >= a) {
-            const k = b === a ? 1 : prog(t, a, b);
-            r = { x: lerp(ra.x, rb.x, k), y: lerp(ra.y, rb.y, k), w: lerp(ra.w, rb.w, k), h: lerp(ra.h, rb.h, k) };
-          }
-        }
-        const s = Math.min(VW / r.w, VH / r.h);
-        const tx = Math.min(0, Math.max(VW - s * WW, VW / 2 - s * (r.x + r.w / 2)));
-        const ty = Math.min(0, Math.max(VH - s * WH, VH / 2 - s * (r.y + r.h / 2)));
-        cam = { s, tx, ty };
-        $('win').style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
-      }
-
-      // Center of an element, in window coordinates.
-      function centerOf(el) {
-        if (!el) return null;
-        const w = $('view').getBoundingClientRect();
-        let r = el.getBoundingClientRect();
-        if (el.ownerDocument !== document) {
-          const f = $('panel').getBoundingClientRect();
-          r = { left: f.left + r.left * cam.s, top: f.top + r.top * cam.s, width: r.width * cam.s, height: r.height * cam.s };
-        }
-        return { x: (r.left - w.left - cam.tx + r.width / 2) / cam.s, y: (r.top - w.top - cam.ty + r.height / 2) / cam.s };
-      }
-      const panelDoc = () => $('panel').contentDocument;
-      // A button in the Accounts row of one service.
-      const rowButton = (service, label) => () => {
-        const row = [...panelDoc().querySelectorAll('.list-item')].find((li) => li.querySelector('.grow')?.firstChild?.textContent === service);
-        return row && [...row.querySelectorAll('button')].find((b) => b.textContent.trim() === label);
+      const row = (service, label) => () => {
+        const li = [...inPanel('.list')()?.children ?? []].find((el) => el.querySelector('.grow')?.firstChild?.textContent === service);
+        return li && [...li.querySelectorAll('button')].find((b) => b.textContent.trim() === label);
       };
-      const usageTab = () => panelDoc().getElementById('tab-usage');
 
-      const C = (t, target) => ({ t, target });
-      const CURSOR = [
-        C(STEP1 + 1.9, () => ({ x: 640, y: 420 })), C(STEP1 + 2.6, () => $('result')),
-        C(STEP1 + 3.0, () => $('result')), C(STEP1 + 3.7, () => $('install')),
-        C(STEP1 + 4.6, () => $('install')), C(STEP1 + 5.2, () => ({ x: 700, y: 560 })),
-        C(STEP2 + 2.3, () => ({ x: 700, y: 560 })), C(STEP2 + 3.0, rowButton('Claude', 'Sign in')),
-        C(STEP2 + 4.9, rowButton('Claude', 'Sign in')), C(STEP2 + 5.7, () => $('done')),
-        C(STEP2 + 6.3, () => $('done')), C(STEP2 + 6.9, rowButton('Copilot', 'Sign in with GitHub')),
-        C(STEP2 + 7.6, rowButton('Copilot', 'Sign in with GitHub')), C(STEP2 + 8.2, rowButton('Codex', 'Sign in')),
-        C(STEP2 + 8.9, rowButton('Codex', 'Sign in')), C(STEP2 + 9.5, rowButton('Grok', 'Sign in')),
-        C(STEP2 + 10.4, rowButton('Grok', 'Sign in')), C(STEP3 + 0.4, usageTab),
-        C(STEP3 + 1.4, usageTab), C(STEP3 + 2.4, () => ({ x: 1000, y: 470 })),
-      ];
-      const CLICKS = [STEP1 + 2.7, STEP1 + 3.8, STEP2 + 3.1, STEP2 + 5.8, STEP2 + 7.0, STEP2 + 8.3, STEP2 + 9.6, STEP3 + 0.5];
-      const lastPos = new Map();
-      const pos = (key) => {
-        const p = key.target();
-        const c = p && ('x' in p ? p : centerOf(p));
-        if (c) lastPos.set(key, c);
-        return lastPos.get(key) ?? { x: 640, y: 400 };
-      };
-      function cursor(t) {
-        show($('cursor'), span(t, CURSOR[0].t - 0.3, CURSOR.at(-1).t + 0.4, 0.3));
-        let i = CURSOR.findLastIndex((k) => k.t <= t);
-        if (i < 0) i = 0;
-        const a = pos(CURSOR[i]);
-        const b = pos(CURSOR[Math.min(i + 1, CURSOR.length - 1)]);
-        const k = i + 1 < CURSOR.length ? prog(t, CURSOR[i].t, CURSOR[i + 1].t) : 0;
-        const x = lerp(a.x, b.x, k), y = lerp(a.y, b.y, k);
-        const click = CLICKS.find((c) => t >= c && t < c + 0.45);
-        const press = click == null ? 1 : 1 - 0.15 * Math.sin(Math.PI * clamp01((t - click) / 0.2));
-        $('cursor').style.transform = `translate(${x - 4}px, ${y - 3}px) scale(${press})`;
-        const ring = click == null ? 0 : clamp01((t - click) / 0.45);
-        Object.assign($('ripple').style, { left: `${x}px`, top: `${y}px`, opacity: click == null ? 0 : 1 - ring, transform: `scale(${0.4 + ring * 1.2})` });
-      }
-
-      // State of the real panel at time t. It changes only at a few moments.
       const NOW = Date.now();
       const H = 3600e3, M = 60e3;
       const READINGS = [
@@ -456,132 +59,126 @@
         { service: 'codex', sessionPct: 76, weeklyPct: 58, sessionResetsAt: NOW + 1 * H + 43.5 * M, weeklyResetsAt: NOW + 5 * 24 * H - 1.5 * M },
         { service: 'grok', sessionPct: 88, weeklyPct: 64, sessionResetsAt: NOW + 47.5 * M, weeklyResetsAt: NOW + 2 * 24 * H + 3 * H + 0.5 * M },
       ];
-      const SIGN_IN = { claude: STEP2 + 5.9, copilot: STEP2 + 7.5, codex: STEP2 + 8.8, grok: STEP2 + 10.0 };
-      function panelState(t) {
-        const accounts = [
-          ['claude', 'browser', 'Connected as Personal'], ['copilot', 'github'], ['codex', 'browser'], ['grok', 'browser'],
-        ].map(([service, method, detail]) => ({ service, method, status: t >= SIGN_IN[service] ? 'connected' : 'none', detail }));
-        const fill = prog(t, STEP3 + 0.7, STEP3 + 2.2);
-        const scale = (v) => (v == null ? v : Math.round(v * fill));
-        const readings = t < STEP3 ? [] : READINGS.map((r) => ({ ...r, sessionPct: scale(r.sessionPct), weeklyPct: scale(r.weeklyPct), lastUpdated: NOW }));
-        const claudeForm = t >= STEP2 + 3.2 && t < SIGN_IN.claude
-          ? { target: 'claude', status: 'testing', detail: 'Sign in to Claude in the browser window. Then click Done in VS Code.' }
-          : { target: 'claude', status: 'idle' };
-        return { tab: t >= STEP3 + 0.6 ? 'usage' : 'accounts', snapshot: { readings, accounts, keys: [] }, forms: [claudeForm] };
-      }
-      let lastPanel = '';
-      async function panel(t) {
-        const state = panelState(t);
-        const key = JSON.stringify(state);
-        if (key === lastPanel) return;
-        lastPanel = key;
-        const w = $('panel').contentWindow;
-        w.postMessage({ type: 'show_tab', tab: state.tab }, '*');
-        w.postMessage({ type: 'snapshot', snapshot: state.snapshot }, '*');
-        for (const form of state.forms) w.postMessage({ type: 'form_status', form }, '*');
-        await new Promise((r) => setTimeout(r, 60));
-        await new Promise((r) => w.requestAnimationFrame(() => w.requestAnimationFrame(r)));
-      }
-
-      function statusItem(t) {
-        const q = $('quota');
-        const parts = [['claude', 'Claude 9%'], ['copilot', 'Copilot ·'], ['codex', 'Codex 58%'], ['grok', 'Grok 64%']]
-          .filter(([s]) => t >= SIGN_IN[s] + 0.3).map(([, text]) => text);
-        const pulse = '<svg class="icon" viewBox="0 0 16 16"><path d="M1 8h3l2-5 3 10 2-5h4" /></svg>';
-        const key = '<svg class="icon" viewBox="0 0 16 16"><circle cx="5.5" cy="10.5" r="3" /><path d="M7.7 8.3 14 2M11.5 4.5l2 2" /></svg>';
-        q.innerHTML = parts.length ? `${pulse}${parts.join(' | ')}` : `${key}AI Quota: Set up accounts`;
-        q.className = parts.some((p) => p.startsWith('Claude')) ? 'warn' : '';
-        q.style.opacity = prog(t, STEP1 + 4.7, STEP1 + 5.0);
-
-        // A large copy of the item above the real one, with the rest of the window dimmed.
-        const on = Math.max(span(t, STEP1 + 5.1, STEP2, 0.4), span(t, STEP3 + 4.8, END + 0.2, 0.4));
-        $('dim').style.opacity = 0.6 * on;
-        show($('callout'), on, 16);
-        $('co-note').textContent = t < STEP2 ? 'Installed. Click here to set up your accounts.' : 'Click it to open the panel.';
-        $('co-big').innerHTML = q.innerHTML;
-        $('co-big').className = `big ${q.className}`;
-        const right = q.offsetLeft + q.offsetWidth;
-        $('callout').style.right = `${WW - right}px`;
-        $('co-arrow').style.marginRight = `${q.offsetWidth / 2 - 12}px`;
-      }
-
-      function scenes(t) {
-        // Hook
-        show($('hook'), span(t, 0, STEP1 - 3.2, 0.3));
-        show($('hook1'), prog(t, 0.15, 0.7), 20);
-        const pop = prog(t, 0.9, 1.3);
-        $('limit').style.opacity = pop;
-        $('limit').style.transform = `scale(${0.85 + 0.15 * pop})`;
-        show($('hook2'), prog(t, 1.9, 2.4), 20);
-        // Brand
-        show($('brand'), span(t, 3.2, STEP1, 0.3));
-        const m = prog(t, 3.3, 3.9);
-        $('b-mark').style.opacity = m;
-        $('b-mark').style.transform = `scale(${0.6 + 0.4 * m}) rotate(${(1 - m) * -12}deg)`;
-        show($('b-title'), prog(t, 3.6, 4.1), 24);
-        show($('b-tag'), prog(t, 3.9, 4.4), 18);
-        [...$('chips').children].forEach((c, i) => show(c, prog(t, 4.3 + i * 0.12, 4.7 + i * 0.12), 14));
-        // End card
-        show($('cta'), prog(t, END, END + 0.5));
-        const cta = $('cta');
-        show(cta.querySelector('.mark'), prog(t, END + 0.2, END + 0.7), 20);
-        show(cta.querySelector('h1'), prog(t, END + 0.4, END + 0.9), 20);
-        show(cta.querySelector('p'), prog(t, END + 0.6, END + 1.1), 16);
-        show(cta.querySelector('.cmd'), prog(t, END + 0.9, END + 1.4), 16);
-        show(cta.querySelector('.url'), prog(t, END + 1.2, END + 1.7), 12);
-      }
-
-      function window_(t) {
-        const v = span(t, STEP1, END, 0.45);
-        $('view').style.opacity = v;
-        $('view').style.transform = `translateY(${(1 - v) * 40}px) scale(${0.97 + 0.03 * v})`;
-        // Step 1: Extensions view and the details page.
-        const s1 = t < STEP2;
-        $('side').style.display = s1 ? '' : 'none';
-        $('act-ext').className = s1 ? 'on' : '';
-        const q = typed('AI Quota Tool', t, STEP1 + 0.6, STEP1 + 1.7);
-        $('ext-q').textContent = q;
-        $('ext-ph').style.display = q ? 'none' : '';
-        $('ext-caret').style.opacity = Math.floor(t * 2) % 2 || (t > STEP1 + 0.5 && t < STEP1 + 1.8) ? 1 : 0;
-        $('result').style.opacity = prog(t, STEP1 + 1.8, STEP1 + 2.1);
-        $('result').className = t >= STEP1 + 2.7 ? 'sel' : '';
-        const installed = t >= STEP1 + 4.6;
-        $('r-install').textContent = installed ? 'Installed' : t >= STEP1 + 3.8 ? 'Installing' : 'Install';
-        $('d-btns').innerHTML = installed
-          ? '<span class="ghost">Disable</span><span class="ghost">Uninstall</span><span class="ghost">Auto Update</span>'
-          : `<span id="install">${t >= STEP1 + 3.8 ? 'Installing' : 'Install'}</span>`;
-        // Which editor pane shows.
-        const pane = t < STEP1 + 2.7 ? 'welcome' : t < STEP2 + 2.2 ? 'details' : 'panel-pane';
-        for (const id of ['welcome', 'details', 'panel-pane']) $(id).style.opacity = id === pane ? 1 : 0;
-        const mark = $('tab').dataset.mark ?? '';
-        $('tab').style.display = pane === 'welcome' ? 'none' : '';
-        $('tab').innerHTML = `<span class="mark">${mark}</span>${pane === 'details' ? 'Extension: AI Quota Tool' : 'AI Quota Tool'}<span class="x">×</span>`;
-        // Step 2: command palette.
-        show($('palette'), span(t, STEP2 + 0.6, STEP2 + 2.2, 0.15), -8);
-        const pq = typed('Set Up Accounts', t, STEP2 + 0.8, STEP2 + 1.7);
-        $('pal-q').textContent = `>${pq ? ' ' : ''}${pq}`;
-        $('pal-1t').innerHTML = pq ? `AI Quota Tool: <mark>${pq}</mark>${'Set Up Accounts'.slice(pq.length)}` : 'AI Quota Tool: Set Up Accounts';
-        // Browser window and notices.
-        const b = span(t, STEP2 + 3.4, STEP2 + 6.0, 0.3);
-        $('browser').style.opacity = b;
-        $('browser').style.transform = `scale(${0.92 + 0.08 * b})`;
-        $('b-email').textContent = typed('you@example.com', t, STEP2 + 3.9, STEP2 + 4.7) || ' ';
-        $('b-login').style.opacity = t < STEP2 + 5.0 ? 1 : 0;
-        $('b-ok').style.opacity = t < STEP2 + 5.0 ? 0 : 1;
-        show($('toast-wait'), span(t, STEP2 + 3.6, SIGN_IN.claude, 0.2), 12);
-        show($('toast-ok'), span(t, SIGN_IN.claude + 0.1, STEP2 + 9.0, 0.25), 12);
-      }
-
-      window.DURATION = DURATION;
-      window.render = async (t) => {
-        scenes(t);
-        caption(t);
-        camera(t);
-        window_(t);
-        statusItem(t);
-        if (t >= STEP2) await panel(t);
-        cursor(t);
+      const KIMI = { id: 'kimi-1', service: 'kimi', name: 'Kimi key 1', last4: '7f3a' };
+      const KIMI_READING = {
+        service: 'kimi', kind: 'key', connectionId: 'kimi-1', lastUpdated: NOW,
+        balance: { available: true, infos: [{ currency: 'CNY', total: '42.10', granted: '15.00', toppedUp: '27.10' }] },
       };
+
+      Promo.start({
+        duration: 44.4,
+        hookEnd: 3.2,
+        start: S1,
+        end: END,
+        caps: [
+          { at: S1, step: 'STEP 1', title: 'Install the extension', subs: [
+            [S1, 'Open <b>Extensions</b>. Search <b>AI Quota Tool</b>. Click <b>Install</b>.'],
+            [S1 + 4.9, 'Or press <kbd>Ctrl</kbd> <kbd>P</kbd> and run <code>ext install BasantPandey.ai-quota-tool-vscode</code>'],
+          ] },
+          { at: S2, step: 'STEP 2', title: 'Sign in to your AI accounts', subs: [
+            [S2, 'Press <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>P</kbd> and run <b>AI Quota Tool: Set Up Accounts</b>.'],
+            [S2 + 2.3, 'Click <b>Sign in</b>. Sign in on the real site in a new browser window.'],
+            [S2 + 6.3, 'The cookie stays in VS Code SecretStorage. Copilot uses your GitHub sign-in.'],
+          ] },
+          { at: S3, step: 'STEP 3', title: 'Add your API keys', subs: [
+            [S3, 'Open <b>Keys</b>. Click <b>Add key</b>. Pick Kimi, DeepSeek, OpenRouter, Anthropic or OpenAI.'],
+            [S3 + 3.8, 'Paste the key. Click <b>Test and save</b>. The key shows its balance.'],
+          ] },
+          { at: S4, step: 'STEP 4', title: 'See your AI quota', subs: [
+            [S4, 'Accounts show session and weekly limits. Keys show the balance or spend.'],
+            [S4 + 4.3, 'The status bar shows each quota. It turns amber below 10%.'],
+          ] },
+        ],
+        camera: [[S4 + 2.4, FULL], [S4 + 3.2, HERO], [S4 + 3.9, HERO], [S4 + 4.6, FULL]],
+        cursor: [
+          [S1 + 1.9, point(640, 420)], [S1 + 2.6, () => $('result')],
+          [S1 + 3.0, () => $('result')], [S1 + 3.7, () => $('install')],
+          [S1 + 4.6, () => $('install')], [S1 + 5.2, point(700, 560)],
+          [S2 + 2.3, point(700, 560)], [S2 + 3.0, row('Claude', 'Sign in')],
+          [S2 + 4.9, row('Claude', 'Sign in')], [S2 + 5.7, () => $('done')],
+          [S2 + 6.3, () => $('done')], [S2 + 6.9, row('Copilot', 'Sign in with GitHub')],
+          [S2 + 7.6, row('Copilot', 'Sign in with GitHub')], [S2 + 8.2, row('Codex', 'Sign in')],
+          [S2 + 8.9, row('Codex', 'Sign in')], [S2 + 9.5, row('Grok', 'Sign in')],
+          [S2 + 10.4, row('Grok', 'Sign in')], [S3 + 0.6, inPanel('#tab-keys')],
+          [S3 + 1.0, inPanel('#tab-keys')], [S3 + 1.6, button('Add key')],
+          [S3 + 2.0, button('Add key')], [S3 + 2.5, inPanel('.key-form select')],
+          [S3 + 2.9, inPanel('.key-form select')], [S3 + 3.4, inPanel('.key-form input[type=password]')],
+          [S3 + 3.8, inPanel('.key-form input[type=password]')], [S3 + 4.3, button('Test and save')],
+          [S3 + 4.8, button('Test and save')], [S3 + 5.6, point(900, 520)],
+          [S4 + 0.0, point(900, 520)], [S4 + 0.4, inPanel('#tab-usage')],
+          [S4 + 1.4, inPanel('#tab-usage')], [S4 + 2.4, point(1000, 470)],
+        ],
+        clicks: [
+          [S1 + 2.7], [S1 + 3.8], [S2 + 3.1], [S2 + 5.8], [S2 + 7.0], [S2 + 8.3], [S2 + 9.6],
+          [S3 + 0.7], [S3 + 1.7, button('Add key'), true], [S3 + 2.6], [S3 + 3.5], [S3 + 4.4, button('Test and save'), true],
+          [S4 + 0.5],
+        ],
+        actions: [
+          [S3 + 2.7, () => setValue(inPanel('.key-form select')(), 'kimi')],
+          [S3 + 3.6, () => setValue(inPanel('.key-form input[type=password]')(), 'sk-kimi-4Qx9TzP2cVb8Lm7f3a')],
+        ],
+        panel(t) {
+          const accounts = [['claude', 'browser', 'Connected as Personal'], ['copilot', 'github'], ['codex', 'browser'], ['grok', 'browser']]
+            .map(([service, method, detail]) => ({ service, method, status: t >= SIGN_IN[service] ? 'connected' : 'none', detail }));
+          const fill = prog(t, S4 + 0.7, S4 + 2.2);
+          const scale = (v) => (v == null ? v : Math.round(v * fill));
+          const readings = t < S4 ? [] : READINGS.map((r) => ({ ...r, sessionPct: scale(r.sessionPct), weeklyPct: scale(r.weeklyPct), lastUpdated: NOW }));
+          const kimi = t >= KIMI_AT;
+          const claude = t >= S2 + 3.2 && t < SIGN_IN.claude
+            ? { target: 'claude', status: 'testing', detail: 'Sign in to Claude in the browser window. Then click Done in VS Code.' }
+            : { target: 'claude', status: 'idle' };
+          return {
+            tab: t < S3 + 0.7 ? 'accounts' : t < S4 + 0.6 ? 'keys' : 'usage',
+            snapshot: { readings: kimi ? [...readings, KIMI_READING] : readings, accounts, keys: kimi ? [KIMI] : [] },
+            forms: [claude, { target: 'add_key', status: kimi ? 'ok' : 'idle' }],
+          };
+        },
+        statusFrom: S1 + 4.7,
+        status(t) {
+          const parts = [['claude', 'Claude 9%'], ['copilot', 'Copilot ·'], ['codex', 'Codex 58%'], ['grok', 'Grok 64%']]
+            .filter(([s]) => t >= SIGN_IN[s] + 0.3).map(([, text]) => text);
+          return parts.length
+            ? { html: `${ICON.pulse}${parts.join(' | ')}`, warn: t >= SIGN_IN.claude + 0.3 }
+            : { html: `${ICON.key}AI Quota: Set up accounts`, warn: false };
+        },
+        callouts: [
+          [S1 + 5.1, S2, 'Installed. Click here to set up your accounts.'],
+          [S4 + 4.8, END + 0.2, 'Click it to open the panel.'],
+        ],
+        frame(t) {
+          // Step 1: the Extensions view and the details page.
+          const s1 = t < S2;
+          $('side').style.display = s1 ? 'block' : 'none';
+          $('act-ext').className = s1 ? 'on' : '';
+          const q = typed('AI Quota Tool', t, S1 + 0.6, S1 + 1.7);
+          $('ext-q').textContent = q;
+          $('ext-ph').style.display = q ? 'none' : '';
+          $('ext-caret').style.opacity = Math.floor(t * 2) % 2 || (t > S1 + 0.5 && t < S1 + 1.8) ? 1 : 0;
+          $('result').style.opacity = prog(t, S1 + 1.8, S1 + 2.1);
+          $('result').className = t >= S1 + 2.7 ? 'sel' : '';
+          const installed = t >= S1 + 4.6;
+          $('r-install').textContent = installed ? 'Installed' : t >= S1 + 3.8 ? 'Installing' : 'Install';
+          $('d-btns').innerHTML = installed
+            ? '<span class="ghost">Disable</span><span class="ghost">Uninstall</span><span class="ghost">Auto Update</span>'
+            : `<span id="install">${t >= S1 + 3.8 ? 'Installing' : 'Install'}</span>`;
+          const pane = t < S1 + 2.7 ? 'welcome' : t < S2 + 2.2 ? 'details' : 'panel-pane';
+          for (const id of ['welcome', 'details', 'panel-pane']) $(id).style.opacity = id === pane ? 1 : 0;
+          editorTab(pane === 'welcome' ? null : pane === 'details' ? 'Extension: AI Quota Tool' : 'AI Quota Tool');
+          // Step 2: the command palette, the browser window, and the notices.
+          show($('palette'), span(t, S2 + 0.6, S2 + 2.2, 0.15), -8);
+          const pq = typed('Set Up Accounts', t, S2 + 0.8, S2 + 1.7);
+          $('pal-q').textContent = `>${pq ? ' ' : ''}${pq}`;
+          $('pal-1t').innerHTML = pq ? `AI Quota Tool: <mark>${pq}</mark>${'Set Up Accounts'.slice(pq.length)}` : 'AI Quota Tool: Set Up Accounts';
+          const b = span(t, S2 + 3.4, S2 + 6.0, 0.3);
+          $('browser').style.opacity = b;
+          $('browser').style.transform = `scale(${0.92 + 0.08 * b})`;
+          $('b-email').textContent = typed('you@example.com', t, S2 + 3.9, S2 + 4.7) || ' ';
+          $('b-login').style.opacity = t < S2 + 5.0 ? 1 : 0;
+          $('b-ok').style.opacity = t < S2 + 5.0 ? 0 : 1;
+          show($('toast-wait'), span(t, S2 + 3.6, SIGN_IN.claude, 0.2), 12);
+          show($('toast-ok'), span(t, SIGN_IN.claude + 0.1, S2 + 9.0, 0.25), 12);
+        },
+      });
     </script>
   </body>
 </html>
