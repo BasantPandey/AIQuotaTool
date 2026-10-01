@@ -1,8 +1,10 @@
 /** Shared pieces for the store and Marketplace art scripts. */
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,6 +29,23 @@ export const MARK_SVG = (size) => `<svg xmlns="http://www.w3.org/2000/svg" width
 </svg>`;
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' };
+
+/** Module scripts do not load from file:// URLs, so serve the repo over http. */
+export function serve() {
+  const server = createServer(async (req, res) => {
+    const path = normalize(join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
+    if (!path.startsWith(root)) return res.writeHead(403).end();
+    try {
+      const body = await readFile(path);
+      res.writeHead(200, { 'content-type': TYPES[extname(path)] ?? 'application/octet-stream' }).end(body);
+    } catch {
+      res.writeHead(404).end();
+    }
+  });
+  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
+}
 
 /** Headless Chrome driven over the DevTools protocol. Loads an unpacked extension when you give one. */
 export async function launchChrome({ extensionDir } = {}) {
@@ -109,9 +128,12 @@ export async function launchChrome({ extensionDir } = {}) {
       await send('Page.navigate', { url });
       await sleep(1200);
     },
-    async shot(path) {
+    async frame() {
       const res = await send('Page.captureScreenshot', { format: 'png' });
-      writeFileSync(path, Buffer.from(res.result.data, 'base64'));
+      return Buffer.from(res.result.data, 'base64');
+    },
+    async shot(path) {
+      writeFileSync(path, await this.frame());
       console.log('wrote', path.replace(root, '.'));
     },
     async close() {
