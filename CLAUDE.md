@@ -38,6 +38,7 @@ pnpm --filter ai-quota-tool-vscode run package  # vsce → .vsix
 # Utilities
 node scripts/store-assets.mjs             # Chrome icons + Web Store art (build chrome-ext first)
 node scripts/vscode-assets.mjs            # VS Code icon + Marketplace screenshots (build vscode-ext first)
+node scripts/vscode-video.mjs             # VS Code promo video docs/promo.mp4 (build vscode-ext first; needs ffmpeg)
 ```
 
 **Local VS Code testing:** Build/package vscode-ext, install `.vsix`, run **Set Up Accounts**.
