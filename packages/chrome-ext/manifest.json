@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Quota Tool - AI usage limits for Claude, Codex, Cursor",
-  "version": "3.2.0",
-  "description": "See AI limits before they stop your work: Claude, Codex, Gemini, Cursor and Grok usage and reset times. Free, private, no account.",
+  "name": "AI Quota Tool - Track your AI usage limits",
+  "version": "3.2.1",
+  "description": "Track your AI assistant usage limits and API credit balances in one side panel. Free, private, no account.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

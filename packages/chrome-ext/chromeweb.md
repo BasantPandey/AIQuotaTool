@@ -12,44 +12,37 @@ pnpm --filter @ai-quota-tool/chrome-ext zip
 Upload `packages/chrome-ext/ai-quota-tool-chrome-<version>.zip` on the **Package** tab. The version in `manifest.json` must be higher than the live version.
 Store item: https://chromewebstore.google.com/detail/dkohaadncknbgmeefnlfffdjnnlmlglh
 
+Store review reads a run of brand names as keyword stuffing. Keep brand names out of the title, the summary and the promo art. Name each service once, in the SUPPORTED SERVICES line of the description.
+
 ## Store listing tab
 
 ### Title (from manifest `name`)
 
 ```
-AI Quota Tool - AI usage limits for Claude, Codex, Cursor
+AI Quota Tool - Track your AI usage limits
 ```
 
 ### Summary (manifest `description`, 132 characters max)
 
 ```
-See AI limits before they stop your work: Claude, Codex, Gemini, Cursor and Grok usage and reset times. Free, private, no account.
+Track your AI assistant usage limits and API credit balances in one side panel. Free, private, no account.
 ```
 
 ### Description
 
 ```
-Every AI limit in one glance.
+AI Quota Tool shows how much of your AI usage allowance you have left, so you do not hit a limit in the middle of your work.
 
-AI Quota Tool shows what is left of your AI plans in the Chrome side panel. See your session, weekly and monthly limits, and the time until each one resets. Know before a limit stops your work.
-
-WORKS WITH
-• Claude - session and weekly limits, plus model limits
-• Codex (ChatGPT) - session and weekly limits
-• Gemini - 5-hour and weekly limits
-• Cursor - monthly usage
-• Grok - session and weekly limits
-• GitHub Copilot - plan status
-• DeepSeek and Kimi - API balance
+It shows your session, weekly and monthly limits in the Chrome side panel, with the time until each one resets.
 
 FEATURES
-• One panel for all your AI tools
-• Your lowest limit on top, with the time it resets
-• Clear gauges with "% left" and "resets in"
-• Toolbar badge with your lowest limit
-• One alert when a limit runs low, and one when it resets
-• Turn each provider on or off - see only the tools you use
-• Light and dark theme that follows your system
+• See what is left of your AI assistant plans at a glance
+• Check prepaid API credit balances
+• See your lowest limit on top, with the time it resets
+• Get a toolbar badge with your lowest limit
+• Get one alert when a limit runs low, and one when it resets
+• Turn each service on or off, and see only the tools you use
+• Use a light or dark theme that follows your system
 
 PRIVATE BY DESIGN
 • No server, no account, no sign-up
@@ -59,12 +52,18 @@ PRIVATE BY DESIGN
 • Open source: https://github.com/BasantPandey/AIQuotaTool
 
 HONEST NUMBERS
-If a provider does not share a number, the panel says so. It never shows a fake 100%.
+If a service does not share a number, the panel says so. It never shows a fake 100%.
 
 HOW TO START
 1. Click the toolbar icon to open the side panel.
 2. Pick your tools.
 3. Sign in to each tool in this browser, as usual. Your limits show within a minute.
+4. For an API balance, paste your API key on the Providers screen. The key stays on your device.
+
+SUPPORTED SERVICES
+Usage limits for Claude, OpenAI Codex, Gemini, Cursor and Grok. Plan status for GitHub Copilot. API balances for DeepSeek and Kimi.
+
+AI Quota Tool is not affiliated with or endorsed by any of the services listed.
 
 Website and help: https://basantpandey.github.io/AIQuotaTool/
 ```
@@ -94,7 +93,7 @@ Generate with `node scripts/store-assets.mjs` after a build. Files are in `packa
 ### Single purpose description
 
 ```
-This item shows the user their remaining AI usage limits (Claude, Codex, Copilot, Gemini, Cursor, Grok) and API balances (DeepSeek, Kimi) in one side panel. It does not do any other task.
+This item shows the user how much of their AI usage limits and API credit balances is left, in one side panel. It does not do any other task.
 ```
 
 ### Permission justifications
@@ -131,7 +130,7 @@ No. All code ships inside the extension package.
 
 ### Data usage
 
-Check only **Authentication information**. Leave every other category unchecked.
+Check **Authentication information** and **Website content**. Leave every other category unchecked.
 
 | Category | Collect? | Why |
 |---|---|---|
@@ -143,7 +142,7 @@ Check only **Authentication information**. Leave every other category unchecked.
 | Location | No | Not applicable. |
 | Web history | No | The item reads usage API responses only. |
 | User activity | No | No click, key, or scroll tracking. |
-| Website content | No | The item reads usage API responses, not page content. |
+| Website content | **Yes** | The Gemini check reads two sign-in tokens from the gemini.google.com page. Nothing leaves the device. |
 
 Certify all three disclosures:
 - Does not sell or transfer user data to third parties

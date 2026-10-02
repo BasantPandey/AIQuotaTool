@@ -47,6 +47,19 @@ const SAMPLE = `(() => {
   });
 })()`;
 
+// Store review flags third-party logos in store art, so each provider mark becomes a plain letter tile.
+const LETTER_TILES = `(() => {
+  const ids = ['claude', 'copilot', 'codex', 'grok', 'gemini', 'cursor', 'deepseek', 'kimi'];
+  const style = document.createElement('style');
+  style.textContent = \`
+    [data-service] { background: #3a4060 !important; container-type: size; }
+    [data-service] > svg { display: none; }
+    [data-service]::after { color: #fff; font: 700 55cqh/1 'Segoe UI', system-ui, sans-serif; }
+    \${ids.map((id) => \`[data-service='\${id}']::after { content: '\${id[0].toUpperCase()}'; }\`).join('')}
+  \`;
+  document.head.append(style);
+})()`;
+
 async function capturePanels(chrome) {
   const panelUrl = `chrome-extension://${chrome.extId}/src/sidepanel/index.html`;
   const out = join(storeDir, 'panels');
@@ -54,6 +67,7 @@ async function capturePanels(chrome) {
 
   await chrome.view(360, 720, 2, true);
   await chrome.open(panelUrl);
+  await chrome.evaluate(LETTER_TILES);
   await chrome.shot(join(out, 'welcome-dark.png'));
 
   await chrome.evaluate(SAMPLE);

@@ -39,6 +39,7 @@ export function ProviderLogo({ service, size = 32 }: { service: ServiceId; size?
   return (
     <span
       aria-hidden
+      data-service={service}
       style={{
         width: size,
         height: size,

@@ -147,7 +147,7 @@
                 <div class="sub" style="font-size:16px;margin-top:6px">Every AI limit, one glance</div>
               </div>
             </div>
-            <div style="position:relative">${bars([['Claude', 42], ['Codex', 76], ['Cursor', 4]], 15)}</div>
+            <div style="position:relative">${bars([['Session', 42], ['Weekly', 76], ['Monthly', 4]], 15)}</div>
           </div>`,
         marquee: () => `
           <div class="canvas" style="width:1400px;height:560px">
@@ -155,7 +155,7 @@
             <div style="position:absolute;left:100px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center;gap:24px">
               <div style="display:flex;align-items:center;gap:20px">${mark(88)}<span class="name" style="font-size:60px">AI Quota Tool</span></div>
               <h1 class="headline" style="font-size:44px">See every AI limit before it stops your work</h1>
-              <p class="sub" style="font-size:22px">Claude · Codex · Gemini · Cursor · Copilot · Grok</p>
+              <p class="sub" style="font-size:22px">Session, weekly and monthly limits in one side panel</p>
             </div>
             <img class="panel fade" src="panels/dashboard-dark.png" style="position:absolute;right:120px;top:60px;height:760px" />
           </div>`,
@@ -163,7 +163,7 @@
           shot(
             'All your AI tools',
             'Every AI limit in one glance',
-            'Session, weekly and monthly limits for Claude, Codex, Gemini, Cursor and more. Live in the Chrome side panel.',
+            'Session, weekly and monthly limits for all your AI tools. Live in the Chrome side panel.',
             panel('dashboard-dark'),
           ),
         shot2: () =>
