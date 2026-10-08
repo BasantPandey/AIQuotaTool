@@ -76,6 +76,11 @@ describe('deriveConnections', () => {
       cursor: false,
       deepseek: false,
       kimi: false,
+      anthropic: false,
+      openai: false,
+      xai: false,
+      'cursor-team': false,
+      'copilot-premium': false,
     });
   });
 
@@ -89,6 +94,11 @@ describe('deriveConnections', () => {
       cursor: false,
       deepseek: false,
       kimi: false,
+      anthropic: false,
+      openai: false,
+      xai: false,
+      'cursor-team': false,
+      'copilot-premium': false,
     });
   });
 });

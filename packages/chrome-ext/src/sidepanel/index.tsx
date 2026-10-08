@@ -2,22 +2,25 @@ import { StrictMode, Suspense, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
-import type { QuotaState, ChromeServiceId } from '@ai-quota-tool/core';
+import type { ChromeServiceId, KeyRecord, QuotaState } from '@ai-quota-tool/core';
 import {
+  connectionKindOf,
   DEFAULT_ENABLED_SERVICES,
   deriveConnections,
   ENABLED_SERVICES_KEY,
   filterEnabled,
+  parseKeyRecords,
   resolveEnabledServices,
   CHROME_SERVICES,
   SERVICE_URLS,
 } from '@ai-quota-tool/core';
-import { LowestLimit, ProviderCard, ProviderLogo, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
+import { KeyGroupCard, LowestLimit, ProviderCard, ProviderLogo, QuotaErrorFallback, QuotaLoadingFallback } from '@ai-quota-tool/ui';
 import '@ai-quota-tool/ui/styles.css';
 import './styles.css';
-import { API_KEYS_STORAGE_KEY, type StoredApiKeys } from '../background/api-keys.js';
+import { KEY_LIST_STORAGE_KEY } from '../background/api-keys.js';
 import { GITHUB_TOKEN_STORAGE_KEY } from '../background/github-auth.js';
-import { CopilotConnectButton, ProvidersView } from './ProvidersView.js';
+import { groupKeys, keyCaption, PLUS } from './KeysView.js';
+import { CopilotConnectButton, ProvidersView, type ProvidersTab } from './ProvidersView.js';
 import { BrandMark, SERVICE_HINTS } from './shared.js';
 
 const CONSENT_KEY = 'privacyConsent';
@@ -37,16 +40,6 @@ const queryClient = new QueryClient({
   },
 });
 
-function apiKeyTails(keys: StoredApiKeys): Partial<Record<ChromeServiceId, string>> {
-  const tails: Partial<Record<ChromeServiceId, string>> = {};
-  for (const service of CHROME_SERVICES) {
-    if (service.auth !== 'api_key') continue;
-    const key = keys[service.id];
-    if (typeof key === 'string' && key.length >= 4) tails[service.id] = key.slice(-4);
-  }
-  return tails;
-}
-
 function Welcome() {
   const [picked, setPicked] = useState<ChromeServiceId[]>(DEFAULT_ENABLED_SERVICES);
   return (
@@ -54,13 +47,10 @@ function Welcome() {
       <BrandMark size={44} />
       <h1>See every AI limit in one place</h1>
       <p className="lead">Pick the tools you use. You can change this at any time.</p>
-      {CHROME_SERVICES.map((service) => (
+      {CHROME_SERVICES.filter((service) => service.auth !== 'api_key').map((service) => (
         <label className="row" key={service.id} style={{ alignItems: 'center', cursor: 'pointer' }}>
           <ProviderLogo service={service.id} size={28} />
-          <span className="row-main row-title">
-            {service.label}
-            {service.auth === 'api_key' && <span className="row-hint"> · API balance</span>}
-          </span>
+          <span className="row-main row-title">{service.label}</span>
           <input
             className="switch"
             style={{ marginTop: 0 }}
@@ -75,6 +65,9 @@ function Welcome() {
           />
         </label>
       ))}
+      <p className="row-hint" style={{ margin: '4px 2px 0' }}>
+        You can add API keys on the Providers screen later.
+      </p>
       <div className="privacy">
         <strong>Private by design.</strong> The extension reads your quota with the sessions you already
         have in this browser. Your data stays on this device. There is no server and no account.
@@ -98,24 +91,66 @@ function Welcome() {
 function CardAction({
   service,
   githubConnected,
-  onProviders,
 }: {
   service: (typeof CHROME_SERVICES)[number];
   githubConnected: boolean;
-  onProviders: () => void;
 }) {
   if (service.auth === 'oauth') return <CopilotConnectButton connected={githubConnected} />;
-  if (service.auth === 'api_key') {
-    return (
-      <button className="btn btn-primary" onClick={onProviders}>
-        Add API key
-      </button>
-    );
-  }
   return (
     <a className="btn" href={`https://${SERVICE_URLS[service.id]}`} target="_blank" rel="noreferrer">
       Open {SERVICE_URLS[service.id]}
     </a>
+  );
+}
+
+function KeyIcon() {
+  return (
+    <span className="keys-icon" aria-hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="8" cy="15" r="4" />
+        <path d="M10.8 12.2 20 3M16 7l3 3M18 5l2 2" />
+      </svg>
+    </span>
+  );
+}
+
+/** Shown in the plan grid when there is no API key yet. */
+function NoKeysCard({ onAdd }: { onAdd: () => void }) {
+  return (
+    <section className="card" aria-label="API keys">
+      <header className="card-head">
+        <KeyIcon />
+        <span className="card-title">API keys</span>
+      </header>
+      <p className="card-note">See the balance or spend of your API keys. You can add many keys for one provider.</p>
+      <div className="card-action">
+        <button className="btn btn-primary" onClick={onAdd}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+            <path d={PLUS} />
+          </svg>{' '}
+          Add a key
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** One card for each key provider, under its own heading. */
+function KeysSection({ keys, states, onManage }: { keys: KeyRecord[]; states: QuotaState[]; onManage: () => void }) {
+  return (
+    <section aria-label="API keys">
+      <div className="section-head">
+        <span className="hero-kicker">API keys</span>
+        <button className="btn btn-ghost keys-manage" onClick={onManage}>
+          Manage keys
+        </button>
+      </div>
+      <div className="cards">
+        {groupKeys(keys, states).map(({ service, items }) => (
+          <KeyGroupCard key={service} service={service} caption={keyCaption(service)} items={items} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -128,9 +163,9 @@ function Panel() {
     queryKey: ['github-connected'],
     queryFn: () => readStorage<string>(GITHUB_TOKEN_STORAGE_KEY, '').then((t) => t.length > 0),
   });
-  const { data: keyTails } = useSuspenseQuery({
-    queryKey: ['api-key-tails'],
-    queryFn: () => readStorage<StoredApiKeys>(API_KEYS_STORAGE_KEY, {}).then(apiKeyTails),
+  const { data: keys } = useSuspenseQuery({
+    queryKey: ['api-keys'],
+    queryFn: () => readStorage<unknown>(KEY_LIST_STORAGE_KEY, []).then(parseKeyRecords),
   });
   const { data: consent } = useSuspenseQuery({
     queryKey: ['privacy-consent'],
@@ -141,11 +176,23 @@ function Panel() {
     queryFn: () => readStorage<unknown>(ENABLED_SERVICES_KEY, undefined).then(resolveEnabledServices),
   });
   const [view, setView] = useState<'dashboard' | 'providers'>('dashboard');
+  const [tab, setTab] = useState<ProvidersTab>('plans');
+  const [startAdding, setStartAdding] = useState(false);
+
+  function openProviders(next: ProvidersTab, adding = false) {
+    setTab(next);
+    setStartAdding(adding);
+    setView('providers');
+  }
 
   if (!consent) return <Welcome />;
 
-  const states = filterEnabled(allStates, enabled);
-  const visible = CHROME_SERVICES.filter((service) => enabled.includes(service.id));
+  // Plan readings follow the provider switches. A key reading shows while its key exists.
+  const states = [
+    ...filterEnabled(allStates, enabled).filter((s) => connectionKindOf(s) === 'account'),
+    ...allStates.filter((s) => connectionKindOf(s) === 'key'),
+  ];
+  const visible = CHROME_SERVICES.filter((service) => service.auth !== 'api_key' && enabled.includes(service.id));
 
   return (
     <div className="shell">
@@ -168,7 +215,7 @@ function Panel() {
               <BrandMark />
               <span className="brand-name">AI Quota</span>
             </div>
-            <button className="btn" onClick={() => setView('providers')}>
+            <button className="btn" onClick={() => openProviders('plans')}>
               Providers
             </button>
           </>
@@ -180,41 +227,43 @@ function Panel() {
           enabled={enabled}
           connections={deriveConnections(states)}
           githubConnected={githubConnected}
-          apiKeyTails={keyTails}
+          keys={keys}
           states={states}
+          tab={tab}
+          onTab={(next) => {
+            setTab(next);
+            setStartAdding(false);
+          }}
+          startAdding={startAdding}
         />
-      ) : visible.length === 0 ? (
+      ) : visible.length === 0 && keys.length === 0 ? (
         <div className="empty">
           <BrandMark size={40} />
           <h2>No providers yet</h2>
           <p>Add the AI tools you use to see their limits here.</p>
-          <button className="btn btn-primary" onClick={() => setView('providers')}>
+          <button className="btn btn-primary" onClick={() => openProviders('plans')}>
             Add providers
           </button>
         </div>
       ) : (
         <main className="content">
-          <LowestLimit states={states} />
+          <LowestLimit states={states.filter((s) => connectionKindOf(s) === 'account')} />
           <div className="cards">
             {visible.map((service) => {
-              const state = states.find((s) => s.service === service.id);
+              const state = states.find((s) => s.service === service.id && connectionKindOf(s) === 'account');
               return (
                 <ProviderCard
                   key={service.id}
                   service={service.id}
                   {...(state != null ? { state } : {})}
                   hint={SERVICE_HINTS[service.id]}
-                  action={
-                    <CardAction
-                      service={service}
-                      githubConnected={githubConnected}
-                      onProviders={() => setView('providers')}
-                    />
-                  }
+                  action={<CardAction service={service} githubConnected={githubConnected} />}
                 />
               );
             })}
+            {keys.length === 0 && <NoKeysCard onAdd={() => openProviders('keys', true)} />}
           </div>
+          {keys.length > 0 && <KeysSection keys={keys} states={states} onManage={() => openProviders('keys')} />}
         </main>
       )}
 
@@ -233,7 +282,7 @@ function Panel() {
 const QUERY_BY_KEY: Record<string, string> = {
   quotaStates: 'quota-states',
   [GITHUB_TOKEN_STORAGE_KEY]: 'github-connected',
-  [API_KEYS_STORAGE_KEY]: 'api-key-tails',
+  [KEY_LIST_STORAGE_KEY]: 'api-keys',
   [CONSENT_KEY]: 'privacy-consent',
   [ENABLED_SERVICES_KEY]: 'enabled-services',
 };

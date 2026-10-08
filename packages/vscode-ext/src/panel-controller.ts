@@ -7,7 +7,7 @@ import {
   connectionIdOf,
   isAdminKeyService,
   isUniqueKeyName,
-  KEY_SERVICES,
+  VSCODE_KEY_SERVICES,
   normalizeApiKey,
   SERVICE_IDS,
   SERVICE_LABELS,
@@ -292,7 +292,7 @@ export class PanelController {
   }
 
   private async addKey(service: ServiceId, rawName: string, rawValue: string, adminConfirmed: boolean): Promise<void> {
-    if (!KEY_SERVICES.includes(service)) return;
+    if (!VSCODE_KEY_SERVICES.includes(service)) return;
     if (isAdminKeyService(service) && !adminConfirmed) {
       this.form({ target: 'add_key', status: 'error', detail: 'Tick the box to confirm that this is an Admin key.' });
       return;

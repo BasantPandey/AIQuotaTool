@@ -31,7 +31,8 @@ interface Props {
   action?: React.ReactNode;
 }
 
-function freshness(lastUpdated: number): string {
+/** "Updated just now", "Updated 5m ago" or "Updated 2h ago". */
+export function freshness(lastUpdated: number): string {
   const seconds = Math.floor((Date.now() - lastUpdated) / 1000);
   if (seconds < 90) return 'Updated just now';
   const minutes = Math.floor(seconds / 60);
@@ -97,10 +98,12 @@ export function ProviderCard({ service, state, hint, pendingText, action }: Prop
             <div className={state?.honesty === 'balance_empty' ? 'balance-total num zero' : 'balance-total num'}>
               {formatAccountBalance(row.total, row.currency)}
             </div>
-            <div className="balance-sub">
-              Granted {formatAccountBalance(row.granted, row.currency)} · Topped up{' '}
-              {formatAccountBalance(row.toppedUp, row.currency)}
-            </div>
+            {row.granted != null && row.toppedUp != null && (
+              <div className="balance-sub">
+                Granted {formatAccountBalance(row.granted, row.currency)} · Topped up{' '}
+                {formatAccountBalance(row.toppedUp, row.currency)}
+              </div>
+            )}
           </div>
         ))}
 

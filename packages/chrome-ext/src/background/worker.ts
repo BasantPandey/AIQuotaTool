@@ -1,13 +1,18 @@
 import type { LowQuotaArmed, PanelMessage, QuotaState, ChromeServiceId } from '@ai-quota-tool/core';
 import {
+  connectionIdOf,
+  connectionKindOf,
   decideLowQuotaAlerts,
   DEFAULT_ENABLED_SERVICES,
   deriveBadge,
   ENABLED_SERVICES_KEY,
   filterEnabled,
   initialLowQuotaArmed,
+  isUniqueKeyName,
   mergeQuotaStates,
+  needsTeamId,
   resolveEnabledServices,
+  serviceById,
   upsertQuotaState,
 } from '@ai-quota-tool/core';
 import {
@@ -16,12 +21,8 @@ import {
   clearResetNotifications,
   handleAlarm,
 } from './notifications.js';
-import {
-  API_KEYS_STORAGE_KEY,
-  clearServiceApiKey,
-  saveServiceApiKey,
-  type StoredApiKeys,
-} from './api-keys.js';
+import { addKey, cleanSecret, keysWithSecrets, listKeys, migrateLegacyKeys, removeKey, updateKey } from './api-keys.js';
+import { fetchKeyReading, validateKey } from './key-fetchers.js';
 import { disconnectGitHub, GITHUB_TOKEN_STORAGE_KEY } from './github-auth.js';
 import { createFetchers } from './providers.js';
 
@@ -62,7 +63,13 @@ async function storeMerged(
 ): Promise<void> {
   const stored = await chrome.storage.local.get(['quotaStates']);
   const existing: QuotaState[] = (stored['quotaStates'] as QuotaState[] | undefined) ?? [];
-  const merged = filterEnabled(merge(existing), enabled);
+  const keyIds = new Set((await listKeys()).map((key) => key.id));
+  // Plan readings follow the provider switches. A key reading stays while its key exists.
+  const merged = merge(existing).filter((state) =>
+    connectionKindOf(state) === 'key'
+      ? keyIds.has(connectionIdOf(state))
+      : serviceById(state.service).auth !== 'api_key' && filterEnabled([state], enabled).length === 1,
+  );
   await chrome.storage.local.set({ quotaStates: merged, lastPollAt: Date.now() });
   await afterMerge(merged);
 }
@@ -77,7 +84,11 @@ async function afterMerge(merged: QuotaState[]): Promise<void> {
 async function pollAll(): Promise<void> {
   const enabled = await readEnabled();
   const active = fetchers.filter((f) => enabled.includes(f.serviceId));
-  const results = await Promise.allSettled(active.map((f) => f.fetch()));
+  const keys = await keysWithSecrets();
+  const results = await Promise.allSettled([
+    ...active.map((f) => f.fetch()),
+    ...keys.map(({ key, secret }) => fetchKeyReading(key, secret)),
+  ]);
 
   const states: QuotaState[] = [];
   for (const result of results) {
@@ -149,16 +160,15 @@ chrome.runtime.onMessage.addListener(
         });
       return true; // async sendResponse
     }
-    if (msg.type === 'api_key_connect' || msg.type === 'api_key_disconnect') {
+    if (msg.type === 'api_key_add' || msg.type === 'api_key_update' || msg.type === 'api_key_remove') {
       const action =
-        msg.type === 'api_key_connect'
-          ? saveServiceApiKey(msg.service, msg.apiKey)
-          : clearServiceApiKey(msg.service);
+        msg.type === 'api_key_add'
+          ? addCheckedKey(msg)
+          : msg.type === 'api_key_update'
+            ? updateCheckedKey(msg)
+            : removeKeyAndReading(msg.id);
       action
-        .then(async () => {
-          await pollAll();
-          sendResponse({ ok: true });
-        })
+        .then(() => sendResponse({ ok: true }))
         .catch((err: unknown) => {
           sendResponse({
             ok: false,
@@ -171,29 +181,61 @@ chrome.runtime.onMessage.addListener(
   },
 );
 
+/** Test the key with one call, then store it with its first reading. Throws a message for the user. */
+async function addCheckedKey(msg: Extract<PanelMessage, { type: 'api_key_add' }>): Promise<void> {
+  const secret = cleanSecret(msg.service, msg.apiKey);
+  const teamId = msg.teamId?.trim() ?? '';
+  if (needsTeamId(msg.service) && !teamId) throw new Error('Paste the team ID.');
+  const name = msg.name.trim();
+  if (name && !isUniqueKeyName(name, msg.service, await listKeys())) throw new Error('Another key for this provider has this name.');
+  const draft = { id: 'draft', service: msg.service, name, last4: secret.slice(-4), ...(teamId ? { teamId } : {}) };
+  const reading = await validateKey(draft, secret);
+  const key = await addKey(msg.service, name, secret, teamId || undefined);
+  await storeMerged((existing) => upsertQuotaState(existing, { ...reading, connectionId: key.id }), await readEnabled());
+}
+
+/** A rename saves at once. A new secret or team ID gets the test call first, and its reading replaces the old one. */
+async function updateCheckedKey(msg: Extract<PanelMessage, { type: 'api_key_update' }>): Promise<void> {
+  const row = (await keysWithSecrets()).find(({ key }) => key.id === msg.id);
+  if (!row) throw new Error('This key is not saved any more.');
+  const { key } = row;
+  const name = msg.name.trim();
+  if (!name) throw new Error('Type a name for the key.');
+  if (!isUniqueKeyName(name, key.service, await listKeys(), key.id)) throw new Error('Another key for this provider has this name.');
+  const secret = msg.apiKey?.trim() ? cleanSecret(key.service, msg.apiKey) : undefined;
+  const teamId = msg.teamId?.trim();
+  if (needsTeamId(key.service) && teamId === '') throw new Error('Paste the team ID.');
+  const changed = secret != null || (teamId != null && teamId !== key.teamId);
+  const reading = changed
+    ? await validateKey({ ...key, ...(teamId ? { teamId } : {}) }, secret ?? row.secret)
+    : undefined;
+  await updateKey(key.id, { name, ...(secret ? { secret } : {}), ...(teamId ? { teamId } : {}) });
+  if (reading) await storeMerged((existing) => upsertQuotaState(existing, { ...reading, connectionId: key.id }), await readEnabled());
+}
+
+async function removeKeyAndReading(id: string): Promise<void> {
+  await removeKey(id);
+  await storeMerged((existing) => existing, await readEnabled());
+}
+
 // Top-level call runs on every SW activation (install, startup, and every alarm wake-up).
 ensureAlarms();
 
-/**
- * Users from before the provider list keep every provider that has a saved
- * API key. New users pick providers on the welcome screen.
- */
+/** Users from before the provider list keep every plan provider. New users pick them on the welcome screen. */
 async function migrateEnabledServices(): Promise<void> {
-  const stored = await chrome.storage.local.get([ENABLED_SERVICES_KEY, API_KEYS_STORAGE_KEY]);
+  const stored = await chrome.storage.local.get([ENABLED_SERVICES_KEY]);
   if (stored[ENABLED_SERVICES_KEY] !== undefined) return;
-  const keys = (stored[API_KEYS_STORAGE_KEY] as StoredApiKeys | undefined) ?? {};
-  const withKeys = Object.keys(keys) as ChromeServiceId[];
-  await chrome.storage.local.set({
-    [ENABLED_SERVICES_KEY]: resolveEnabledServices([...DEFAULT_ENABLED_SERVICES, ...withKeys]),
-  });
+  await chrome.storage.local.set({ [ENABLED_SERVICES_KEY]: DEFAULT_ENABLED_SERVICES });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  migrateEnabledServices().catch(console.error);
+  migrateLegacyKeys()
+    .then(migrateEnabledServices)
+    .then(pollAll)
+    .catch(console.error);
   ensureAlarms();
   // One-time cleanup of the removed V1 WS client's keepalive alarm.
   chrome.alarms.clear(LEGACY_WS_KEEPALIVE_ALARM);
-  pollAll().catch(console.error);
 });
 
 chrome.runtime.onStartup.addListener(() => {

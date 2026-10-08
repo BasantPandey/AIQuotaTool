@@ -26,11 +26,15 @@ const MARKS: Record<ServiceId, (props: { size?: number }) => React.ReactNode> = 
   openrouter: OpenRouterLogo,
   anthropic: AnthropicLogo,
   openai: CodexLogo,
+  xai: GrokLogo,
+  'cursor-team': CursorLogo,
+  'copilot-premium': CopilotLogo,
 };
 
 /** Tile colors where the catalog card color clashes with the mark. */
 const TILE_OVERRIDES: Partial<Record<ServiceId, string>> = {
   copilot: '#1d1830',
+  'copilot-premium': '#1d1830',
 };
 
 /** Brand mark on a brand-color tile, so white marks read in light and dark themes. */

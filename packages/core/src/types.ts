@@ -58,8 +58,10 @@ export interface AccountBalance {
   currency: string;
   /** Total available, including granted credit and topped-up funds. */
   total: string;
-  granted: string;
-  toppedUp: string;
+  /** Free credit part of the total. Omit when the provider does not split the total. */
+  granted?: string;
+  /** Paid part of the total. Omit when the provider does not split the total. */
+  toppedUp?: string;
 }
 
 /** Prepaid balance reading. This is money left, not a remaining percent. */
@@ -157,8 +159,10 @@ export type WsMessage =
 /** Messages the Chrome side panel sends to the service worker. */
 export type PanelMessage =
   | { type: 'github_disconnect' }
-  | { type: 'api_key_connect'; service: ServiceId; apiKey: string }
-  | { type: 'api_key_disconnect'; service: ServiceId }
+  | { type: 'api_key_add'; service: ServiceId; name: string; apiKey: string; teamId?: string }
+  | { type: 'api_key_remove'; id: string }
+  /** Rename a key. A new `apiKey` or `teamId` gets a test call first. */
+  | { type: 'api_key_update'; id: string; name: string; apiKey?: string; teamId?: string }
   | { type: 'content_quota'; payload: QuotaState };
 
 

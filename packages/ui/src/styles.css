@@ -110,6 +110,29 @@ html, body {
 }
 .card-head { display: flex; align-items: center; gap: 10px; min-height: 30px; }
 .card-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+
+/* Named API keys: one card for each provider, one row for each key. */
+.card-caption { display: block; margin-top: 1px; font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--aq-muted); }
+.key-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.key-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 0 10px 40px;
+  border-top: 1px solid var(--aq-border);
+}
+.key-row.with-action { grid-template-columns: minmax(0, 1fr) auto auto; }
+.key-main { min-width: 0; }
+.key-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
+.key-tail { color: var(--aq-faint); white-space: nowrap; }
+.key-sub { margin-top: 2px; font-size: 11px; line-height: 1.4; color: var(--aq-muted); }
+.key-value { font-size: 18px; font-weight: 600; text-align: right; white-space: nowrap; }
+.key-value.bad { color: var(--aq-critical); font-size: 13px; }
+.key-unit { margin-left: 3px; font: 500 11px var(--aq-font); letter-spacing: 0; color: var(--aq-muted); }
+.key-value.faint { color: var(--aq-faint); font-size: 12px; }
+.key-meter { grid-column: 1 / -1; margin-top: 8px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 2px 8px; }
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--aq-muted); white-space: nowrap; }
 .card-note { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: var(--aq-muted); }
 .card-action { margin-top: 10px; }

@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import type { QuotaState, ServiceId } from '@ai-quota-tool/core';
-import { defaultKeyName, isAdminKeyService, KEY_SERVICES, keyCardType, SERVICE_LABELS } from '@ai-quota-tool/core';
+import { defaultKeyName, isAdminKeyService, VSCODE_KEY_SERVICES, keyCardType, SERVICE_LABELS } from '@ai-quota-tool/core';
 import { ProviderLogo } from '@ai-quota-tool/ui';
 import type { FormStatus, KeyRow } from './protocol.js';
 import { send, useForm } from './store.js';
@@ -31,7 +31,7 @@ function useCloseOnOk(target: string, onClose: () => void): FormStatus {
 }
 
 function AddKeyForm({ keys, onClose }: { keys: KeyRow[]; onClose: () => void }) {
-  const [service, setService] = useState<ServiceId>(KEY_SERVICES[0]!);
+  const [service, setService] = useState<ServiceId>(VSCODE_KEY_SERVICES[0]!);
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
   const [adminConfirmed, setAdminConfirmed] = useState(false);
@@ -56,7 +56,7 @@ function AddKeyForm({ keys, onClose }: { keys: KeyRow[]; onClose: () => void }) 
             setAdminConfirmed(false);
           }}
         >
-          {KEY_SERVICES.map((id) => (
+          {VSCODE_KEY_SERVICES.map((id) => (
             <option key={id} value={id}>
               {SERVICE_LABELS[id]}
               {isAdminKeyService(id) ? ' (Admin key)' : ''}
