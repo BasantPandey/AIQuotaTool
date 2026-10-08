@@ -3,18 +3,29 @@ import { mapCodexUsage, sessionExpired, type WhamUsageResponse } from '@ai-quota
 import type { ServiceFetcher } from './base.js';
 
 // Confirmed via reverse-engineering of chatgpt.com network traffic.
+const CODEX_SESSION_ENDPOINT = 'https://chatgpt.com/api/auth/session';
 const CODEX_USAGE_ENDPOINT = 'https://chatgpt.com/backend-api/wham/usage';
 
 export class CodexFetcher implements ServiceFetcher {
   readonly serviceId = 'codex' as const;
 
   async fetch(): Promise<QuotaState> {
+    // wham/usage returns 401 to cookies alone. It needs the short-lived
+    // accessToken that /api/auth/session gives for the signed-in cookies.
+    const sessionRes = await fetch(CODEX_SESSION_ENDPOINT, {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+    if (!sessionRes.ok) throw new Error(`ChatGPT session API returned ${sessionRes.status}`);
+    const session = (await sessionRes.json()) as { accessToken?: unknown };
+    // An empty {} means nobody is signed in to chatgpt.com.
+    if (typeof session.accessToken !== 'string' || !session.accessToken) {
+      return sessionExpired('codex');
+    }
+
     const res = await fetch(CODEX_USAGE_ENDPOINT, {
       credentials: 'include',
-      headers: {
-        Accept: 'application/json',
-        Referer: 'https://chatgpt.com/codex/settings/usage',
-      },
+      headers: { Accept: 'application/json', Authorization: `Bearer ${session.accessToken}` },
     });
 
     // 401 = session truly expired: drop the ring, signal re-auth.
