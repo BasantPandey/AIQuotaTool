@@ -1,10 +1,11 @@
 /**
- * Records a VS Code promo video. Opens a page in packages/vscode-ext/docs/shots/ in headless Chrome,
- * renders each frame, and pipes it to ffmpeg (1920x1080, 30 fps).
- *   (default)     promo.html      -> docs/promo.mp4: install, sign in, add a key, see the quota.
- *   --video keys  promo-keys.html -> docs/promo-keys.mp4: add API keys, set a budget, see the keys.
+ * Records a promo video. Opens a promo page in headless Chrome, renders each frame,
+ * and pipes it to ffmpeg (1920x1080, 30 fps).
+ *   (default)      VS Code promo.html      -> packages/vscode-ext/docs/promo.mp4: install, sign in, add a key, see the quota.
+ *   --video keys   VS Code promo-keys.html -> packages/vscode-ext/docs/promo-keys.mp4: add API keys, set a budget, see the keys.
+ *   --video chrome Chrome store/promo.html -> packages/chrome-ext/store/promo.mp4: search, add, pick providers, add keys, see the data.
  *
- * Run: pnpm --filter ai-quota-tool-vscode build && node scripts/vscode-video.mjs [--video keys]
+ * Run: build the extension of the video first, then node scripts/promo-video.mjs [--video keys|chrome]
  * Check single frames first: add --stills 2,9.5,20 (writes <name>-<t>.png to the OS temp folder).
  * Needs Google Chrome and ffmpeg on the PATH.
  */
@@ -17,24 +18,32 @@ import { join } from 'node:path';
 import { launchChrome, MARK_SVG, root, serve } from './asset-kit.mjs';
 
 const FPS = 30;
+// page: the promo page. ready: a selector in the panel iframe that shows the real panel is up.
+const VIDEOS = {
+  promo: { page: 'packages/vscode-ext/docs/shots/promo.html', out: 'packages/vscode-ext/docs/promo.mp4', ready: '.tabs' },
+  keys: { page: 'packages/vscode-ext/docs/shots/promo-keys.html', out: 'packages/vscode-ext/docs/promo-keys.mp4', ready: '.tabs' },
+  chrome: { page: 'packages/chrome-ext/store/promo.html', out: 'packages/chrome-ext/store/promo.mp4', ready: '.welcome' },
+};
 const arg = (flag) => {
   const i = process.argv.indexOf(flag);
   return i > 0 ? process.argv[i + 1] : undefined;
 };
-const name = arg('--video') === 'keys' ? 'promo-keys' : 'promo';
-const out = join(root, `packages/vscode-ext/docs/${name}.mp4`);
+const name = arg('--video') ?? 'promo';
+const video = VIDEOS[name];
+if (!video) throw new Error(`Unknown --video ${name}. Use one of: ${Object.keys(VIDEOS).join(', ')}`);
+const out = join(root, video.out);
 const stills = arg('--stills')?.split(',').map(Number) ?? null;
 
 const server = await serve();
 const chrome = await launchChrome();
 try {
   await chrome.view(1920, 1080, 1, true);
-  await chrome.open(`http://127.0.0.1:${server.address().port}/packages/vscode-ext/docs/shots/${name}.html`);
+  await chrome.open(`http://127.0.0.1:${server.address().port}/${video.page}`);
   const duration = await chrome.evaluate(`(async () => {
     setMark(${JSON.stringify(MARK_SVG(128))});
     await document.fonts.ready;
     await Promise.all([...document.images].map((i) => i.decode()));
-    while (!document.getElementById('panel').contentDocument?.querySelector('.tabs')) await new Promise((r) => setTimeout(r, 50));
+    while (!document.getElementById('panel').contentDocument?.querySelector(${JSON.stringify(video.ready)})) await new Promise((r) => setTimeout(r, 50));
     return DURATION;
   })()`);
 
