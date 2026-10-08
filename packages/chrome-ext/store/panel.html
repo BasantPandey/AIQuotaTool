@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  Hosts the real built side panel (dist/sidepanel.js) outside the extension. Used by promo.html.
+  chrome.storage.local lives in memory. The parent page handles chrome.runtime.sendMessage.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      /* Store review flags third-party logos in store art, so each provider mark becomes a plain letter tile. */
+      [data-service] { background: #3a4060 !important; container-type: size; }
+      [data-service] > svg { display: none; }
+      [data-service]::after { color: #fff; font: 700 55cqh/1 'Segoe UI', system-ui, sans-serif; }
+      [data-service='claude']::after { content: 'C'; }
+      [data-service='copilot']::after { content: 'C'; }
+      [data-service='codex']::after { content: 'C'; }
+      [data-service='grok']::after { content: 'G'; }
+      [data-service='gemini']::after { content: 'G'; }
+      [data-service='cursor']::after { content: 'C'; }
+      [data-service='deepseek']::after { content: 'D'; }
+      [data-service='kimi']::after { content: 'K'; }
+      html { scrollbar-width: none; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      const data = {};
+      const listeners = [];
+      const local = {
+        get(keys, done) {
+          const result = Object.fromEntries([keys].flat().filter((k) => k in data).map((k) => [k, structuredClone(data[k])]));
+          done?.(result);
+          return Promise.resolve(result);
+        },
+        set(items) {
+          const changes = {};
+          for (const [key, value] of Object.entries(items)) {
+            changes[key] = { oldValue: data[key], newValue: value };
+            data[key] = structuredClone(value);
+          }
+          for (const listener of listeners) listener(changes);
+          return Promise.resolve();
+        },
+        onChanged: { addListener: (listener) => listeners.push(listener) },
+      };
+      window.chrome = {
+        storage: { local },
+        runtime: { sendMessage: (message) => Promise.resolve(window.parent.onPanelMessage?.(message) ?? { ok: true }) },
+      };
+    </script>
+    <script type="module">
+      // The CSS file name has a build hash, so read it from the built page.
+      const page = await (await fetch('../dist/src/sidepanel/index.html')).text();
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `../dist/${page.match(/href="\/(assets\/[^"]+\.css)"/)[1]}`;
+      await new Promise((resolve) => {
+        link.onload = resolve;
+        document.head.append(link);
+      });
+      await import('../dist/sidepanel.js');
+    </script>
+  </body>
+</html>

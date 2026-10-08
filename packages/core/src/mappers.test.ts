@@ -119,6 +119,25 @@ describe('mapCodexUsage', () => {
     expect(state.weeklyResetsAt).toBeUndefined();
   });
 
+  it('maps the free plan 30-day window to monthly, not weekly', () => {
+    const state = mapCodexUsage(
+      {
+        plan_type: 'free',
+        rate_limit: {
+          limit_reached: false,
+          primary_window: { used_percent: 0, limit_window_seconds: 30 * 24 * H, reset_after_seconds: 30 * 24 * H, reset_at: 1_793_815_454 },
+          secondary_window: null,
+        },
+      },
+      1,
+    );
+    expect(state.monthlyPct).toBe(100);
+    expect(state.monthlyResetsAt).toBe(1_793_815_454_000);
+    expect(state.sessionPct).toBeUndefined();
+    expect(state.weeklyPct).toBeUndefined();
+    expect(state.honesty).toBeUndefined();
+  });
+
   it('labels a lone weekly window as weekly, not session', () => {
     const state = mapCodexUsage(
       { rate_limit: { primary_window: { used_percent: 25, limit_window_seconds: 168 * H, reset_at: 1_784_500_000 } } },

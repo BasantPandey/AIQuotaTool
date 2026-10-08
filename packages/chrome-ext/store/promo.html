@@ -1,0 +1,592 @@
+<!doctype html>
+<!--
+  The Chrome promo video: search the store, add the extension, pick providers, add API keys, see the data. 1920x1080.
+  The side panel is the real built panel (panel.html). This page drives it with storage writes and real clicks.
+  Record: node scripts/promo-video.mjs --video chrome
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      :root { --brand-a: #6d7dff; --brand-b: #22d3ee; --tabs: #202124; --bar: #35363a; --fg: #e8eaed; --dim: #9aa0a6; --blue: #8ab4f8; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
+      body {
+        font-family: 'Segoe UI Variable Display', 'Segoe UI', sans-serif; color: #fff;
+        background: radial-gradient(1200px 700px at 15% 0%, #1d2350 0%, transparent 60%),
+          radial-gradient(1000px 700px at 100% 100%, #0f3a4a 0%, transparent 60%), #0a0c1a;
+      }
+      svg { display: block; }
+      .mark svg { width: 100%; height: 100%; }
+      .scene { position: absolute; inset: 0; opacity: 0; }
+      .grad { background: linear-gradient(90deg, var(--brand-a), var(--brand-b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+      #hook { display: grid; place-content: center; justify-items: center; gap: 44px; text-align: center; }
+      #hook h1 { margin: 0; font-size: 76px; font-weight: 600; letter-spacing: -0.02em; }
+      .limit { display: flex; gap: 22px; align-items: center; padding: 26px 34px; border-radius: 16px; background: #1b1d2b; border: 1px solid #3a2a30; box-shadow: 0 30px 80px #0008; text-align: left; }
+      .limit .bang { width: 54px; height: 54px; border-radius: 50%; background: #f14c4c22; color: #f14c4c; display: grid; place-items: center; font: 700 32px/1 'Segoe UI', sans-serif; }
+      .limit b { display: block; font-size: 32px; font-weight: 600; }
+      .limit span { font-size: 24px; color: #a8abbd; }
+
+      .center { display: grid; place-content: center; justify-items: center; text-align: center; }
+      .center .mark { width: 168px; height: 168px; filter: drop-shadow(0 20px 50px #22d3ee40); }
+      .center h1 { margin: 34px 0 0; font-size: 104px; font-weight: 700; letter-spacing: -0.03em; }
+      .center p { margin: 10px 0 0; font-size: 40px; color: #b9bdd6; }
+      .chips { display: flex; gap: 14px; margin-top: 44px; }
+      .chips span { padding: 10px 22px; border-radius: 999px; border: 1px solid #ffffff26; background: #ffffff0d; font-size: 26px; color: #dfe2f5; }
+      .cmd { margin-top: 44px; padding: 18px 30px; border-radius: 12px; background: #000a; border: 1px solid #ffffff22; font-size: 32px; color: #e8e8e8; }
+      .cmd i { font-style: normal; color: var(--brand-b); margin-right: 12px; }
+      .url { margin-top: 26px; font-size: 26px; color: #8d91ab; }
+
+      #cap { position: absolute; left: 0; right: 0; top: 34px; text-align: center; opacity: 0; }
+      #cap .step { display: inline-block; padding: 5px 16px; border-radius: 999px; font: 700 18px/1.2 'Segoe UI', sans-serif; letter-spacing: 0.12em; color: #0a0c1a; background: linear-gradient(90deg, var(--brand-a), var(--brand-b)); }
+      #cap h2 { margin: 10px 0 0; font-size: 52px; line-height: 1.1; font-weight: 650; letter-spacing: -0.02em; }
+      #cap p { position: relative; height: 34px; margin: 10px 0 0; font-size: 26px; color: #b9bdd6; }
+      #cap p span { position: absolute; left: 0; right: 0; opacity: 0; }
+
+      /* The browser window. The camera moves #win inside #view. */
+      #view { position: absolute; left: 288px; top: 204px; width: 1344px; height: 840px; border-radius: 12px; overflow: hidden; opacity: 0; box-shadow: 0 40px 120px #000c, 0 0 0 1px #ffffff1f; background: var(--tabs); }
+      #win { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; transform-origin: 0 0; display: flex; flex-direction: column; font: 13px/1.4 'Segoe UI', sans-serif; color: var(--fg); background: var(--tabs); }
+      .icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+      .tabstrip { height: 40px; flex-shrink: 0; display: flex; align-items: flex-end; padding-left: 8px; }
+      .tab { width: 240px; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 10px 10px 0 0; background: var(--bar); font-size: 12px; }
+      .tab .fav { width: 16px; height: 16px; border-radius: 4px; background: conic-gradient(#8ab4f8 0 25%, #81c995 0 50%, #fdd663 0 75%, #f28b82 0); }
+      .tab .x { margin-left: auto; color: var(--dim); }
+      .newtab { width: 34px; height: 34px; display: grid; place-items: center; color: var(--dim); font-size: 20px; }
+      .winctl { margin-left: auto; align-self: stretch; display: flex; }
+      .winctl span { width: 46px; display: grid; place-items: center; color: var(--dim); }
+
+      .toolbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 8px; background: var(--bar); border-bottom: 1px solid #000; }
+      .tb { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; color: #c4c7c5; position: relative; }
+      .tb.on { background: #ffffff1f; }
+      .omni { flex: 1; height: 32px; margin: 0 6px; border-radius: 16px; background: var(--tabs); display: flex; align-items: center; gap: 10px; padding: 0 14px; font-size: 14px; color: var(--fg); white-space: nowrap; overflow: hidden; }
+      .omni .host { color: var(--fg); }
+      .omni .path { color: var(--dim); }
+      #pinned { width: 0; overflow: hidden; border-radius: 50%; }
+      #pinned .mark { width: 18px; height: 18px; }
+      #badge { position: absolute; right: 0; bottom: 1px; min-width: 18px; height: 14px; padding: 0 4px; border-radius: 4px; font: 700 10px/14px 'Segoe UI', sans-serif; text-align: center; color: #1f1f1f; background: #e3b341; opacity: 0; }
+      .avatar { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #7b8cff, #22d3ee); }
+
+      .body { flex: 1; display: flex; min-height: 0; }
+      .page { flex: 1; min-width: 0; position: relative; overflow: hidden; background: #fff; color: #1f1f1f; }
+      .store-head { height: 64px; display: flex; align-items: center; gap: 28px; padding: 0 24px; border-bottom: 1px solid #e3e3e3; }
+      .store-logo { display: flex; align-items: center; gap: 10px; font-size: 22px; color: #444746; white-space: nowrap; }
+      .store-logo i { width: 28px; height: 28px; border-radius: 7px; background: conic-gradient(#4285f4 0 25%, #34a853 0 50%, #fbbc04 0 75%, #ea4335 0); }
+      .store-search { width: 520px; height: 44px; border-radius: 22px; background: #f0f4f9; display: flex; align-items: center; gap: 12px; padding: 0 18px; font-size: 16px; color: #1f1f1f; }
+      .store-search.focus { background: #fff; box-shadow: 0 1px 6px #0003; }
+      .store-search .ph { color: #747775; }
+      .caret { display: inline-block; width: 1.5px; height: 20px; background: #1f1f1f; margin-left: -10px; }
+      .sv { position: absolute; top: 64px; left: 0; right: 0; bottom: 0; padding: 28px 40px; opacity: 0; }
+      .sv h3 { margin: 0 0 18px; font-size: 24px; font-weight: 500; }
+      .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .tiles div { height: 150px; border-radius: 16px; }
+      .result { display: flex; gap: 18px; align-items: center; padding: 16px; border-radius: 16px; max-width: 760px; }
+      .result.hot { background: #f0f4f9; }
+      .result .mark { width: 64px; height: 64px; flex-shrink: 0; }
+      .result b { display: block; font-size: 17px; font-weight: 600; }
+      .result span { display: block; font-size: 14px; color: #444746; margin-top: 2px; }
+      .skel { height: 96px; display: flex; gap: 18px; align-items: center; padding: 16px; max-width: 760px; }
+      .skel i { width: 64px; height: 64px; border-radius: 14px; background: #eef0f3; }
+      .skel div { flex: 1; display: grid; gap: 10px; }
+      .skel s { display: block; height: 12px; border-radius: 6px; background: #eef0f3; }
+      .d-head { display: flex; gap: 24px; align-items: center; }
+      .d-head .mark { width: 96px; height: 96px; flex-shrink: 0; }
+      .d-head h1 { margin: 0; font-size: 28px; font-weight: 500; }
+      .d-head p { margin: 6px 0 0; color: #444746; font-size: 14px; }
+      #add { margin-left: auto; flex-shrink: 0; height: 40px; padding: 0 24px; border-radius: 20px; display: grid; place-items: center; font-size: 15px; font-weight: 500; color: #fff; background: #0b57d0; white-space: nowrap; }
+      #add.added { color: #0b57d0; background: #fff; box-shadow: inset 0 0 0 1px #747775; }
+      .d-body { display: flex; gap: 36px; margin-top: 28px; }
+      .d-shot { width: 640px; flex-shrink: 0; border-radius: 12px; box-shadow: 0 0 0 1px #e3e3e3; }
+      .d-body h2 { margin: 0 0 10px; font-size: 18px; font-weight: 500; }
+      .d-body p { margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: #444746; }
+
+      .pop { position: absolute; opacity: 0; border-radius: 12px; background: #292a2d; color: var(--fg); box-shadow: 0 10px 40px #000c, 0 0 0 1px #ffffff1a; }
+      #dialog { left: 120px; top: 92px; width: 440px; padding: 20px 22px; }
+      #dialog h4 { margin: 0 0 14px; font-size: 16px; font-weight: 500; }
+      #dialog p { margin: 0 0 6px; font-size: 13px; color: var(--dim); }
+      #dialog ul { margin: 0 0 18px; padding-left: 18px; font-size: 13px; }
+      .acts { display: flex; justify-content: flex-end; gap: 8px; }
+      .acts span { height: 34px; padding: 0 16px; border-radius: 17px; display: grid; place-items: center; font-size: 13px; font-weight: 500; }
+      .acts .ghost { color: var(--blue); box-shadow: inset 0 0 0 1px #5f6368; }
+      .acts .main { color: #062e6f; background: var(--blue); }
+      #bubble { right: 60px; top: 86px; width: 340px; padding: 16px 18px; display: flex; gap: 12px; }
+      #bubble .mark { width: 32px; height: 32px; flex-shrink: 0; }
+      #bubble b { display: block; font-size: 14px; font-weight: 500; }
+      #bubble span { font-size: 13px; color: var(--dim); }
+      #menu { right: 60px; top: 86px; width: 320px; padding: 10px 0; }
+      #menu .h { padding: 6px 16px 10px; font-size: 14px; font-weight: 500; }
+      #menu .row { display: flex; align-items: center; gap: 12px; padding: 8px 16px; font-size: 13px; }
+      #menu .row.hot { background: #ffffff14; }
+      #menu .row .mark { width: 18px; height: 18px; flex-shrink: 0; }
+      #menu .row .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #pin { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--dim); }
+      #pin.on { color: var(--blue); }
+      #pin.on .icon { fill: currentColor; }
+      #menu hr { border: 0; border-top: 1px solid #ffffff1a; margin: 8px 0; }
+
+      #side { width: 0; flex-shrink: 0; overflow: hidden; position: relative; background: #202124; border-left: 1px solid #000; }
+      .side-head { width: 400px; height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 13px; color: var(--fg); background: var(--bar); }
+      .side-head .mark { width: 16px; height: 16px; }
+      .side-head .x { margin-left: auto; color: var(--dim); }
+      #panel { display: block; width: 400px; height: 680px; border: 0; }
+
+      #cursor { position: absolute; left: 0; top: 0; width: 26px; height: 26px; opacity: 0; transform-origin: 0 0; filter: drop-shadow(0 2px 3px #0009); }
+      #ripple { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 2px solid #ffffffcc; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <section class="scene" id="hook">
+      <h1 id="hook1">You use more than one AI tool.</h1>
+      <div class="limit" id="limit">
+        <div class="bang">!</div>
+        <div><b>You reached your usage limit.</b><span>Try again in 4 hours.</span></div>
+      </div>
+      <h1 id="hook2">See each limit <span class="grad">before</span> you reach it.</h1>
+    </section>
+
+    <section class="scene center" id="brand">
+      <div class="mark" id="b-mark"></div>
+      <h1 id="b-title">AI Quota Tool</h1>
+      <p id="b-tag">Every AI limit. One Chrome side panel.</p>
+      <div class="chips" id="chips"><span>Plan limits</span><span>API balance</span><span>Toolbar badge</span><span>Low-limit alerts</span></div>
+    </section>
+
+    <div id="cap"><span class="step" id="cap-step"></span><h2 id="cap-title"></h2><p id="cap-sub"></p></div>
+
+    <div id="view">
+      <div id="win">
+        <div class="tabstrip">
+          <div class="tab"><span class="fav"></span><span id="tab-title">Chrome Web Store</span><span class="x">×</span></div>
+          <div class="newtab">+</div>
+          <div class="winctl">
+            <span><svg class="icon" viewBox="0 0 16 16"><path d="M3 8h10" /></svg></span>
+            <span><svg class="icon" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" /></svg></span>
+            <span><svg class="icon" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg></span>
+          </div>
+        </div>
+        <div class="toolbar">
+          <span class="tb"><svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6" /></svg></span>
+          <span class="tb"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          <span class="tb"><svg class="icon" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2-5M19 4v4h-4" /></svg></span>
+          <div class="omni">
+            <svg class="icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; color: var(--dim)"><path d="M4 8h10M4 16h16M17 8h3M7 16" /><circle cx="15.5" cy="8" r="2" /><circle cx="8" cy="16" r="2" /></svg>
+            <span><span class="host">chromewebstore.google.com</span><span class="path" id="path"></span></span>
+          </div>
+          <span class="tb" id="pinned"><span class="mark"></span><span id="badge">9</span></span>
+          <span class="tb" id="puzzle"><svg class="icon" viewBox="0 0 24 24"><path d="M10 4a2 2 0 0 1 4 0v2h4v4h-2a2 2 0 0 0 0 4h2v4h-4v-2a2 2 0 0 0-4 0v2H6v-4h2a2 2 0 0 0 0-4H6V6h4z" /></svg></span>
+          <span class="tb"><span class="avatar"></span></span>
+          <span class="tb"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></svg></span>
+        </div>
+        <div class="body">
+          <div class="page">
+            <div class="store-head">
+              <div class="store-logo"><i></i>chrome web store</div>
+              <div class="store-search" id="search">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #444746"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5 5" /></svg>
+                <span id="q"></span><span class="caret" id="caret"></span><span class="ph" id="ph">Search extensions and themes</span>
+              </div>
+            </div>
+            <div class="sv" id="home">
+              <h3>Discover extensions</h3>
+              <div class="tiles">
+                <div style="background: #e8f0fe"></div><div style="background: #e6f4ea"></div><div style="background: #fef7e0"></div>
+                <div style="background: #fce8e6"></div><div style="background: #f3e8fd"></div><div style="background: #e4f7fb"></div>
+              </div>
+            </div>
+            <div class="sv" id="results">
+              <h3>Extensions</h3>
+              <div class="result" id="result">
+                <div class="mark"></div>
+                <div><b>AI Quota Tool - Track your AI usage limits</b><span>Track your AI assistant usage limits and API credit balances in one side panel.</span><span>Productivity</span></div>
+              </div>
+              <div class="skel"><i></i><div><s style="width: 40%"></s><s style="width: 75%"></s></div></div>
+              <div class="skel"><i></i><div><s style="width: 32%"></s><s style="width: 66%"></s></div></div>
+            </div>
+            <div class="sv" id="detail">
+              <div class="d-head">
+                <div class="mark"></div>
+                <div><h1>AI Quota Tool - Track your AI usage limits</h1><p>Productivity · Free · No account</p></div>
+                <span id="add">Add to Chrome</span>
+              </div>
+              <div class="d-body">
+                <img class="d-shot" src="shot1.png" alt="" />
+                <div>
+                  <h2>Overview</h2>
+                  <p>See the usage limits of your AI tools and the credit balance of your API keys in one side panel.</p>
+                  <p>The toolbar badge shows your lowest limit. An alert tells you when a limit gets low.</p>
+                  <p>Your data stays on this device. There is no server and no account.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="side">
+            <div class="side-head"><span class="mark"></span>AI Quota Tool<span class="x">×</span></div>
+            <iframe id="panel" title="AI Quota Tool" src="panel.html"></iframe>
+          </div>
+        </div>
+
+        <div class="pop" id="dialog">
+          <h4>Add "AI Quota Tool - Track your AI usage limits"?</h4>
+          <p>It can:</p>
+          <ul><li>Read and change your data on a number of websites</li><li>Display notifications</li></ul>
+          <div class="acts"><span class="ghost">Cancel</span><span class="main" id="confirm">Add extension</span></div>
+        </div>
+        <div class="pop" id="bubble">
+          <div class="mark"></div>
+          <div><b>AI Quota Tool is added to Chrome</b><span>Open it from the extensions menu.</span></div>
+        </div>
+        <div class="pop" id="menu">
+          <div class="h">Extensions</div>
+          <div class="row" id="menu-row"><span class="mark"></span><span class="name">AI Quota Tool - Track your AI usage limits</span>
+            <span id="pin"><svg class="icon" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3v2H7v-2l3-3zM12 15v6" /></svg></span>
+          </div>
+          <hr />
+          <div class="row"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" /></svg>Manage extensions</div>
+        </div>
+
+        <div id="ripple"></div>
+        <svg id="cursor" viewBox="0 0 26 26"><path d="M3 2v19l5-5 3.5 8 3-1.3L11 15h7z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round" /></svg>
+      </div>
+    </div>
+
+    <section class="scene center" id="cta">
+      <div class="mark"></div>
+      <h1>AI Quota Tool</h1>
+      <p>Free on the Chrome Web Store</p>
+      <div class="cmd"><i>Search</i>AI Quota Tool</div>
+      <div class="url">github.com/BasantPandey/AIQuotaTool</div>
+    </section>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const clamp01 = (x) => Math.min(1, Math.max(0, x));
+      const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
+      const prog = (t, a, b) => ease(clamp01((t - a) / (b - a)));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      // 0 before a, fades in over `f`, holds, fades out before b.
+      const span = (t, a, b, f = 0.35) => Math.min(prog(t, a, a + f), 1 - prog(t, b - f, b));
+      const typed = (text, t, a, b) => text.slice(0, Math.round(text.length * clamp01((t - a) / (b - a))));
+      const show = (el, o, dy = 0) => {
+        el.style.opacity = o;
+        el.style.transform = dy ? `translateY(${(1 - o) * dy}px)` : '';
+      };
+      window.setMark = (svg) => {
+        for (const el of document.querySelectorAll('.mark')) el.innerHTML = svg;
+      };
+
+      const S1 = 6.6, S2 = 16.0, S3 = 21.6, S4 = 30.6, S5 = 40.6, END = 49.6;
+      const DURATION = END + 4.4;
+      const QUERY = 'AI Quota Tool';
+
+      // Elements. Each finder runs at render time, because the panel changes.
+      const doc = () => $('panel').contentDocument;
+      const el = (id) => () => $(id);
+      const point = (x, y) => () => ({ x, y });
+      const button = (label) => () =>
+        [...doc().querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === label || b.textContent.trim() === label);
+      const toggle = (label) => () =>
+        doc().querySelector(`input[aria-label='Show ${label}']`) ??
+        [...doc().querySelectorAll('label.row')].find((row) => row.textContent.startsWith(label))?.querySelector('input');
+      const keyInput = (label) => () => doc().querySelector(`input[aria-label='${label} API key']`);
+      const keySave = (label) => () => keyInput(label)()?.closest('form').querySelector('button[type=submit]');
+      const apiGroupTop = () => {
+        const title = [...doc().querySelectorAll('.section-title')].find((s) => s.textContent === 'API balance');
+        return title ? title.getBoundingClientRect().top + doc().scrollingElement.scrollTop - 60 : 0;
+      };
+      const pageBottom = () => doc().scrollingElement.scrollHeight - doc().scrollingElement.clientHeight;
+
+      // React reads the value from the native setter and the input event.
+      function setValue(input, value) {
+        Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value').set.call(input, value);
+        input.dispatchEvent(new (input.ownerDocument.defaultView.Event)('input', { bubbles: true }));
+      }
+
+      // Sample readings. The worker writes these after each poll.
+      const NOW = Date.now(), H = 3600e3, AT = NOW + 10 * H;
+      const SESSIONS = [
+        { service: 'claude', sessionPct: 42, weeklyPct: 9, sessionResetsAt: NOW + 3 * H - 60e3, weeklyResetsAt: NOW + 4 * 24 * H - 60e3,
+          subcategories: [{ name: 'Sonnet', usedPct: 71, label: '29% left' }], lastUpdated: AT },
+        { service: 'codex', sessionPct: 76, weeklyPct: 58, sessionResetsAt: NOW + 1 * H + 44 * 60e3, weeklyResetsAt: NOW + 5 * 24 * H - 60e3, lastUpdated: AT },
+        { service: 'copilot', honesty: 'seat_active_usage_unknown', lastUpdated: AT },
+        { service: 'grok', sessionPct: 88, weeklyPct: 64, sessionResetsAt: NOW + 48 * 60e3, weeklyResetsAt: NOW + 2 * 24 * H + 4 * H, lastUpdated: AT },
+        { service: 'gemini', sessionPct: 81, weeklyPct: 67, sessionResetsAt: NOW + 3 * H + 12 * 60e3, weeklyResetsAt: NOW + 6 * 24 * H + 7 * H, lastUpdated: AT },
+        { service: 'cursor', monthlyPct: 62, monthlyResetsAt: NOW + 12 * 24 * H, lastUpdated: AT },
+      ];
+      const balance = (service, currency, total, granted) => ({
+        service, lastUpdated: AT,
+        balance: { available: true, infos: [{ currency, total, granted, toppedUp: (total - granted).toFixed(2) }] },
+      });
+      const DEEPSEEK = balance('deepseek', 'USD', '18.40', '0.00');
+      const KIMI = balance('kimi', 'CNY', '42.10', '15.00');
+
+      const store = () => $('panel').contentWindow.chrome.storage.local;
+      async function addStates(states) {
+        const { quotaStates = [] } = await store().get('quotaStates');
+        await store().set({ quotaStates: [...quotaStates, ...states] });
+      }
+      // The worker side of the panel messages.
+      window.onPanelMessage = async (message) => {
+        if (message.type === 'api_key_connect') {
+          const { apiKeys = {} } = await store().get('apiKeys');
+          await store().set({ apiKeys: { ...apiKeys, [message.service]: message.apiKey } });
+        }
+        return { ok: true };
+      };
+
+      const SEARCH = el('search'), RESULT = el('result'), ADD = el('add'), CONFIRM = el('confirm');
+      const PUZZLE = el('puzzle'), PIN = el('pin'), PINNED = el('pinned');
+      const PANEL_TOP = { x: 448, y: 40, w: 832, h: 520 };
+      const PANEL_LOW = { x: 448, y: 280, w: 832, h: 520 };
+      const TOOLBAR = { x: 768, y: 0, w: 512, h: 320 };
+      const FULL = { x: 0, y: 0, w: 1280, h: 800 };
+
+      const V = {
+        caps: [
+          { at: S1, step: 'STEP 1', title: 'Search and add the extension', subs: [
+            [S1, 'Open the Chrome Web Store. Search for <b>AI Quota Tool</b>.'],
+            [S1 + 2.9, 'Open the result. Click <b>Add to Chrome</b>.'],
+            [S1 + 4.6, 'Click <b>Add extension</b>. You need no account.'],
+          ] },
+          { at: S2, step: 'STEP 2', title: 'Open the side panel', subs: [
+            [S2, 'Click the puzzle icon. Pin <b>AI Quota Tool</b> to the toolbar.'],
+            [S2 + 2.6, 'Click the icon. The side panel opens.'],
+          ] },
+          { at: S3, step: 'STEP 3', title: 'Add your providers', subs: [
+            [S3, 'Turn on the AI tools that you use.'],
+            [S3 + 2.9, 'Click <b>Get started</b>.'],
+            [S3 + 4.4, 'Stay signed in to your AI sites. Your limits show within a minute.'],
+          ] },
+          { at: S4, step: 'STEP 4', title: 'Add your API keys', subs: [
+            [S4, 'Click <b>Providers</b>. Go to the <b>API balance</b> group.'],
+            [S4 + 2.4, 'Paste each API key. Click <b>Save</b>.'],
+            [S4 + 6.6, 'The panel shows only the last 4 characters. Keys stay on this device.'],
+          ] },
+          { at: S5, step: 'STEP 5', title: 'See all your limits', subs: [
+            [S5, 'Click <b>Done</b>. Each card shows the limit left and the time to reset.'],
+            [S5 + 3.6, 'API key cards show the balance.'],
+            [S5 + 5.6, 'The toolbar badge shows your lowest limit.'],
+          ] },
+        ],
+        camera: [
+          [S2 + 4.2, FULL], [S2 + 5.0, PANEL_TOP],
+          [S3 + 0.6, PANEL_TOP], [S3 + 1.2, PANEL_LOW], [S3 + 3.6, PANEL_LOW], [S3 + 4.2, PANEL_TOP],
+          [S4 + 1.6, PANEL_TOP], [S4 + 2.3, PANEL_LOW], [S5 + 0.9, PANEL_LOW], [S5 + 1.5, PANEL_TOP],
+          [S5 + 3.2, PANEL_TOP], [S5 + 4.0, PANEL_LOW], [S5 + 5.2, PANEL_LOW], [S5 + 5.9, TOOLBAR], [S5 + 7.8, TOOLBAR], [S5 + 8.5, FULL],
+        ],
+        scroll: [
+          [S3 + 2.4, () => 0], [S3 + 2.9, pageBottom], [S3 + 3.4, pageBottom], [S3 + 3.4, () => 0],
+          [S4 + 1.4, () => 0], [S4 + 2.2, apiGroupTop],
+          [S5 + 0.8, apiGroupTop], [S5 + 0.8, () => 0],
+          [S5 + 1.8, () => 0], [S5 + 4.0, pageBottom],
+        ],
+        cursor: [
+          [S1 + 0.3, point(640, 420)], [S1 + 0.9, SEARCH],
+          [S1 + 2.5, SEARCH], [S1 + 3.0, RESULT],
+          [S1 + 3.4, RESULT], [S1 + 4.0, ADD],
+          [S1 + 4.6, ADD], [S1 + 5.3, CONFIRM],
+          [S1 + 5.9, CONFIRM], [S1 + 6.8, point(760, 520)],
+          // Pin and open
+          [S2 + 0.0, point(760, 520)], [S2 + 0.6, PUZZLE],
+          [S2 + 1.2, PUZZLE], [S2 + 1.8, PIN],
+          [S2 + 2.6, PIN], [S2 + 3.2, PINNED],
+          [S2 + 3.7, PINNED], [S2 + 4.6, point(1080, 300)],
+          // Welcome
+          [S3 + 0.6, point(1080, 300)], [S3 + 1.4, toggle('DeepSeek')],
+          [S3 + 1.8, toggle('DeepSeek')], [S3 + 2.2, toggle('Kimi')],
+          [S3 + 2.7, toggle('Kimi')], [S3 + 3.2, button('Get started')],
+          [S3 + 3.6, button('Get started')], [S3 + 4.4, point(1060, 420)],
+          // Keys
+          [S4 + 0.2, point(1060, 420)], [S4 + 0.8, button('Providers')],
+          [S4 + 1.2, button('Providers')], [S4 + 2.4, keyInput('DeepSeek')],
+          [S4 + 3.0, keyInput('DeepSeek')], [S4 + 3.4, keySave('DeepSeek')],
+          [S4 + 4.0, keySave('DeepSeek')], [S4 + 4.6, keyInput('Kimi')],
+          [S4 + 5.2, keyInput('Kimi')], [S4 + 5.6, keySave('Kimi')],
+          [S4 + 6.2, keySave('Kimi')], [S4 + 7.0, point(1060, 380)],
+          // Done
+          [S5 + 0.1, point(1060, 380)], [S5 + 0.6, button('Done')],
+          [S5 + 1.2, button('Done')], [S5 + 2.0, point(1150, 560)],
+        ],
+        clicks: [
+          [S1 + 1.0], [S1 + 3.2], [S1 + 4.3], [S1 + 5.6],
+          [S2 + 0.8], [S2 + 2.0], [S2 + 3.4],
+          [S3 + 1.5, toggle('DeepSeek')], [S3 + 2.3, toggle('Kimi')], [S3 + 3.3, button('Get started')],
+          [S4 + 1.0, button('Providers')], [S4 + 2.6], [S4 + 3.6, keySave('DeepSeek')],
+          [S4 + 4.8], [S4 + 5.8, keySave('Kimi')],
+          [S5 + 0.8, button('Done')],
+        ],
+        actions: [
+          [S3 + 5.2, () => store().set({ githubToken: 'gho_promo' })],
+          [S3 + 5.2, () => addStates(SESSIONS)],
+          [S4 + 2.8, () => setValue(keyInput('DeepSeek')(), 'sk-81c0e5a7d24b49f29f2c')],
+          [S4 + 4.2, () => addStates([DEEPSEEK])],
+          [S4 + 5.0, () => setValue(keyInput('Kimi')(), 'sk-4Qx9TzP2cVb8Lm7f3a5e')],
+          [S4 + 6.4, () => addStates([KIMI])],
+        ],
+      };
+
+      function scenes(t) {
+        const hookEnd = 3.4;
+        show($('hook'), span(t, 0, hookEnd, 0.3));
+        show($('hook1'), prog(t, 0.15, 0.7), 20);
+        const pop = prog(t, 0.9, 1.3);
+        $('limit').style.opacity = pop;
+        $('limit').style.transform = `scale(${0.85 + 0.15 * pop})`;
+        show($('hook2'), prog(t, 1.9, 2.4), 20);
+
+        show($('brand'), span(t, hookEnd, S1, 0.3));
+        const m = prog(t, hookEnd + 0.1, hookEnd + 0.7);
+        $('b-mark').style.opacity = m;
+        $('b-mark').style.transform = `scale(${0.6 + 0.4 * m}) rotate(${(1 - m) * -12}deg)`;
+        show($('b-title'), prog(t, hookEnd + 0.4, hookEnd + 0.9), 24);
+        show($('b-tag'), prog(t, hookEnd + 0.7, hookEnd + 1.2), 18);
+        [...$('chips').children].forEach((c, i) => show(c, prog(t, hookEnd + 1.1 + i * 0.12, hookEnd + 1.5 + i * 0.12), 14));
+
+        const cta = $('cta');
+        show(cta, prog(t, END, END + 0.5));
+        show(cta.querySelector('.mark'), prog(t, END + 0.2, END + 0.7), 20);
+        show(cta.querySelector('h1'), prog(t, END + 0.4, END + 0.9), 20);
+        show(cta.querySelector('p'), prog(t, END + 0.6, END + 1.1), 16);
+        show(cta.querySelector('.cmd'), prog(t, END + 0.9, END + 1.4), 16);
+        show(cta.querySelector('.url'), prog(t, END + 1.2, END + 1.7), 12);
+
+        const v = span(t, S1, END, 0.45);
+        $('view').style.opacity = v;
+        $('view').style.transform = `translateY(${(1 - v) * 40}px) scale(${0.97 + 0.03 * v})`;
+      }
+
+      // Each subtitle shows until the next one starts.
+      const subs = V.caps.flatMap((c, ci) =>
+        c.subs.map(([at, html], i) => ({ at, html, end: c.subs[i + 1]?.[0] ?? V.caps[ci + 1]?.at ?? END })),
+      );
+      $('cap-sub').innerHTML = subs.map((s) => `<span>${s.html}</span>`).join('');
+      subs.forEach((s, i) => (s.el = $('cap-sub').children[i]));
+      function caption(t) {
+        show($('cap'), span(t, S1, END));
+        const cap = [...V.caps].reverse().find((c) => t >= c.at) ?? V.caps[0];
+        $('cap-step').textContent = cap.step;
+        $('cap-title').textContent = cap.title;
+        show($('cap-title'), cap === V.caps[0] ? 1 : prog(t, cap.at, cap.at + 0.45), 14);
+        subs.forEach(({ el, at, end }) => show(el, span(t, at, end, 0.3), 10));
+      }
+
+      // Interpolate keyframes [[t, value]]. Values are rectangles or numbers.
+      function track(keys, t, mix) {
+        let value;
+        for (let i = 0; i < keys.length; i++) {
+          const [a, va] = keys[i];
+          const [b, vb] = keys[i + 1] ?? keys[i];
+          if (t >= a) value = mix(va, vb, b === a ? 1 : prog(t, a, b));
+        }
+        return value;
+      }
+
+      // Camera: fit a rectangle of the 1280x800 window into the 1344x840 view.
+      const VW = 1344, VH = 840;
+      let cam = { s: 1, tx: 0, ty: 0 };
+      function camera(t) {
+        const r = track(V.camera, t, (ra, rb, k) => ({
+          x: lerp(ra.x, rb.x, k), y: lerp(ra.y, rb.y, k), w: lerp(ra.w, rb.w, k), h: lerp(ra.h, rb.h, k),
+        })) ?? FULL;
+        const s = Math.min(VW / r.w, VH / r.h);
+        const tx = Math.min(0, Math.max(VW - s * FULL.w, VW / 2 - s * (r.x + r.w / 2)));
+        const ty = Math.min(0, Math.max(VH - s * FULL.h, VH / 2 - s * (r.y + r.h / 2)));
+        cam = { s, tx, ty };
+        $('win').style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+      }
+
+      // The browser chrome and the store page follow the time. Only the side panel is a real app.
+      function browser(t) {
+        const q = typed(QUERY, t, S1 + 1.1, S1 + 2.1);
+        const focus = t >= S1 + 1.0 && t < S1 + 2.6;
+        $('q').textContent = q;
+        $('ph').style.display = q ? 'none' : '';
+        $('caret').style.opacity = focus ? 1 : 0;
+        $('search').classList.toggle('focus', focus);
+        const view = t < S1 + 2.4 ? 'home' : t < S1 + 3.3 ? 'results' : 'detail';
+        for (const id of ['home', 'results', 'detail']) $(id).style.opacity = id === view ? 1 : 0;
+        $('path').textContent = { home: '', results: '/search/AI%20Quota%20Tool', detail: '/detail/ai-quota-tool' }[view];
+        $('result').classList.toggle('hot', t >= S1 + 2.9 && t < S1 + 3.3);
+        const added = t >= S1 + 5.6;
+        $('add').textContent = added ? 'Remove from Chrome' : 'Add to Chrome';
+        $('add').classList.toggle('added', added);
+
+        show($('dialog'), span(t, S1 + 4.4, S1 + 5.75, 0.15), -8);
+        show($('bubble'), span(t, S1 + 5.8, S2 + 0.7, 0.25), -8);
+        show($('menu'), span(t, S2 + 0.9, S2 + 2.7, 0.15), -8);
+        $('menu-row').classList.toggle('hot', t >= S2 + 1.6 && t < S2 + 2.7);
+        $('pin').classList.toggle('on', t >= S2 + 2.0);
+        $('puzzle').classList.toggle('on', t >= S2 + 0.8 && t < S2 + 2.7);
+        $('pinned').style.width = `${32 * prog(t, S2 + 2.0, S2 + 2.3)}px`;
+        $('pinned').classList.toggle('on', t >= S2 + 3.4);
+        $('badge').style.opacity = prog(t, S3 + 5.2, S3 + 5.5);
+        $('side').style.width = `${400 * prog(t, S2 + 3.5, S2 + 4.1)}px`;
+      }
+
+      // Center of an element, in window coordinates.
+      function centerOf(found) {
+        const w = $('view').getBoundingClientRect();
+        let r = found.getBoundingClientRect();
+        if (found.ownerDocument !== document) {
+          const f = $('panel').getBoundingClientRect();
+          r = { left: f.left + r.left * cam.s, top: f.top + r.top * cam.s, width: r.width * cam.s, height: r.height * cam.s };
+        }
+        return { x: (r.left - w.left - cam.tx + r.width / 2) / cam.s, y: (r.top - w.top - cam.ty + r.height / 2) / cam.s };
+      }
+
+      const lastPos = new Map();
+      function pos(i) {
+        const found = V.cursor[i][1]();
+        const c = found && ('x' in found ? found : centerOf(found));
+        if (c) lastPos.set(i, c);
+        return lastPos.get(i) ?? lastPos.get(i - 1) ?? { x: 640, y: 400 };
+      }
+      function cursor(t) {
+        const keys = V.cursor;
+        show($('cursor'), span(t, keys[0][0] - 0.3, keys.at(-1)[0] + 0.4, 0.3));
+        const i = Math.max(0, keys.findLastIndex(([at]) => at <= t));
+        const a = pos(i);
+        const b = pos(Math.min(i + 1, keys.length - 1));
+        const k = i + 1 < keys.length ? prog(t, keys[i][0], keys[i + 1][0]) : 0;
+        const x = lerp(a.x, b.x, k), y = lerp(a.y, b.y, k);
+        const click = V.clicks.map(([at]) => at).find((c) => t >= c && t < c + 0.45);
+        const press = click == null ? 1 : 1 - 0.15 * Math.sin(Math.PI * clamp01((t - click) / 0.2));
+        $('cursor').style.transform = `translate(${x - 4}px, ${y - 3}px) scale(${press})`;
+        const ring = click == null ? 0 : clamp01((t - click) / 0.45);
+        Object.assign($('ripple').style, { left: `${x}px`, top: `${y}px`, opacity: click == null ? 0 : 1 - ring, transform: `scale(${0.4 + ring * 1.2})` });
+      }
+
+      async function settle() {
+        const w = $('panel').contentWindow;
+        await new Promise((r) => setTimeout(r, 120));
+        await new Promise((r) => w.requestAnimationFrame(() => w.requestAnimationFrame(r)));
+      }
+
+      // Real clicks and storage writes in the panel, in time order.
+      const actions = [
+        ...V.clicks.filter(([, find]) => find).map(([at, find]) => [at, () => find()?.click()]),
+        ...V.actions,
+      ].sort((x, y) => x[0] - y[0]);
+      async function act(t) {
+        let changed = false;
+        while (actions.length && actions[0][0] <= t) {
+          await actions.shift()[1]();
+          changed = true;
+        }
+        if (changed) await settle();
+        const y = track(V.scroll, t, (fa, fb, k) => lerp(fa(), fb(), k));
+        if (y != null) doc().scrollingElement.scrollTop = y;
+      }
+
+      window.DURATION = DURATION;
+      window.render = async (t) => {
+        scenes(t);
+        caption(t);
+        camera(t);
+        browser(t);
+        await act(t);
+        cursor(t);
+      };
+    </script>
+  </body>
+</html>

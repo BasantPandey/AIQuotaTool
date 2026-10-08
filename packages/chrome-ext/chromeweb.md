@@ -37,7 +37,8 @@ It shows your session, weekly and monthly limits in the Chrome side panel, with 
 
 FEATURES
 • See what is left of your AI assistant plans at a glance
-• Check prepaid API credit balances
+• Add your API keys, and see the balance, spend or usage of each key
+• Add many keys for one provider, each with its own name
 • See your lowest limit on top, with the time it resets
 • Get a toolbar badge with your lowest limit
 • Get one alert when a limit runs low, and one when it resets
@@ -58,7 +59,7 @@ HOW TO START
 1. Click the toolbar icon to open the side panel.
 2. Pick your tools.
 3. Sign in to each tool in this browser, as usual. Your limits show within a minute.
-4. For an API balance, paste your API key on the Providers screen. The key stays on your device.
+4. To track an API key, open Providers, then the API keys tab, and click Add key. The key stays on your device.
 
 SUPPORTED SERVICES
 See the full list on the website: https://basantpandey.github.io/AIQuotaTool/
@@ -105,7 +106,7 @@ The item checks quota every 60 seconds and shows reset notifications. The servic
 
 **storage**
 ```
-The item saves quota readings, the list of providers that the user turns on, the GitHub OAuth token, and optional API keys on the user's device. Nothing is synced.
+The item saves quota readings, the list of providers that the user turns on, the GitHub OAuth token, and the API keys that the user adds, with their names, on the user's device. Nothing is synced.
 ```
 
 **notifications**
@@ -120,7 +121,9 @@ The side panel is the main user interface. It shows the quota dashboard and the 
 
 **Host permissions**
 ```
-The item reads the user's own usage from claude.ai, chatgpt.com, grok.com, gemini.google.com and cursor.com with the user's existing session. It uses api.github.com and github.com only for GitHub sign-in and the Copilot plan check. It uses api.deepseek.com and api.moonshot.ai only to read an API balance with a key that the user pastes. It reads data only for providers that the user turns on. It does not access any other site.
+The item reads the user's own usage from claude.ai, chatgpt.com, grok.com, gemini.google.com and cursor.com with the user's existing session. It uses api.github.com and github.com only for GitHub sign-in and the Copilot plan check. It uses api.deepseek.com and api.moonshot.ai only to read an API balance with a key that the user adds. It reads data only for providers that the user turns on and keys that the user adds. It does not access any other site.
+
+Optional hosts: the item asks for api.anthropic.com, api.openai.com, management-api.x.ai and api.cursor.com only when the user adds a key for that provider. It uses each host only to read the spend or the credit of that key. It also uses api.github.com to read Copilot premium requests with a fine-grained token that the user adds.
 ```
 
 **Remote code**
@@ -130,14 +133,14 @@ No. All code ships inside the extension package.
 
 ### Data usage
 
-Check **Authentication information** and **Website content**. Leave every other category unchecked.
+Check **Financial and payment information**, **Authentication information** and **Website content**. Leave every other category unchecked.
 
 | Category | Collect? | Why |
 |---|---|---|
 | Personally identifiable information | No | The item never reads or stores a name, address, or email. |
 | Health information | No | Not applicable. |
-| Financial and payment information | No | Not applicable. |
-| Authentication information | **Yes** | The GitHub OAuth token and optional API keys, stored on the device only. |
+| Financial and payment information | **Yes** | API credit balances and spend amounts of the keys that the user adds. Stored on the device only. |
+| Authentication information | **Yes** | The GitHub OAuth token, the API keys, and the fine-grained GitHub token that the user adds. Stored on the device only. |
 | Personal communications | No | The item does not read chats or prompts. |
 | Location | No | Not applicable. |
 | Web history | No | The item reads usage API responses only. |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultKeyName, isUniqueKeyName, KEY_SERVICES, parseKeyRecords, type KeyRecord } from './keys.js';
+import { defaultKeyName, isUniqueKeyName, KEY_SERVICES, needsTeamId, parseKeyRecords, VSCODE_KEY_SERVICES, type KeyRecord } from './keys.js';
 
 const key = (id: string, service: KeyRecord['service'], name: string): KeyRecord => ({ id, service, name, last4: 'abcd' });
 
@@ -46,6 +46,20 @@ describe('parseKeyRecords', () => {
   });
 
   it('knows the Key providers', () => {
-    expect(KEY_SERVICES).toEqual(['deepseek', 'kimi', 'openrouter', 'anthropic', 'openai']);
+    expect(KEY_SERVICES).toEqual(['deepseek', 'kimi', 'openrouter', 'anthropic', 'openai', 'xai', 'cursor-team', 'copilot-premium']);
+  });
+
+  it('keeps the Chrome only providers out of VS Code', () => {
+    expect(VSCODE_KEY_SERVICES).toEqual(['deepseek', 'kimi', 'openrouter', 'anthropic', 'openai']);
+  });
+
+  it('keeps the team ID of an xAI key', () => {
+    const stored = [{ id: 'x', service: 'xai', name: 'Team', last4: 'abcd', teamId: 'team-1' }, { id: 'y', service: 'xai', name: 'B', last4: 'efgh', teamId: '' }];
+    expect(parseKeyRecords(stored)).toEqual([
+      { id: 'x', service: 'xai', name: 'Team', last4: 'abcd', teamId: 'team-1' },
+      { id: 'y', service: 'xai', name: 'B', last4: 'efgh' },
+    ]);
+    expect(needsTeamId('xai')).toBe(true);
+    expect(needsTeamId('openai')).toBe(false);
   });
 });

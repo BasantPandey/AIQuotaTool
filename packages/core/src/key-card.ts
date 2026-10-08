@@ -87,6 +87,14 @@ export function describeKey(reading: QuotaState | undefined): KeyDescription {
       empty: pct === 0,
     };
   }
+  if (type === 'spend' && spend != null && reading.creditsUsed != null) {
+    return {
+      headline: `${reading.creditsUsed.toLocaleString('en-US')} requests`,
+      detail: `this month - ${formatMoney(spend.amount, spend.currency)} billed`,
+      shows: 'Requests used',
+      empty: false,
+    };
+  }
   if (type === 'spend' && spend != null) {
     const scope = spend.scope === 'org' ? 'org spend' : 'this month';
     const pct = keyPercent(reading);

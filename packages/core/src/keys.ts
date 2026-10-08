@@ -10,6 +10,8 @@ export interface KeyRecord {
   last4: string;
   /** Optional monthly budget for a Spend only Key, in the currency of its spend. */
   budget?: number;
+  /** Team ID for providers that need one next to the secret (xAI). Not a secret. */
+  teamId?: string;
 }
 
 /** A budget is a positive, finite amount. */
@@ -19,6 +21,16 @@ export function isValidBudget(value: unknown): value is number {
 
 /** Providers that take a Key, in catalog order. */
 export const KEY_SERVICES: readonly ServiceId[] = SERVICES.filter((s) => s.auth === 'api_key').map((s) => s.id);
+
+/** Key providers that the VS Code extension can read. */
+export const VSCODE_KEY_SERVICES: readonly ServiceId[] = SERVICES.filter(
+  (s) => s.auth === 'api_key' && !('chromeOnly' in s),
+).map((s) => s.id);
+
+/** Key providers that need a team ID next to the secret. */
+export function needsTeamId(service: ServiceId): boolean {
+  return SERVICES.some((s) => s.id === service && 'teamId' in s);
+}
 
 /** Key providers that take only an Admin key. The add form asks the user to confirm it. */
 export const ADMIN_KEY_SERVICES: readonly ServiceId[] = SERVICES.filter((s) => 'adminKey' in s).map((s) => s.id);
@@ -56,6 +68,15 @@ export function parseKeyRecords(stored: unknown): KeyRecord[] {
     if (typeof r.id !== 'string' || typeof r.name !== 'string' || typeof r.last4 !== 'string') return [];
     const service = KEY_SERVICES.find((s) => s === r.service);
     if (service == null) return [];
-    return [{ id: r.id, service, name: r.name, last4: r.last4, ...(isValidBudget(r.budget) ? { budget: r.budget } : {}) }];
+    return [
+      {
+        id: r.id,
+        service,
+        name: r.name,
+        last4: r.last4,
+        ...(isValidBudget(r.budget) ? { budget: r.budget } : {}),
+        ...(typeof r.teamId === 'string' && r.teamId !== '' ? { teamId: r.teamId } : {}),
+      },
+    ];
   });
 }

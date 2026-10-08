@@ -5,9 +5,9 @@ Shared TypeScript library. No runtime dependencies — pure types and utilities 
 ## Exports
 - `QuotaState`, `QuotaHonesty`, `QUOTA_HONESTY_LABELS`, `WsMessage`, `ServiceId`, `ClaudeSubcategory`
 - `SERVICE_LABELS`, `SERVICE_COLORS`, `SERVICE_URLS`
-- **Catalog:** `SERVICES`, `CHROME_SERVICES` (rows without `vscodeOnly`), `ChromeServiceId`
+- **Catalog:** `SERVICES`, `CHROME_SERVICES` (rows without `vscodeOnly`), `ChromeServiceId`. Row flags: `vscodeOnly`, `chromeOnly`, `adminKey`, `teamId`
 - **Merge:** `preferQuotaState`, `upsertQuotaState`, `mergeQuotaStates` (freshest-wins by `lastUpdated`, matched on `connectionIdOf`; an Account uses its provider id)
-- **Keys:** `KeyRecord`, `KEY_SERVICES`, `defaultKeyName`, `isUniqueKeyName`, `parseKeyRecords`; card math `keyCardType`, `keyPercent` (percent only from a real cap or a user budget), `applyKeyBudgets`, `describeKey` (words for the panel and the status bar), `formatMoney`; mappers `mapOpenRouterKey`, `mapAnthropicCost`, `mapOpenAICost` (org spend this month), `monthStartUtc`; `ADMIN_KEY_SERVICES`, `isAdminKeyService`
+- **Keys:** `KeyRecord` (optional `teamId`), `KEY_SERVICES`, `VSCODE_KEY_SERVICES` (no `chromeOnly` rows), `needsTeamId`, `defaultKeyName`, `isUniqueKeyName`, `parseKeyRecords`; card math `keyCardType`, `keyPercent` (percent only from a real cap or a user budget), `applyKeyBudgets`, `describeKey` (words for the panel and the status bar), `formatMoney`; mappers `mapOpenRouterKey`, `mapAnthropicCost`, `mapOpenAICost` (org spend this month), `monthStartUtc`; `ADMIN_KEY_SERVICES`, `isAdminKeyService`; Chrome-only key mappers `mapXaiPrepaidBalance`, `mapCursorTeamSpend`, `mapCopilotPremiumUsage`
 - **Mappers:** `mapClaudeUsage`, `mapCodexUsage` (+ response types)
 - **Copilot:** `mapCopilotUser` (`copilot_internal/user`; null for an unknown shape so the host falls back to the seat check). Honesty: `copilotSeatActiveUsageUnknown`, `copilotNoPlan`, `copilotAuthUnavailable`, `mapCopilotSeatStatus`
 - **Grok honesty / weekly map:** `grokUsageUnknown`, `grokNotConnected`, `grokBrowserSessionRequired`, `mapGrokWeeklyUsage`, `extractGrokWeeklyUsage`

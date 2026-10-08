@@ -79,7 +79,6 @@ export const SERVICES = [
     color: '#262420',
     host: 'console.anthropic.com',
     auth: 'api_key',
-    vscodeOnly: true,
     adminKey: true,
   },
   {
@@ -88,8 +87,34 @@ export const SERVICES = [
     color: '#0d0d0d',
     host: 'platform.openai.com',
     auth: 'api_key',
-    vscodeOnly: true,
     adminKey: true,
+  },
+  {
+    id: 'xai',
+    label: 'xAI',
+    color: '#1c1c1e',
+    host: 'console.x.ai',
+    auth: 'api_key',
+    chromeOnly: true,
+    adminKey: true,
+    teamId: true,
+  },
+  {
+    id: 'cursor-team',
+    label: 'Cursor Team',
+    color: '#14120b',
+    host: 'cursor.com/dashboard',
+    auth: 'api_key',
+    chromeOnly: true,
+    adminKey: true,
+  },
+  {
+    id: 'copilot-premium',
+    label: 'Copilot premium',
+    color: '#2ea44f',
+    host: 'github.com/settings/personal-access-tokens',
+    auth: 'api_key',
+    chromeOnly: true,
   },
 ] as const satisfies readonly {
   id: string;
@@ -99,8 +124,12 @@ export const SERVICES = [
   auth: ServiceAuth;
   /** Not in the Chrome extension. */
   vscodeOnly?: true;
+  /** Not in the VS Code extension. */
+  chromeOnly?: true;
   /** The Key must be an Admin key. It can manage the whole org, so the user confirms it. */
   adminKey?: true;
+  /** The Key needs a team ID next to the secret. */
+  teamId?: true;
 }[];
 
 type ServiceRow = (typeof SERVICES)[number];

@@ -89,14 +89,15 @@ export interface WhamUsageResponse {
   plan_type?: string;
   rate_limit?: {
     limit_reached?: boolean;
-    primary_window?: WhamWindow;
-    secondary_window?: WhamWindow;
+    primary_window?: WhamWindow | null;
+    secondary_window?: WhamWindow | null;
   };
-  primary_window?: WhamWindow;
-  secondary_window?: WhamWindow;
+  primary_window?: WhamWindow | null;
+  secondary_window?: WhamWindow | null;
 }
 
 const DAY_SECONDS = 86_400;
+const MONTH_SECONDS = 28 * DAY_SECONDS;
 
 function remainingFromUsedPct(usedPct: number): number {
   return Math.max(0, Math.min(100, Math.round(100 - usedPct)));
@@ -110,6 +111,7 @@ function resetMs(window: WhamWindow, lastUpdated: number): number | undefined {
 
 /**
  * Map a ChatGPT Codex wham/usage JSON payload to QuotaState.
+ * A window of 28 days or longer is monthly (the free plan has one 30-day window).
  * A window of one day or longer is weekly. Without `limit_window_seconds`,
  * the primary window is the session and the secondary window is weekly.
  * Pure: no network.
@@ -126,13 +128,14 @@ export function mapCodexUsage(
 
   for (const { window, weekly: byPosition } of windows) {
     if (typeof window?.used_percent !== 'number') continue;
-    const weekly =
-      typeof window.limit_window_seconds === 'number'
-        ? window.limit_window_seconds >= DAY_SECONDS
-        : byPosition;
+    const seconds = window.limit_window_seconds;
+    const weekly = typeof seconds === 'number' ? seconds >= DAY_SECONDS : byPosition;
     const pct = remainingFromUsedPct(window.used_percent);
     const resetsAt = resetMs(window, lastUpdated);
-    if (weekly) {
+    if (typeof seconds === 'number' && seconds >= MONTH_SECONDS) {
+      state.monthlyPct = pct;
+      if (resetsAt != null) state.monthlyResetsAt = resetsAt;
+    } else if (weekly) {
       state.weeklyPct = pct;
       if (resetsAt != null) state.weeklyResetsAt = resetsAt;
     } else {
@@ -141,6 +144,6 @@ export function mapCodexUsage(
     }
   }
 
-  if (state.sessionPct == null && state.weeklyPct == null) state.honesty = 'usage_unknown';
+  if (state.sessionPct == null && state.weeklyPct == null && state.monthlyPct == null) state.honesty = 'usage_unknown';
   return state;
 }
