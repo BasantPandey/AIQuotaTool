@@ -12,7 +12,7 @@ pnpm --filter @ai-quota-tool/chrome-ext zip
 Upload `packages/chrome-ext/ai-quota-tool-chrome-<version>.zip` on the **Package** tab. The version in `manifest.json` must be higher than the live version.
 Store item: https://chromewebstore.google.com/detail/dkohaadncknbgmeefnlfffdjnnlmlglh
 
-Store review reads a run of brand names as keyword stuffing. Keep brand names out of the title, the summary and the promo art. Name each service once, in the SUPPORTED SERVICES line of the description.
+Store review reads a list of brand names as keyword spam. A single line with each name once also failed review (3.2.1). Keep all brand names out of the title, the summary, the description and the promo art. The website lists the supported services.
 
 ## Store listing tab
 
@@ -61,11 +61,11 @@ HOW TO START
 4. For an API balance, paste your API key on the Providers screen. The key stays on your device.
 
 SUPPORTED SERVICES
-Usage limits for Claude, OpenAI Codex, Gemini, Cursor and Grok. Plan status for GitHub Copilot. API balances for DeepSeek and Kimi.
+See the full list on the website: https://basantpandey.github.io/AIQuotaTool/
 
-AI Quota Tool is not affiliated with or endorsed by any of the services listed.
+AI Quota Tool is an independent project. No AI service makes or endorses it.
 
-Website and help: https://basantpandey.github.io/AIQuotaTool/
+Help: https://github.com/BasantPandey/AIQuotaTool/issues
 ```
 
 ### Category
