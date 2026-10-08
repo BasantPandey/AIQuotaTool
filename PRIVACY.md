@@ -1,17 +1,25 @@
 # Privacy Policy
 
-Last updated: 30 September 2026
+Last updated: 8 October 2026
 
-AI Quota Tool is a Chrome extension and a VS Code extension. The Chrome extension shows your remaining AI quota for Claude, Codex, Copilot, Grok, Gemini, and Cursor, and your DeepSeek and Kimi API balance, in one side panel.
+AI Quota Tool is a Chrome extension and a VS Code extension. The Chrome extension shows your remaining AI quota for Claude, Codex, Copilot, Grok, Gemini, and Cursor, and the balance, spend, or usage of API keys that you add, in one side panel.
 
 ## Chrome extension: what it reads
 
-The extension reads data only for the providers that you turn on.
+The extension reads data only for the providers that you turn on and the API keys that you add.
 
 - It reads your own quota from claude.ai, chatgpt.com, grok.com, gemini.google.com, and cursor.com. It uses your own logged-in browser session.
 - It reads your GitHub Copilot seat status from api.github.com. It uses an OAuth token that you approve.
-- It reads your DeepSeek API balance from api.deepseek.com. It uses an API key that you paste.
-- It reads your Kimi API balance from api.moonshot.ai. It uses an API key that you paste.
+- It reads the data of each API key that you add, only from the provider of that key.
+- DeepSeek key: the account balance, from api.deepseek.com.
+- Kimi key: the account balance, from api.moonshot.ai.
+- Anthropic key: the org spend this month, from api.anthropic.com. It uses an Admin key.
+- OpenAI key: the org spend this month, from api.openai.com. It uses an Admin key.
+- xAI key: the prepaid credit, from management-api.x.ai. It uses a management key and a team ID.
+- Cursor Team key: the team spend, from api.cursor.com. It uses a team Admin key.
+- Copilot premium key: the premium requests this month, from api.github.com. It uses a fine-grained GitHub token with read access to the Plan permission.
+- Before it saves a key, it makes one test call to the provider of that key.
+- The extension asks for access to api.anthropic.com, api.openai.com, management-api.x.ai, and api.cursor.com only when you add a key for that provider.
 
 ## Chrome extension: what it stores
 
@@ -20,7 +28,7 @@ All data stays on your device in local extension storage. Nothing is synced.
 - Quota readings for the providers that you turn on.
 - The list of providers that you turn on.
 - The GitHub OAuth token. The extension removes this token when you disconnect.
-- The DeepSeek and Kimi API keys. The extension removes a key when you remove it.
+- Each API key that you add, with its name and its team ID (xAI only). The panel shows only the last 4 characters. The extension removes a key when you remove it.
 
 ## Chrome extension: what it never does
 
@@ -32,11 +40,11 @@ All data stays on your device in local extension storage. Nothing is synced.
 
 ## Chrome extension: how to revoke access
 
-- Any provider: turn it off in the Providers screen. The extension stops all requests to that provider.
+- Any plan provider: turn it off in the Providers screen. The extension stops all requests to that provider.
+- Any API key: remove it on the API keys tab. The extension stops all requests with that key.
 - Claude, Codex, Grok, Gemini, and Cursor: sign out on the service website.
 - Copilot: disconnect in the extension. To revoke the GitHub grant fully, visit https://github.com/settings/applications.
-- DeepSeek: remove the key in the extension. To revoke the key everywhere, delete it at https://platform.deepseek.com.
-- Kimi: remove the key in the extension. To revoke the key everywhere, delete it at https://platform.kimi.ai.
+- To revoke an API key everywhere, delete it in the console of its provider. For example: https://platform.deepseek.com, https://platform.kimi.ai, https://console.anthropic.com, https://platform.openai.com, https://console.x.ai, https://cursor.com/dashboard, or https://github.com/settings/tokens.
 - To delete everything, remove the extension from Chrome.
 
 ## VS Code extension
