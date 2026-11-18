@@ -3,6 +3,7 @@
  * 1. Renders the brand mark to icons/icon{16,48,128}.png (128 has 16 px padding).
  * 2. Loads packages/chrome-ext/dist in headless Chrome, seeds sample data, and
  *    captures the real side panel to store/panels/.
+ *    Sample keys have no secret, so the worker never polls them.
  * 3. Renders store/art.html for the tile, the marquee and 5 screenshots.
  *
  * Run: pnpm --filter @ai-quota-tool/chrome-ext build && node scripts/store-assets.mjs
@@ -47,9 +48,35 @@ const SAMPLE = `(() => {
   });
 })()`;
 
+const SAMPLE_KEYS = `(() => {
+  const now = Date.now(), F = now + 10 * 3600e3;
+  const keys = [
+    { id: 'kimi-main', service: 'kimi', name: 'Kimi main', last4: '7f3a' },
+    { id: 'deepseek-1', service: 'deepseek', name: 'DeepSeek key 1', last4: '9f2c' },
+    { id: 'anthropic-org', service: 'anthropic', name: 'Anthropic org', last4: 'c9e1' },
+    { id: 'xai-team', service: 'xai', name: 'xAI team', last4: '5b0d', teamId: 'team-4821' },
+    { id: 'copilot-premium', service: 'copilot-premium', name: 'Copilot premium', last4: '81aa' },
+  ];
+  const balance = (currency, total) => ({ balance: { available: true, infos: [{ currency, total }] } });
+  const data = {
+    'kimi-main': balance('CNY', '42.10'),
+    'deepseek-1': balance('USD', '18.40'),
+    'anthropic-org': { spend: { amount: 42.3, currency: 'USD', scope: 'org' } },
+    'xai-team': balance('USD', '25.00'),
+    'copilot-premium': { creditsUsed: 212, spend: { amount: 3.48, currency: 'USD', scope: 'account' } },
+  };
+  return chrome.storage.local.get('quotaStates').then(({ quotaStates = [] }) => chrome.storage.local.set({
+    apiKeyList: keys,
+    quotaStates: [
+      ...quotaStates,
+      ...keys.map((key) => ({ service: key.service, kind: 'key', connectionId: key.id, lastUpdated: F, ...data[key.id] })),
+    ],
+  }));
+})()`;
+
 // Store review flags third-party logos in store art, so each provider mark becomes a plain letter tile.
 const LETTER_TILES = `(() => {
-  const ids = ['claude', 'copilot', 'codex', 'grok', 'gemini', 'cursor', 'deepseek', 'kimi'];
+  const ids = ['claude', 'copilot', 'codex', 'grok', 'gemini', 'cursor', 'deepseek', 'kimi', 'anthropic', 'openai', 'xai', 'cursor-team', 'copilot-premium'];
   const style = document.createElement('style');
   style.textContent = \`
     [data-service] { background: #3a4060 !important; container-type: size; }
@@ -73,9 +100,6 @@ async function capturePanels(chrome) {
   await chrome.evaluate(SAMPLE);
   await sleep(1000);
   await chrome.shot(join(out, 'dashboard-dark.png'));
-  await chrome.view(360, 720, 2, false);
-  await sleep(300);
-  await chrome.shot(join(out, 'dashboard-light.png'));
 
   await chrome.view(360, 720, 2, true);
   await chrome.evaluate(
@@ -84,6 +108,13 @@ async function capturePanels(chrome) {
   await chrome.evaluate("document.querySelector(\"[aria-label='Show Grok']\").click()");
   await sleep(800);
   await chrome.shot(join(out, 'providers-dark.png'));
+
+  await chrome.evaluate(SAMPLE_KEYS);
+  await chrome.evaluate(
+    "document.getElementById('tab-keys').click()",
+  );
+  await sleep(800);
+  await chrome.shot(join(out, 'keys-dark.png'));
 }
 
 async function renderArt(chrome) {
