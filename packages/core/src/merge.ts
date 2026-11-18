@@ -1,4 +1,5 @@
-import type { ConnectionKind, QuotaState } from './types.js';
+import { historyForPreferred } from './pace.js';
+import type { QuotaSample, QuotaState, ConnectionKind } from './types.js';
 
 /** The connection id of a reading. Readings with no id are the Account of their provider. */
 export function connectionIdOf(state: QuotaState): string {
@@ -36,20 +37,44 @@ export function preferQuotaState(existing: QuotaState, incoming: QuotaState): Qu
   return richness(incoming) >= richness(existing) ? incoming : existing;
 }
 
+/** Attach local history. Omit the field when there are no samples. */
+function withHistory(state: QuotaState, history: readonly QuotaSample[] | undefined): QuotaState {
+  if (history == null || history.length === 0) {
+    if (state.history == null) return state;
+    const copy = { ...state };
+    delete copy.history;
+    return copy;
+  }
+  if (state.history === history) return state;
+  return { ...state, history: [...history] };
+}
+
+/**
+ * Keep the fresher reading and its local samples.
+ * A newer poll appends one sample. An older poll leaves the stored reading as it is.
+ */
+export function appendPollHistory(previous: QuotaState | undefined, incoming: QuotaState): QuotaState {
+  if (previous == null) return withHistory(incoming, historyForPreferred(undefined, incoming, incoming));
+  const preferred = preferQuotaState(previous, incoming);
+  return withHistory(preferred, historyForPreferred(previous, incoming, preferred));
+}
+
 /**
  * Insert or replace a single connection reading in a list using freshest-wins.
+ * A newer poll also appends local history.
  * Returns a new array; does not mutate `states`.
  */
 export function upsertQuotaState(states: readonly QuotaState[], incoming: QuotaState): QuotaState[] {
   const id = connectionIdOf(incoming);
   const index = states.findIndex((s) => connectionIdOf(s) === id);
-  if (index === -1) return [...states, incoming];
+  if (index === -1) return [...states, appendPollHistory(undefined, incoming)];
 
-  const preferred = preferQuotaState(states[index]!, incoming);
-  if (preferred === states[index]) return [...states];
+  const existing = states[index]!;
+  const combined = appendPollHistory(existing, incoming);
+  if (combined === existing) return [...states];
 
   const next = states.slice();
-  next[index] = preferred;
+  next[index] = combined;
   return next;
 }
 
@@ -65,14 +90,14 @@ export function mergeQuotaStates(
   base: readonly QuotaState[],
   incoming: readonly QuotaState[],
 ): QuotaState[] {
-  if (base.length === 0) return [...incoming];
+  if (base.length === 0) return incoming.map((s) => appendPollHistory(undefined, s));
   if (incoming.length === 0) return [...base];
 
   const byConnection = new Map<string, QuotaState>();
   for (const s of [...base, ...incoming]) {
     const id = connectionIdOf(s);
     const prev = byConnection.get(id);
-    byConnection.set(id, prev ? preferQuotaState(prev, s) : s);
+    byConnection.set(id, prev ? appendPollHistory(prev, s) : appendPollHistory(undefined, s));
   }
   // Map keeps first-insertion order: base connections first, then incoming-only ones.
   return [...byConnection.values()];

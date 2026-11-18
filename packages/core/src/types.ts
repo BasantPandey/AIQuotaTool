@@ -91,6 +91,18 @@ export interface KeySpend {
 /** An Account is a consumer plan (one for each provider). A Key is a named API key (many for each provider). */
 export type ConnectionKind = 'account' | 'key';
 
+/** One local poll reading. `remaining` is the percent left. `limit` is 100. */
+export interface QuotaSample {
+  /** Unix timestamp (ms) of the successful poll. */
+  at: number;
+  /** 0–100, percentage remaining in that window. */
+  remaining: number;
+  /** The percent scale. This tool stores 100. */
+  limit: number;
+  /** Unix timestamp (ms) when that window resets. */
+  resetAt: number;
+}
+
 export interface QuotaState {
   service: ServiceId;
   /**
@@ -130,6 +142,11 @@ export interface QuotaState {
   balance?: ProviderBalance;
   /** Key spend. Never a remaining percent by itself: see `keyPercent`. */
   spend?: KeySpend;
+  /**
+   * Local samples from successful polls.
+   * The device keeps the last 48. Nothing is sent off the device.
+   */
+  history?: QuotaSample[];
   /** Unix timestamp (ms) of the last successful poll */
   lastUpdated: number;
 }
