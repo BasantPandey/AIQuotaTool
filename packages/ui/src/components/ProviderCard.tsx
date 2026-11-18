@@ -1,6 +1,6 @@
 import type React from 'react';
 import type { QuotaHonesty, QuotaState, ServiceId } from '@ai-quota-tool/core';
-import { formatAccountBalance, QUOTA_HONESTY_LABELS, SERVICE_LABELS } from '@ai-quota-tool/core';
+import { formatAccountBalance, paceWarning, QUOTA_HONESTY_LABELS, SERVICE_LABELS } from '@ai-quota-tool/core';
 import { ProviderLogo } from './ProviderLogo.js';
 import { UsageBar } from './UsageBar.js';
 
@@ -62,6 +62,7 @@ export function ProviderCard({ service, state, hint, pendingText, action }: Prop
   const infos = state?.balance?.infos ?? [];
   const info =
     !needsAction && bars.length === 0 && state?.honesty != null ? QUOTA_HONESTY_LABELS[state.honesty] : null;
+  const pace = state != null && !needsAction ? paceWarning(state) : null;
 
   const pill =
     state == null ? (
@@ -112,6 +113,8 @@ export function ProviderCard({ service, state, hint, pendingText, action }: Prop
           <span className="num">{state.creditsUsed.toLocaleString('en-US')}</span> AI credits used. This pool has no limit.
         </p>
       )}
+
+      {pace != null && <p className="card-note">{pace}</p>}
 
       {info != null && <p className="card-note">{info}</p>}
 
